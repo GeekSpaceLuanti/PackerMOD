@@ -45,6 +45,53 @@ describe("library._internal helpers", function()
         end)
         it("passes through in-range value", function() assert.are.equal(2, clamp(2, 5)) end)
     end)
+
+    describe("format_server_label", function()
+        local f
+        setup(function() f = lib._internal.format_server_label end)
+        it("includes name and address when name given", function()
+            local s = f({ name = "Home", address = "1.2.3.4", port = 30000 })
+            assert.is_truthy(s:find("Home", 1, true))
+            assert.is_truthy(s:find("1.2.3.4", 1, true))
+        end)
+        it("appends port when non-default", function()
+            local s = f({ name = "Home", address = "1.2.3.4", port = 30001 })
+            assert.is_truthy(s:find(":30001", 1, true))
+        end)
+        it("omits port when default 30000", function()
+            local s = f({ name = "Home", address = "1.2.3.4", port = 30000 })
+            assert.is_nil(s:find(":30000", 1, true))
+        end)
+        it("returns only address when name is empty", function()
+            local s = f({ name = "", address = "host" })
+            assert.are.equal("host", s)
+        end)
+    end)
+
+    describe("build_server_from_form", function()
+        local f
+        setup(function() f = lib._internal.build_server_from_form end)
+        it("rejects empty address", function()
+            local r, err = f({ address = "" })
+            assert.is_nil(r)
+            assert.is_truthy(err:find("Address"))
+        end)
+        it("rejects non-numeric port", function()
+            local r, err = f({ address = "a.b", port = "abc" })
+            assert.is_nil(r)
+            assert.is_truthy(err:find("Port"))
+        end)
+        it("defaults port to 30000 when blank", function()
+            local r = f({ address = "a.b" })
+            assert.are.equal(30000, r.port)
+        end)
+        it("trims whitespace on name and address", function()
+            local r = f({ name = "  X  ", address = "  a.b  ", port = "30005" })
+            assert.are.equal("X", r.name)
+            assert.are.equal("a.b", r.address)
+            assert.are.equal(30005, r.port)
+        end)
+    end)
 end)
 
 describe("library.yml expansion via ui_loader", function()
@@ -80,8 +127,16 @@ describe("library.yml expansion via ui_loader", function()
             has_world = false,
             no_world = true,
             selected_world = 1,
+            servers = {},
+            has_server = false,
+            no_server = true,
+            selected_server = 1,
+            form_server_name = "",
+            form_server_address = "",
+            form_server_port = "",
             format_pack_label = function(p) return p.manifest.name end,
             format_world_label = function(w) return w.display_name or w.name end,
+            format_server_label = function(s) return tostring(s.name or s.address) end,
             icon_path = function(n) return "icon_" .. n .. ".png" end,
         }
         for k, v in pairs(overrides or {}) do c[k] = v end
@@ -136,5 +191,33 @@ describe("library.yml expansion via ui_loader", function()
             "subtab_worlds button should not render when no_pack")
         assert.is_truthy(s_yes:find("subtab_worlds", 1, true),
             "subtab_worlds button should render when has_pack")
+    end)
+
+    it("Multi subtab shows Add only when no servers, plus Remove/Connect when servers exist", function()
+        local build = packermod.layout.build_formspec
+        local fs_empty = loader.load({
+            yaml_path = "mainmenu/ui/library.yml",
+            ctx = build_ctx({
+                has_pack = true, no_pack = false, show_multi = true,
+            }),
+            theme = theme,
+        })
+        local fs_with = loader.load({
+            yaml_path = "mainmenu/ui/library.yml",
+            ctx = build_ctx({
+                has_pack = true, no_pack = false, show_multi = true,
+                servers = { { name = "H", address = "1.1.1.1", port = 30000 } },
+                has_server = true, no_server = false,
+            }),
+            theme = theme,
+        })
+        local s_empty = build(fs_empty, { theme = theme })
+        local s_with  = build(fs_with,  { theme = theme })
+        assert.is_truthy(s_empty:find("server_add", 1, true))
+        assert.is_nil(s_empty:find("server_remove", 1, true))
+        assert.is_nil(s_empty:find("server_connect", 1, true))
+        assert.is_truthy(s_with:find("server_add", 1, true))
+        assert.is_truthy(s_with:find("server_remove", 1, true))
+        assert.is_truthy(s_with:find("server_connect", 1, true))
     end)
 end)

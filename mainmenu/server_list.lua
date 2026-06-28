@@ -30,10 +30,20 @@ local function default_write(path, text)
     return true
 end
 
+local function resolve_yaml(opts)
+    if opts.yaml then return opts.yaml end
+    -- Luanti のメニュー sandbox では `require` が無効化されているので、
+    -- 通常は init.lua がロードした packermod.yaml をグローバル経由で使う。
+    local pm = rawget(_G, "packermod")
+    if pm and pm.yaml then return pm.yaml end
+    -- spec 環境などのフォールバック。
+    return require("mainmenu.yaml")
+end
+
 local function deps(opts)
     opts = opts or {}
     return {
-        yaml = opts.yaml or require("mainmenu.yaml"),
+        yaml = resolve_yaml(opts),
         read = opts.read_file or default_read,
         write = opts.write_file or default_write,
     }

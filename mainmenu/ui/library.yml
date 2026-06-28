@@ -118,9 +118,56 @@ page:
                           flex: 1
                           when: "${show_multi}"
                           children:
-                            - text:
-                                text: "Multiplayer arrives in Phase 9."
-                                style: dim
+                            - list:
+                                name: serverlist
+                                items: "${servers | format_server_label}"
+                                selected: "${selected_server}"
+                                flex: 1
+                            - status:
+                                text: "No servers yet. Fill the form below and press Add."
+                                when: "${no_server}"
+                            - row:
+                                spacing: sm
+                                children:
+                                  - field:
+                                      name: server_name
+                                      label: Name
+                                      w: 2.5
+                                      default: "${form_server_name}"
+                                  - field:
+                                      name: server_address
+                                      label: Address
+                                      w: 3.5
+                                      default: "${form_server_address}"
+                                  - field:
+                                      name: server_port
+                                      label: Port
+                                      w: 1.3
+                                      default: "${form_server_port}"
+                            - actions:
+                                children:
+                                  - icon-button:
+                                      name: server_add
+                                      icon: plus
+                                      label: Add
+                                      w: 1.8
+                                      h: 0.8
+                                  - icon-button:
+                                      name: server_remove
+                                      icon: trash
+                                      label: Remove
+                                      variant: danger
+                                      w: 1.8
+                                      h: 0.8
+                                      when: "${has_server}"
+                                  - icon-button:
+                                      name: server_connect
+                                      icon: play
+                                      label: Connect
+                                      variant: primary
+                                      w: 2.2
+                                      h: 0.8
+                                      when: "${has_server}"
                       - section:
                           flex: 1
                           when: "${show_mods}"

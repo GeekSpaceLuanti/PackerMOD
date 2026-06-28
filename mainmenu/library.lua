@@ -18,6 +18,17 @@ local function format_world_label(w)
     return tostring(w.display_name or w.name)
 end
 
+local function format_server_label(s)
+    local addr = s.address or ""
+    if s.port and s.port ~= 30000 then
+        addr = addr .. ":" .. tostring(s.port)
+    end
+    if s.name and s.name ~= "" then
+        return ("%s   (%s)"):format(s.name, addr)
+    end
+    return addr
+end
+
 local SUBTABS = { "worlds", "multi", "mods", "info" }
 
 local function subtab_variant(current, target)
@@ -38,14 +49,20 @@ local function get_formspec(tabdata)
     local pack = packs[tabdata.selected_pack]
 
     local worlds = {}
+    local servers = {}
     if pack then
         worlds = packermod.launcher.list_worlds(pack)
+        servers = packermod.launcher.list_servers(pack)
     end
     tabdata.worlds = worlds
+    tabdata.servers = servers
     tabdata.selected_world = clamp_selection(tabdata.selected_world, #worlds)
+    tabdata.selected_server = clamp_selection(tabdata.selected_server, #servers)
 
     local subtab = tabdata.subtab or "worlds"
     tabdata.subtab = subtab
+
+    local form = tabdata.form_server or {}
 
     local ctx = {
         packs = packs,
@@ -75,8 +92,17 @@ local function get_formspec(tabdata)
         no_world = #worlds == 0,
         selected_world = tabdata.selected_world,
 
+        servers = servers,
+        has_server = #servers > 0,
+        no_server = #servers == 0,
+        selected_server = tabdata.selected_server,
+        form_server_name = form.name or "",
+        form_server_address = form.address or "",
+        form_server_port = form.port or "",
+
         format_pack_label = format_pack_label,
         format_world_label = format_world_label,
+        format_server_label = format_server_label,
         icon_path = function(n) return packermod.icons.path(n, "md") end,
     }
 
@@ -119,6 +145,32 @@ local function launch_new(pack)
     core.start()
 end
 
+local function launch_server(server)
+    gamedata.singleplayer = false
+    gamedata.address = server.address
+    gamedata.port = tonumber(server.port) or 30000
+    gamedata.playername = core.settings:get("name") or "Player"
+    gamedata.password = ""
+    gamedata.selected_world = 0
+    core.start()
+end
+
+-- form 入力を server_list の形に整形(空文字列は省く)。失敗時 nil + err。
+local function build_server_from_form(form)
+    local addr = (form.address or ""):match("^%s*(.-)%s*$")
+    if addr == "" then return nil, "Address is required" end
+    local port = tonumber(form.port)
+    if form.port and form.port ~= "" and not port then
+        return nil, "Port must be a number"
+    end
+    return {
+        name = (form.name or ""):match("^%s*(.-)%s*$"),
+        address = addr,
+        port = port or 30000,
+        description = "",
+    }
+end
+
 local function button_handler(self, fields)
     local tabdata = self.data
 
@@ -159,6 +211,52 @@ local function button_handler(self, fields)
         return true
     end
 
+    -- ---- Multiplayer サブタブ ----
+
+    if fields.serverlist then
+        local e = core.explode_textlist_event(fields.serverlist)
+        if e.type == "CHG" then
+            tabdata.selected_server = e.index
+        end
+        return true
+    end
+
+    -- 入力中の form 値は serverlist 選択など毎に formspec 再描画で消えないよう保持する
+    tabdata.form_server = tabdata.form_server or {}
+    if fields.server_name    ~= nil then tabdata.form_server.name = fields.server_name end
+    if fields.server_address ~= nil then tabdata.form_server.address = fields.server_address end
+    if fields.server_port    ~= nil then tabdata.form_server.port = fields.server_port end
+
+    if fields.server_add and pack then
+        local entry, err = build_server_from_form(tabdata.form_server)
+        if not entry then
+            gamedata.errormessage = err
+            return true
+        end
+        local ok, add_err = packermod.server_list.add(pack.path, entry)
+        if not ok then
+            gamedata.errormessage = add_err or "Failed to save server"
+        else
+            tabdata.form_server = {}
+        end
+        return true
+    end
+
+    if fields.server_remove and pack then
+        local idx = tabdata.selected_server
+        if idx and idx > 0 then
+            packermod.server_list.remove(pack.path, idx)
+            tabdata.selected_server = 1
+        end
+        return true
+    end
+
+    if fields.server_connect and pack then
+        local server = tabdata.servers and tabdata.servers[tabdata.selected_server]
+        if server then launch_server(server) end
+        return true
+    end
+
     -- Import / Create / Settings は Phase 11 でモーダル化するまで no-op
     if fields.btn_import or fields.btn_create or fields.btn_settings then
         return true
@@ -184,6 +282,8 @@ end
 M._internal = {
     format_pack_label = format_pack_label,
     format_world_label = format_world_label,
+    format_server_label = format_server_label,
+    build_server_from_form = build_server_from_form,
     subtab_variant = subtab_variant,
     clamp_selection = clamp_selection,
     SUBTABS = SUBTABS,

@@ -11,6 +11,29 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 23:40 (main)
+
+**変更概要**:
+Phase 9。Multiplayer サブタブを実装。`<pack_root>/servers.yaml` のサーバー一覧表示・追加・削除・接続が動く。Edit は省略(現状は Remove → 再 Add で代用)。
+- マイクラ式: `servers.yaml` は単に「IP メモ」、サーバー側 Mod 要件への適合は Luanti のハンドシェイクが処理。プラン通り
+- library.yml: Multi セクションに list + Name/Address/Port フィールド + Add / Remove / Connect ボタン。Remove と Connect は `${has_server}` 条件付き
+- library.lua: get_formspec で `packermod.launcher.list_servers(pack)` 呼び出し、form 値を tabdata.form_server で保持(再描画でクリアされない)。button_handler で Add / Remove / Connect 分岐、Connect は `gamedata.singleplayer=false / address / port / playername / password` セット → `core.start()`
+- `build_server_from_form(form)` で入力 validation(address 必須、port 数値チェック、空白 trim、port default 30000)
+- `format_server_label` でリスト表示「Name (host:port)」、port=30000 のときは port 省略
+- **Hot fix**: `server_list.lua` の `deps()` が `require("mainmenu.yaml")` を呼ぶと Luanti のメニュー sandbox(mod security)で死ぬ。`packermod.yaml` グローバル → `require` の順に fallback して回避(spec も無修正で通る)
+- Xvfb で Multi サブタブ描画を確認(空サーバー時の状態)。Add → 接続のインタラクション部はテストで担保
+- 全 146 spec 緑(+9 件)
+
+**主な変更ファイル**:
+- mainmenu/library.lua (Multi 関連 ctx・handler・launch_server・build_server_from_form 追加)
+- mainmenu/ui/library.yml (Multi セクション)
+- mainmenu/server_list.lua (require → packermod.yaml fallback)
+- spec/library_spec.lua (format_server_label・build_server_from_form・Multi UI レンダリングテスト 9 件追加)
+
+**コミット**: (push 時に追記)
+
+**次のTODO**: Phase 10 = Mods サブタブ。`tab_create.lua` の ContentDB 検索 + manifest 編集ロジックを `pack_editor.lua` に切り出し、Mods サブタブから呼ぶ。Info サブタブ(description 編集)も Phase 10 でセットで。アイコン PNG の視認性問題は Phase 10/11 のテーマ調整時に対応(白系 stroke を fill 黒色 + accent stroke 等に置換するアイコン再生成が必要)。
+
 ## 2026-06-28 23:20 (main)
 
 **変更概要**:
