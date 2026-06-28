@@ -13,11 +13,6 @@ local function get_formspec(tabview, name, tabdata)
     local packs = get_packs()
     tabdata.packs = packs
 
-    local list_items = {}
-    for _, p in ipairs(packs) do
-        list_items[#list_items + 1] = format_pack_label(p)
-    end
-
     local selected = tabdata.selected or 1
     local has_selection = #packs > 0
     local description
@@ -27,24 +22,23 @@ local function get_formspec(tabview, name, tabdata)
         description = "No packs installed. Use the Import tab to add one."
     end
 
-    local L = packermod.layout
-    local BTN_W, BTN_H = 3.5, 0.8
-
-    local bottom_children = { L.Button{name="refresh", label="Refresh", w=BTN_W, h=BTN_H} }
-    if has_selection then
-        table.insert(bottom_children, L.Spacer{flex = 1})
-        table.insert(bottom_children, L.Button{name="play", label="Play", w=BTN_W, h=BTN_H})
-    end
-
-    local root = L.VBox{
-        spacing = 0.2, padding = 0.3,
-        L.Label{text="Installed Packs"},
-        L.TextList{name="packlist", items=list_items, selected=selected, flex = 1},
-        L.Label{text=description},
-        L.HBox(bottom_children),
+    local ctx = {
+        packs = packs,
+        selected = selected,
+        has_selection = has_selection,
+        description = description,
+        format_pack_label = format_pack_label,
+        icon_path = function(n) return packermod.icons.path(n, "md") end,
     }
 
-    return L.build_formspec(root, { w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6 })
+    return packermod.ui_loader.build_tab_formspec(
+        packermod.ui_loader.tab_yaml_path("packs"),
+        ctx,
+        {
+            w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6,
+            theme = packermod.theme,
+        }
+    )
 end
 
 local function button_handler(tabview, fields, name, tabdata)

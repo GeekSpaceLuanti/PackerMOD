@@ -31,6 +31,9 @@ local function setup_mocks()
         list_packs = function() return {} end,
     }
     packermod.layout = packermod.layout or dofile("mainmenu/lib/layout.lua")
+    packermod.theme  = packermod.theme  or dofile("mainmenu/lib/theme.lua")
+    packermod.icons  = packermod.icons  or dofile("mainmenu/lib/icons.lua")
+    packermod.ui_loader = packermod.ui_loader or dofile("mainmenu/lib/ui_loader.lua")
 end
 
 -- A tolerant formspec element parser. Recognises the element kinds the PackerMOD
@@ -59,7 +62,9 @@ local function parse_formspec(s)
                     x = tonumber(x), y = tonumber(y), w = tonumber(w), h = tonumber(h) })
             end
         elseif kind == "textlist" or kind == "textarea" or kind == "image"
-                or kind == "box" or kind == "tableoptions" or kind == "table" then
+                or kind == "tableoptions" or kind == "table" then
+            -- Note: box[] is intentionally excluded — it's used for backdrop
+            -- fills (card panels) that legitimately span behind other widgets.
             local x, y, w, h = body:match("^([%d.]+),([%d.]+);([%d.]+),([%d.]+)")
             if x then
                 table.insert(elements, { kind = kind,

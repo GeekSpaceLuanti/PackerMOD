@@ -308,4 +308,13 @@ function M.build_tab_formspec(yaml_path, ctx, build_opts)
     return L.build_formspec(root, build_opts or {})
 end
 
+-- Resolve the canonical mainmenu/ui/tab_<name>.yml path relative to this file.
+function M.tab_yaml_path(tabname)
+    local src = debug.getinfo(1, "S").source
+    if src:sub(1, 1) == "@" then src = src:sub(2) end
+    local dir = src:match("(.*[/\\])") or ("." .. (rawget(_G, "DIR_DELIM") or "/"))
+    local sep = (rawget(_G, "DIR_DELIM") or "/")
+    return dir .. ".." .. sep .. "ui" .. sep .. "tab_" .. tabname .. ".yml"
+end
+
 return M

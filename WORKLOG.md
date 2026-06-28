@@ -11,6 +11,26 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 21:45 (main)
+
+**変更概要**:
+Phase 2 Packs タブを YAML 化。Lua 直書きの widget 木を `mainmenu/ui/tab_packs.yml` のセマンティック DSL に移行し、`tab_packs.lua` は動的データ収集 + ハンドラの薄い殻にした。新しい theme/icons 経由でアイコン付きカード UI になる。
+- YAML: `page > card > section(Installed Packs) > list / status / actions(Refresh + Play)`。Play は `when: ${has_selection}` で空のとき隠れる。Refresh = reload アイコン (secondary), Play = play アイコン (primary)
+- ui_loader に `M.tab_yaml_path(name)` を追加(`mainmenu/lib/ui_loader.lua` の相対位置から `../ui/tab_<name>.yml` を解決)
+- `spec/layout_spec.lua` の `setup_mocks` に `packermod.theme/icons/ui_loader` を追加して live-tabs テストが YAML 経路を通せるように
+- `parse_formspec` から `box[]` を除外。card 背景の box が「前景要素」扱いされて全てと overlap する誤検出を防ぐ
+- 全 107 spec 緑、live-tabs (Packs) は overlap / OOB なし
+
+**主な変更ファイル**:
+- mainmenu/ui/tab_packs.yml (新規)
+- mainmenu/tabs/tab_packs.lua (簡素化, 93 → 84 行)
+- mainmenu/lib/ui_loader.lua (tab_yaml_path 追加)
+- spec/layout_spec.lua (setup_mocks 拡張, parse_formspec 改修)
+
+**コミット**: (push 後に追記)
+
+**次のTODO**: Phase 3 Import タブ YAML 化
+
 ## 2026-06-28 21:25 (main)
 
 **変更概要**:
