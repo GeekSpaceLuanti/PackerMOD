@@ -172,12 +172,86 @@ page:
                           flex: 1
                           when: "${show_mods}"
                           children:
-                            - text:
-                                text: "Mod editor arrives in Phase 10."
-                                style: dim
+                            - list:
+                                name: mod_list
+                                items: "${pack_mods | format_mod_entry}"
+                                selected: "${selected_mod}"
+                                flex: 1
+                            - status:
+                                text: "${mod_status}"
+                            - row:
+                                spacing: sm
+                                children:
+                                  - field:
+                                      name: search_query
+                                      label: Search ContentDB
+                                      flex: 1
+                                      default: "${search_query}"
+                                  - field:
+                                      name: search_release
+                                      label: Release
+                                      w: 1.5
+                                      default: "${search_release}"
+                                  - icon-button:
+                                      name: do_search
+                                      icon: search
+                                      label: Search
+                                      w: 1.5
+                                      h: 0.9
+                            - list:
+                                name: search_results
+                                items: "${search_results | format_search_result}"
+                                selected: "${selected_search}"
+                                flex: 1
+                            - actions:
+                                children:
+                                  - icon-button:
+                                      name: mod_remove
+                                      icon: trash
+                                      label: Remove
+                                      variant: danger
+                                      w: 2.0
+                                      h: 0.8
+                                      when: "${has_mod}"
+                                  - icon-button:
+                                      name: mod_add
+                                      icon: plus
+                                      label: Add
+                                      variant: primary
+                                      w: 2.0
+                                      h: 0.8
+                                      when: "${has_search_result}"
                       - section:
                           flex: 1
                           when: "${show_info}"
                           children:
-                            - text:
-                                text: "${pack_description}"
+                            - field:
+                                name: info_name
+                                label: Name
+                                default: "${pack_name}"
+                            - row:
+                                children:
+                                  - field:
+                                      name: info_version
+                                      label: Version
+                                      w: 3.0
+                                      default: "${pack_version}"
+                                  - label:
+                                      text: "Base: ${pack_base}"
+                                      style: dim
+                            - field:
+                                name: info_description
+                                label: Description
+                                flex: 1
+                                default: "${pack_description}"
+                            - status:
+                                text: "${info_status}"
+                            - actions:
+                                children:
+                                  - icon-button:
+                                      name: info_save
+                                      icon: save
+                                      label: Save Changes
+                                      variant: primary
+                                      w: 3.0
+                                      h: 0.8

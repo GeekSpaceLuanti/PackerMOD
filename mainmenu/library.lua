@@ -29,6 +29,21 @@ local function format_server_label(s)
     return addr
 end
 
+local function format_mod_entry(m)
+    if m.source == "contentdb" then
+        return ("%s   [contentdb %s @%s]"):format(m.name, m.package, tostring(m.release or "?"))
+    elseif m.source == "bundle" then
+        return ("%s   [bundle %s]"):format(m.name, m.path or "?")
+    elseif m.source == "url" then
+        return ("%s   [url]"):format(m.name)
+    end
+    return m.name
+end
+
+local function format_search_result(r)
+    return ("%s/%s — %s"):format(r.author or "?", r.name or "?", r.title or r.short_description or "")
+end
+
 local SUBTABS = { "worlds", "multi", "mods", "info" }
 
 local function subtab_variant(current, target)
@@ -63,6 +78,14 @@ local function get_formspec(tabdata)
     tabdata.subtab = subtab
 
     local form = tabdata.form_server or {}
+    local mods_state = tabdata.mods_state or {}
+    local info_state = tabdata.info_state or {}
+
+    local pack_mods = pack and (pack.manifest.mods or {}) or {}
+    tabdata.selected_mod = clamp_selection(tabdata.selected_mod, #pack_mods)
+
+    local search_results = mods_state.results or {}
+    tabdata.selected_search = clamp_selection(tabdata.selected_search, #search_results)
 
     local ctx = {
         packs = packs,
@@ -74,7 +97,7 @@ local function get_formspec(tabdata)
         pack_version = pack and pack.manifest.version or "",
         pack_base = pack and
             (pack.manifest.base_game.id .. "/" .. pack.manifest.base_game.version) or "",
-        pack_mods_count = pack and (pack.manifest.mods and #pack.manifest.mods or 0) or 0,
+        pack_mods_count = #pack_mods,
         pack_description = pack and (pack.manifest.description or "") or "",
 
         variant_worlds = subtab_variant(subtab, "worlds"),
@@ -100,9 +123,23 @@ local function get_formspec(tabdata)
         form_server_address = form.address or "",
         form_server_port = form.port or "",
 
+        pack_mods = pack_mods,
+        has_mod = #pack_mods > 0 and (tabdata.selected_mod or 0) > 0,
+        selected_mod = tabdata.selected_mod,
+        search_query = mods_state.query or "",
+        search_release = mods_state.release or "",
+        search_results = search_results,
+        selected_search = tabdata.selected_search,
+        has_search_result = #search_results > 0 and (tabdata.selected_search or 0) > 0,
+        mod_status = mods_state.status or "",
+
+        info_status = info_state.status or "",
+
         format_pack_label = format_pack_label,
         format_world_label = format_world_label,
         format_server_label = format_server_label,
+        format_mod_entry = format_mod_entry,
+        format_search_result = format_search_result,
         icon_path = function(n) return packermod.icons.path(n, "md") end,
     }
 
@@ -257,6 +294,85 @@ local function button_handler(self, fields)
         return true
     end
 
+    -- ---- Mods サブタブ ----
+
+    tabdata.mods_state = tabdata.mods_state or {}
+    local mods_state = tabdata.mods_state
+
+    if fields.mod_list then
+        local e = core.explode_textlist_event(fields.mod_list)
+        if e.type == "CHG" or e.type == "DCL" then tabdata.selected_mod = e.index end
+        return true
+    end
+    if fields.search_results then
+        local e = core.explode_textlist_event(fields.search_results)
+        if e.type == "CHG" or e.type == "DCL" then tabdata.selected_search = e.index end
+        return true
+    end
+    if fields.search_query ~= nil then mods_state.query = fields.search_query end
+    if fields.search_release ~= nil then mods_state.release = fields.search_release end
+
+    if fields.do_search and pack then
+        local q = mods_state.query or ""
+        if q == "" then
+            mods_state.status = "Enter a query first."
+        else
+            local results, err = packermod.client.search(q)
+            if not results then
+                mods_state.status = "Search failed: " .. tostring(err)
+                mods_state.results = {}
+            else
+                mods_state.results = results
+                mods_state.status = ("Found %d results."):format(#results)
+                tabdata.selected_search = 1
+            end
+        end
+        return true
+    end
+
+    if fields.mod_add and pack then
+        local r = mods_state.results and mods_state.results[tabdata.selected_search or 0]
+        if not r then
+            mods_state.status = "Select a search result first."
+            return true
+        end
+        local release_id = tonumber(mods_state.release)
+        if not release_id then
+            mods_state.status = "Enter the ContentDB release id (numeric)."
+            return true
+        end
+        local mod_spec = packermod.pack_editor.contentdb_result_to_mod(r, release_id)
+        local ok, err = packermod.pack_editor.add_mod(pack, mod_spec)
+        mods_state.status = ok and ("Added " .. mod_spec.name) or ("Add failed: " .. tostring(err))
+        return true
+    end
+
+    if fields.mod_remove and pack then
+        local idx = tabdata.selected_mod or 0
+        if idx < 1 then
+            mods_state.status = "Select a mod to remove."
+            return true
+        end
+        local ok, err = packermod.pack_editor.remove_mod(pack, idx)
+        mods_state.status = ok and "Removed." or ("Remove failed: " .. tostring(err))
+        if ok then tabdata.selected_mod = 1 end
+        return true
+    end
+
+    -- ---- Info サブタブ ----
+
+    tabdata.info_state = tabdata.info_state or {}
+
+    if fields.info_save and pack then
+        local ok, err = packermod.pack_editor.update_meta(pack, {
+            name = fields.info_name,
+            version = fields.info_version,
+            description = fields.info_description,
+        })
+        tabdata.info_state.status = ok and "Saved." or ("Save failed: " .. tostring(err))
+        return true
+    end
+
     -- Import / Create / Settings は Phase 11 でモーダル化するまで no-op
     if fields.btn_import or fields.btn_create or fields.btn_settings then
         return true
@@ -283,6 +399,8 @@ M._internal = {
     format_pack_label = format_pack_label,
     format_world_label = format_world_label,
     format_server_label = format_server_label,
+    format_mod_entry = format_mod_entry,
+    format_search_result = format_search_result,
     build_server_from_form = build_server_from_form,
     subtab_variant = subtab_variant,
     clamp_selection = clamp_selection,

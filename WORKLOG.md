@@ -11,6 +11,31 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 00:00 (main)
+
+**変更概要**:
+Phase 10。Mods サブタブと Info サブタブを実装。Pack を選択した状態で:
+- Mods タブで manifest.mods の表示・ContentDB 検索→追加・削除
+- Info タブで name / version / description を編集して保存
+ができる。`tab_create.lua` の ContentDB 検索 + manifest 編集ロジックは内部関数 + pack_builder の薄いラッパで、これを既存 Pack 編集向けに切り出して `mainmenu/pack_editor.lua` を新設。
+- pack_editor: `add_mod / remove_mod / update_meta / contentdb_result_to_mod`。manifest.yaml への書き戻しまで完結。`packermod.manifest` グローバル + `opts.write_file` で test 差し替え可能
+- library.lua: ctx に pack_mods / search_results / mod_status / info_status 等を追加。button_handler で mod_list / search_results / search_query / do_search / mod_add / mod_remove / info_save を処理
+- library.yml: Mods section に list + search row + results list + Add/Remove actions、Info section に name/version/description field + Save Changes
+- 実機(Xvfb)で Mods タブ(現 mod 一覧 / Search / Remove ボタン)と Info タブ(Name/Version/Description/Save)を確認。Description は formspec の単行 `field` で表示しているので長文だと読みづらい(textarea 未対応 — Phase 10 のスコープ外)
+- 全 155 spec 緑(+9 件: pack_editor 7 + library Mods/Info レンダリング 2)
+
+**主な変更ファイル**:
+- mainmenu/pack_editor.lua (新規)
+- mainmenu/library.lua (Mods + Info の ctx / handler / format_mod_entry / format_search_result)
+- mainmenu/ui/library.yml (Mods / Info セクション)
+- mainmenu/init.lua (pack_editor を packermod に inject)
+- spec/pack_editor_spec.lua (新規, 7 case)
+- spec/library_spec.lua (build_ctx 拡張 + Mods/Info レンダリングテスト 2)
+
+**コミット**: (push 時に追記)
+
+**次のTODO**: Phase 11 = Import / Create / Settings をモーダル化、ライブラリ左下の3小ボタンから dialog を開く。tab_*.yml は捨てずにモーダル用にリフォーム。Phase 12 で旧 `tab_*.yml` / `tabs/tab_*.lua` を削除して清書。アイコン視認性問題は Phase 12 で解決(白系アイコンを accent 色で塗り直す or テーマ button.bgcolor を明るくする)。
+
 ## 2026-06-28 23:40 (main)
 
 **変更概要**:

@@ -134,9 +134,21 @@ describe("library.yml expansion via ui_loader", function()
             form_server_name = "",
             form_server_address = "",
             form_server_port = "",
+            pack_mods = {},
+            has_mod = false,
+            selected_mod = 1,
+            search_query = "",
+            search_release = "",
+            search_results = {},
+            selected_search = 1,
+            has_search_result = false,
+            mod_status = "",
+            info_status = "",
             format_pack_label = function(p) return p.manifest.name end,
             format_world_label = function(w) return w.display_name or w.name end,
             format_server_label = function(s) return tostring(s.name or s.address) end,
+            format_mod_entry = function(m) return tostring(m.name) end,
+            format_search_result = function(r) return tostring(r.name) end,
             icon_path = function(n) return "icon_" .. n .. ".png" end,
         }
         for k, v in pairs(overrides or {}) do c[k] = v end
@@ -219,5 +231,54 @@ describe("library.yml expansion via ui_loader", function()
         assert.is_truthy(s_with:find("server_add", 1, true))
         assert.is_truthy(s_with:find("server_remove", 1, true))
         assert.is_truthy(s_with:find("server_connect", 1, true))
+    end)
+
+    it("Mods subtab shows mod_list, search controls, and Remove/Add gated by selection", function()
+        local build = packermod.layout.build_formspec
+        local fs_empty = loader.load({
+            yaml_path = "mainmenu/ui/library.yml",
+            ctx = build_ctx({
+                has_pack = true, no_pack = false, show_mods = true,
+            }),
+            theme = theme,
+        })
+        local fs_with_results = loader.load({
+            yaml_path = "mainmenu/ui/library.yml",
+            ctx = build_ctx({
+                has_pack = true, no_pack = false, show_mods = true,
+                pack_mods = { { name = "m1", source = "contentdb", package = "a/m1", release = 1 } },
+                has_mod = true,
+                search_results = { { name = "mesecons", author = "rubenwardy" } },
+                has_search_result = true,
+                selected_mod = 1,
+                selected_search = 1,
+            }),
+            theme = theme,
+        })
+        local s_empty = build(fs_empty, { theme = theme })
+        local s_with  = build(fs_with_results, { theme = theme })
+        assert.is_truthy(s_empty:find("do_search", 1, true))
+        assert.is_nil(s_empty:find("mod_remove", 1, true))
+        assert.is_nil(s_empty:find("mod_add", 1, true))
+        assert.is_truthy(s_with:find("mod_remove", 1, true))
+        assert.is_truthy(s_with:find("mod_add", 1, true))
+    end)
+
+    it("Info subtab shows name/version/description fields and Save button", function()
+        local build = packermod.layout.build_formspec
+        local fs = loader.load({
+            yaml_path = "mainmenu/ui/library.yml",
+            ctx = build_ctx({
+                has_pack = true, no_pack = false, show_info = true,
+                pack_name = "MyPack", pack_version = "1.0",
+                pack_description = "desc", pack_base = "base/1",
+            }),
+            theme = theme,
+        })
+        local s = build(fs, { theme = theme })
+        assert.is_truthy(s:find("info_name", 1, true))
+        assert.is_truthy(s:find("info_version", 1, true))
+        assert.is_truthy(s:find("info_description", 1, true))
+        assert.is_truthy(s:find("info_save", 1, true))
     end)
 end)
