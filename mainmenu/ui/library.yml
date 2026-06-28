@@ -1,7 +1,7 @@
 page:
   size:
     w: 15.5
-    h: 8.0
+    h: 8.5
   children:
     - row:
         flex: 1
@@ -49,7 +49,7 @@ page:
                     flex: 1
                     children:
                       - status:
-                          text: "No pack selected. Use Import to install one or Create to start fresh."
+                          text: "No pack selected. Use Import or Create."
                           when: "${no_pack}"
                       - label:
                           text: "${pack_name}"

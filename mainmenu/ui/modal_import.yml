@@ -1,7 +1,7 @@
 page:
   size:
-    w: 11
-    h: 4.5
+    w: 12
+    h: 5.5
   children:
     - card:
         flex: 1

@@ -110,17 +110,17 @@ page:
                                 icon: trash
                                 label: Remove
                                 variant: danger
-                                w: 2.0
+                                w: 1.8
                                 h: 0.8
                             - icon-button:
                                 name: export
                                 icon: save
                                 label: Export
                                 variant: primary
-                                w: 3.0
+                                w: 2.2
                                 h: 0.8
                             - button:
                                 name: dlg_close
                                 label: Close
-                                w: 2.0
+                                w: 1.5
                                 h: 0.8
