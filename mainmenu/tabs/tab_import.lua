@@ -1,18 +1,17 @@
 local function get_formspec(tabview, name, tabdata)
-    local status = tabdata.status or ""
-    local L = packermod.layout
-    local root = L.VBox{
-        spacing = 0.2, padding = 0.3,
-        L.Label{text="Import a Pack"},
-        L.Label{text="Paste an http(s) URL or a local path to a .zip / manifest.yaml"},
-        L.HBox{
-            L.Field{name="source", label="Source", flex = 1, h=0.8,
-                    default=tabdata.source, close_on_enter=false},
-            L.Button{name="import", label="Import", w=1.9, h=0.8},
-        },
-        L.Label{text=status},
+    local ctx = {
+        source    = tabdata.source or "",
+        status    = tabdata.status or "",
+        icon_path = function(n) return packermod.icons.path(n, "md") end,
     }
-    return L.build_formspec(root, { w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6 })
+    return packermod.ui_loader.build_tab_formspec(
+        packermod.ui_loader.tab_yaml_path("import"),
+        ctx,
+        {
+            w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6,
+            theme = packermod.theme,
+        }
+    )
 end
 
 local function button_handler(tabview, fields, name, tabdata)

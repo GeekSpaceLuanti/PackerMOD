@@ -11,6 +11,24 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 22:00 (main)
+
+**変更概要**:
+Phase 3 と Phase 4: Import タブと Settings タブを YAML 化。Packs と同じパターン (page > card > section > {label/field/list/actions}) を踏襲。タブ Lua は動的データを ctx に詰めて ui_loader を呼ぶだけになる。
+- Import: Source field + Import (download アイコン, primary)。下に status と spacer(flex=1) を置いて status の伸びに依存しない高さ確保
+- Settings: パス/バージョン情報を 3 行ラベル → spacer(flex=1) → 右下に Open Luanti settings (sliders アイコン → 内部で settings-2 に解決, secondary)。マイクラの options 画面っぽい配置
+- 全 107 spec 緑、live-tabs 4 タブ全部 (packs/import/create/settings) overlap / OOB なし
+
+**主な変更ファイル**:
+- mainmenu/ui/tab_import.yml (新規)
+- mainmenu/ui/tab_settings.yml (新規)
+- mainmenu/tabs/tab_import.lua (簡素化, 45 → 41 行)
+- mainmenu/tabs/tab_settings.lua (簡素化, 32 → 32 行)
+
+**コミット**: (push 後に追記)
+
+**次のTODO**: Phase 5 Create タブ YAML 化 (最も複雑)
+
 ## 2026-06-28 21:45 (main)
 
 **変更概要**:
@@ -27,7 +45,7 @@ Phase 2 Packs タブを YAML 化。Lua 直書きの widget 木を `mainmenu/ui/t
 - mainmenu/lib/ui_loader.lua (tab_yaml_path 追加)
 - spec/layout_spec.lua (setup_mocks 拡張, parse_formspec 改修)
 
-**コミット**: (push 後に追記)
+**コミット**: d853445
 
 **次のTODO**: Phase 3 Import タブ YAML 化
 

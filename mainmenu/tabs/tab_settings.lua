@@ -1,18 +1,18 @@
 local function get_formspec(tabview, name, tabdata)
-    local L = packermod.layout
-    local root = L.VBox{
-        spacing = 0.3, padding = 0.5,
-        L.Label{text="PackerMOD Settings"},
-        L.Label{text="User data path: " .. packermod.user_path},
-        L.Label{text="PackerMOD version: " .. PACKERMOD_VERSION},
-        L.Label{text="Luanti version: " .. core.get_version().string},
-        L.Spacer{flex = 1},
-        L.HBox{
-            L.Spacer{flex = 1},
-            L.Button{name="open_luanti_settings", label="Open Luanti settings", w=3.4, h=0.8},
-        },
+    local ctx = {
+        user_path      = packermod.user_path,
+        version        = PACKERMOD_VERSION,
+        luanti_version = core.get_version().string,
+        icon_path      = function(n) return packermod.icons.path(n, "md") end,
     }
-    return L.build_formspec(root, { w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6 })
+    return packermod.ui_loader.build_tab_formspec(
+        packermod.ui_loader.tab_yaml_path("settings"),
+        ctx,
+        {
+            w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6,
+            theme = packermod.theme,
+        }
+    )
 end
 
 local function button_handler(tabview, fields, name, tabdata)
