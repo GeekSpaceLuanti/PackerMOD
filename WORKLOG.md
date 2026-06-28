@@ -35,7 +35,7 @@
 - install/install.sh (textures/packermod_icon_*.png を user textures dir に installed)
 - spec/library_spec.lua (新規, 10 case)
 
-**コミット**: (push 時に追記)
+**コミット**: 57192be
 
 **次のTODO**: Phase 9 = Multiplayer サブタブ。`<pack_root>/servers.yaml` の編集 UI(モーダル or 詳細パネル内)+ `core.start` を address/port 付きで呼ぶ接続実装。アイコン PNG の視認性問題(白系 → ボタン背景に同化)も Phase 9 のついでに対応(stroke/fill 反転 or accent 色)。
 
