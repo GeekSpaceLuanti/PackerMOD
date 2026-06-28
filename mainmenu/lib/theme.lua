@@ -30,17 +30,20 @@ M.icons = {
     px_sm   = 24,  px_md   = 48,  px_lg   = 72,
 }
 
+-- bgcolor を Phase 9 までの #3A3A3A から #5A5A5A に明るくした(#10)。
+-- image_button(アイコン白系)が button 背景に同化していたのを、
+-- contrast を上げて視認性を確保する目的。
 M.button = {
-    default   = { bgcolor = "#3A3A3A", textcolor = "#FFFFFF",
-                  bgcolor_hovered = "#4A4A4A", bgcolor_pressed = "#2A2A2A" },
+    default   = { bgcolor = "#5A5A5A", textcolor = "#FFFFFF",
+                  bgcolor_hovered = "#7A7A7A", bgcolor_pressed = "#3A3A3A" },
     primary   = { bgcolor = "#3FA63F", textcolor = "#FFFFFF",
                   bgcolor_hovered = "#55FF55", bgcolor_pressed = "#2E7A2E" },
-    secondary = { bgcolor = "#3A3A3A", textcolor = "#FFFFFF",
-                  bgcolor_hovered = "#4A4A4A", bgcolor_pressed = "#2A2A2A" },
+    secondary = { bgcolor = "#5A5A5A", textcolor = "#FFFFFF",
+                  bgcolor_hovered = "#7A7A7A", bgcolor_pressed = "#3A3A3A" },
     danger    = { bgcolor = "#B33A3A", textcolor = "#FFFFFF",
                   bgcolor_hovered = "#FF5555", bgcolor_pressed = "#7A2828" },
     ghost     = { bgcolor = "#00000000", textcolor = "#AAAAAA",
-                  bgcolor_hovered = "#3A3A3A", bgcolor_pressed = "#2A2A2A" },
+                  bgcolor_hovered = "#5A5A5A", bgcolor_pressed = "#3A3A3A" },
 }
 
 M.field = {
@@ -101,9 +104,13 @@ end
 function M.emit_global_prelude()
     local lines = {}
     lines[#lines + 1] = ("bgcolor[%s;true]"):format(M.colors.bg)
-    lines[#lines + 1] = M.emit_style_type("button",   M.button.default)
-    lines[#lines + 1] = M.emit_style_type("field",    M.field.default)
-    lines[#lines + 1] = M.emit_style_type("textlist", M.textlist.default)
+    lines[#lines + 1] = M.emit_style_type("button",       M.button.default)
+    -- image_button is a different formspec selector and does not inherit
+    -- style_type[button;...] (#10). Apply the same bg here so icon-buttons
+    -- get the same visual treatment.
+    lines[#lines + 1] = M.emit_style_type("image_button", M.button.default)
+    lines[#lines + 1] = M.emit_style_type("field",        M.field.default)
+    lines[#lines + 1] = M.emit_style_type("textlist",     M.textlist.default)
     -- remove nils
     local out = {}
     for _, l in ipairs(lines) do if l then out[#out + 1] = l end end
