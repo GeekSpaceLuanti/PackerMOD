@@ -11,6 +11,42 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 17:24 (main)
+
+**変更概要**:
+Plan 手順 6〜10 を完走。Issue #1〜#7 全部 close。
+
+- ContentDB HTTP+JSON クライアント(release pin)
+- mod 配置パイプライン(contentdb cache / bundle / url → `<world>/worldmods/`)
+- pack_launcher で world 作成 + mod 配置を統合、Packs タブ Play から呼出
+- Pack importer(URL / zip / yaml、temp-extract-then-validate で packs/ を汚さない)
+- Pack builder(tabdata → manifest 構築、重複 mod 拒否)
+- Create タブ本実装(ContentDB 検索 + release id pin で mod 追加 + Export)
+- Windows install.ps1 / uninstall.ps1(copy デフォルト、symlink は Developer Mode 落ち)
+- E2E ランナー(throwaway $HOME で install → Luanti boot → log 検証)+ Makefile
+- PackerMOD-Base scaffold 別リポジトリ(<https://github.com/GeekSpaceLuanti/PackerMOD-Base>)+ docs/packermod-base.md
+
+busted 計 53 テスト + E2E 1 件すべて pass。Luanti 起動 ERROR/WARNING ゼロ。
+
+**主な変更ファイル**:
+- `mainmenu/contentdb.lua` `mainmenu/mod_installer.lua` `mainmenu/pack_launcher.lua`
+- `mainmenu/pack_importer.lua` `mainmenu/pack_builder.lua`
+- `mainmenu/world_builder.lua`(read_file / delete_dir / copy_dir / extract_zip を default_fs に追加)
+- `mainmenu/init.lua`(全モジュールを packermod 名前空間で束ね)
+- `mainmenu/tabs/{tab_packs,tab_import,tab_create}.lua`
+- `spec/{contentdb,mod_installer,pack_launcher,pack_importer,pack_builder}_spec.lua`
+- `spec/e2e/run.sh`、`Makefile`
+- `install/install.ps1`、`install/uninstall.ps1`
+- `docs/packermod-base.md`
+
+**コミット**: 9b0d9a2, 341acfd, 34c3c7b, 6bba785, f07c7c7, 2b6544f
+
+**次のTODO**:
+- VoxeLibre 0.91 を PackerMOD-Base へ取り込み(Issue #8)
+- Windows install.ps1 の実機検証(Issue #6 残課題)
+- ContentDB ブラウザを mainmenu 自前実装(現状は公式 mainmenu に戻さないと使えない)
+- formspec UI ブラッシュアップ(Create タブのレイアウトが密)
+
 ## 2026-06-28 16:51 (main)
 
 **変更概要**:
