@@ -1,0 +1,6 @@
+*.log
+.luarocks/
+luacov.*.out
+luacov.report.out
+*.swp
+.DS_Store

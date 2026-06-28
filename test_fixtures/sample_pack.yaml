@@ -1,0 +1,35 @@
+schema_version: 1
+id: sample_pack
+name: Sample Pack
+version: "1.0.0"
+description: |
+  Sample pack used as a test fixture.
+  Includes three mod sources.
+author: bacon
+
+base_game:
+  id: packerbase
+  version: "0.91"
+
+mods:
+  - name: mesecons
+    source: contentdb
+    package: Jeija/mesecons
+    release: 12345
+  - name: my_custom_mod
+    source: bundle
+    path: bundled_mods/my_custom_mod
+  - name: external_mod
+    source: url
+    url: https://example.com/mod.zip
+    sha256: abc123def
+
+settings:
+  enable_damage: true
+  creative_mode: false
+  mg_name: v7
+
+texture_pack:
+  source: contentdb
+  package: Foo/cool_textures
+  release: 6789
