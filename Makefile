@@ -16,7 +16,7 @@ screenshot:
 	bash scripts/screenshot_mainmenu.sh $(SUBTAB)
 
 screenshot-all:
-	@for s in library worlds multi mods info; do \
+	@for s in library worlds multi mods info modal_import modal_create modal_settings; do \
 	    bash scripts/screenshot_mainmenu.sh $$s /tmp/mainmenu_$$s.png; \
 	done
 

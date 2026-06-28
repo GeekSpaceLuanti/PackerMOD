@@ -93,9 +93,17 @@ packermod = {
 -- ui_loader is loaded after the packermod table so it can read packermod.layout.
 packermod.ui_loader = dofile(self_path .. "lib" .. DIR_DELIM .. "ui_loader.lua")
 
--- Phase 8+: Library 単一画面。旧 tab_*.lua は Phase 11 でモーダル化するまで残置。
+-- Phase 8+: Library 単一画面。
 local library = dofile(self_path .. "library.lua")
 packermod.library = library
+
+-- Phase 11: Import / Create / Settings は Library 左下のボタンから
+-- 開く modal dialog として実装。dialogs/ 配下に分離。
+packermod.dialogs = {
+    dlg_import   = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_import.lua"),
+    dlg_create   = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_create.lua"),
+    dlg_settings = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_settings.lua"),
+}
 
 local function init()
     if core.is_debug_build then

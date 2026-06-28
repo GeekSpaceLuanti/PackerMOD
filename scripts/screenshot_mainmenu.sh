@@ -20,9 +20,11 @@ set -euo pipefail
 SUBTAB="${1:-library}"
 OUT="${2:-/tmp/mainmenu_${SUBTAB}.png}"
 
+# Phase 11+: modal_<name> 引数で Library 起動と同時に該当モーダルを開く。
 case "$SUBTAB" in
-    library|worlds|multi|mods|info) ;;
-    *) echo "unknown subtab: $SUBTAB (expected library|worlds|multi|mods|info)" >&2; exit 2 ;;
+    library|worlds|multi|mods|info) MODAL="" ;;
+    modal_import|modal_create|modal_settings) MODAL="${SUBTAB#modal_}"; SUBTAB="library" ;;
+    *) echo "unknown subtab: $SUBTAB (expected library|worlds|multi|mods|info|modal_import|modal_create|modal_settings)" >&2; exit 2 ;;
 esac
 
 DISPLAY_NUM="${DISPLAY_NUM:-99}"
@@ -45,17 +47,20 @@ cleanup() {
     [[ -n "$XVFB_PID"  ]] && wait "$XVFB_PID"   2>/dev/null || true
     # Always strip the dev hook so it doesn't leak into normal runs.
     if [[ -f "$CONF" ]]; then
-        sed -i '/^packermod_initial_subtab/d;/^packermod_initial_tab/d' "$CONF"
+        sed -i '/^packermod_initial_subtab/d;/^packermod_initial_modal/d;/^packermod_initial_tab/d' "$CONF"
     fi
 }
 trap cleanup EXIT
 
-# Inject the initial-subtab setting and strip any previous value.
+# Inject the initial-subtab / initial-modal setting and strip previous values.
 if [[ -f "$CONF" ]]; then
-    sed -i '/^packermod_initial_subtab/d;/^packermod_initial_tab/d' "$CONF"
+    sed -i '/^packermod_initial_subtab/d;/^packermod_initial_modal/d;/^packermod_initial_tab/d' "$CONF"
 fi
 if [[ "$SUBTAB" != "library" ]]; then
     echo "packermod_initial_subtab = $SUBTAB" >> "$CONF"
+fi
+if [[ -n "${MODAL:-}" ]]; then
+    echo "packermod_initial_modal = $MODAL" >> "$CONF"
 fi
 
 # Start Xvfb (auth disabled so xdotool can attach without juggling Xauthority).

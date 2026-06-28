@@ -1,0 +1,53 @@
+-- Import dialog (Phase 11). Library 左下の [Import] ボタンから開く。
+-- 旧 tabs/tab_import.lua のロジックを dialog 形式に移植。
+
+local M = {}
+
+local function get_formspec(data)
+    local ctx = {
+        source    = data.source or "",
+        status    = data.status or "",
+        icon_path = function(n) return packermod.icons.path(n, "md") end,
+    }
+    return packermod.ui_loader.build_tab_formspec(
+        packermod.ui_loader.ui_yaml_path("modal_import"),
+        ctx,
+        { version = 6, theme = packermod.theme }
+    )
+end
+
+local function handler(self, fields)
+    local data = self.data
+    if fields.dlg_close or fields.quit then
+        self:delete()
+        return true
+    end
+    if fields.source ~= nil then data.source = fields.source end
+    if fields.import then
+        local src = (data.source or ""):match("^%s*(.-)%s*$")
+        if src == "" then
+            data.status = "Enter a URL or local path first."
+            return true
+        end
+        local ok, id_or_err = packermod.importer.import(src)
+        if ok then
+            data.status = "Imported pack: " .. tostring(id_or_err)
+            data.source = ""
+        else
+            data.status = "Import failed: " .. tostring(id_or_err)
+        end
+        return true
+    end
+    return false
+end
+
+function M.show(parent)
+    local dlg = dialog_create("packermod_dlg_import", get_formspec, handler, nil)
+    if parent then
+        dlg:set_parent(parent)
+        parent:hide()
+    end
+    dlg:show()
+end
+
+return M

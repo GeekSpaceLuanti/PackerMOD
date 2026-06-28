@@ -373,8 +373,16 @@ local function button_handler(self, fields)
         return true
     end
 
-    -- Import / Create / Settings は Phase 11 でモーダル化するまで no-op
-    if fields.btn_import or fields.btn_create or fields.btn_settings then
+    if fields.btn_import then
+        packermod.dialogs.dlg_import.show(M._dlg)
+        return true
+    end
+    if fields.btn_create then
+        packermod.dialogs.dlg_create.show(M._dlg)
+        return true
+    end
+    if fields.btn_settings then
+        packermod.dialogs.dlg_settings.show(M._dlg)
         return true
     end
 
@@ -383,6 +391,7 @@ end
 
 function M.show()
     local dlg = dialog_create("packermod_library", get_formspec, button_handler, nil)
+    M._dlg = dlg
     -- Dev hook: jump to a specific subtab on startup, used by
     -- scripts/screenshot_mainmenu.sh to capture each subtab without xdotool
     -- click sequences.
@@ -392,6 +401,18 @@ function M.show()
     end
     dlg:show()
     ui.set_default("packermod_library")
+
+    -- Dev hook: directly open a modal on startup (Phase 11 testing).
+    local modal = core.settings and core.settings:get("packermod_initial_modal")
+    if modal and modal ~= "" and packermod.dialogs then
+        local d = packermod.dialogs["dlg_" .. modal]
+        if d then d.show(dlg) end
+    end
+end
+
+-- modal dialogs(Phase 11)が library dialog を parent として参照するための取得 API。
+function M.dlg()
+    return M._dlg
 end
 
 -- ハーネス用エクスポート(spec から呼ぶ)

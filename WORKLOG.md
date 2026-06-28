@@ -11,6 +11,32 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 00:20 (main)
+
+**変更概要**:
+Phase 11 (#9)。Library 左下の [Import][Create][Settings] を fstk dialog modal に変換。タブが完全に消えて CurseForge / Modrinth 流の「Library が主役、機能は modal 起動」フローに到達。
+- Issue #9〜#13 を一括作成: 残りの Phase + 派生課題を全部 GitHub Issue 化(今回作業から「Issue ドリブン」運用に移行)
+- `mainmenu/dialogs/dlg_import.lua` / `dlg_create.lua` / `dlg_settings.lua` 新設。`dialog_create` で fstk dialog を作って `set_parent(library_dlg)` + `parent:hide()` → `dlg:show()`。ESC または Close ボタンで `self:delete()` → fstk が parent を再 show
+- `mainmenu/ui/modal_import.yml` / `modal_create.yml` / `modal_settings.yml` 新設(対応する旧 `tab_*.yml` から流用 + サイズ調整 + Close ボタン追加)
+- `library.lua`: `M._dlg` で library dialog を保持して modal から参照可。`btn_import` / `btn_create` / `btn_settings` ハンドラを「dlg.show(M._dlg) を呼ぶ」に置換。dev hook の `packermod_initial_modal` を追加(library 起動と同時に modal を開く)
+- `init.lua` で `packermod.dialogs.dlg_import/dlg_create/dlg_settings` を inject
+- `screenshot_mainmenu.sh` と Makefile: `modal_import` / `modal_create` / `modal_settings` を引数として受けるよう拡張、initial_modal setting で modal を起動時 dispatch
+- 実機(Xvfb)で 3 modal すべて表示確認(`make screenshot SUBTAB=modal_import|modal_create|modal_settings`)
+- 旧 `tabs/tab_import.lua` / `tab_create.lua` / `tab_settings.lua` および `ui/tab_*.yml` は **Phase 12 (#10)** で削除予定。現在は孤立しているが残置(参照しているコードは無いので動作上は問題なし)
+- 全 155 spec 緑(回帰なし)
+
+**主な変更ファイル**:
+- mainmenu/dialogs/dlg_import.lua / dlg_create.lua / dlg_settings.lua (新規)
+- mainmenu/ui/modal_import.yml / modal_create.yml / modal_settings.yml (新規)
+- mainmenu/library.lua (M._dlg / btn_* handler / packermod_initial_modal hook)
+- mainmenu/init.lua (packermod.dialogs 配列に dialogs 3 つを inject)
+- scripts/screenshot_mainmenu.sh (modal_* 引数対応)
+- Makefile (screenshot-all に modal_* 追加)
+
+**コミット**: (push 時に追記)
+
+**次のTODO**: Phase 12 (#10) = 旧 `tabs/tab_*.lua` + `ui/tab_*.yml` + `tab_yaml_path()` + `packermod_initial_tab` 互換コードを全削除して仕上げ。並行して派生 issue (#11 アイコン、#12 textarea、#13 Mods タブ高さ)も対応。
+
 ## 2026-06-29 00:00 (main)
 
 **変更概要**:
