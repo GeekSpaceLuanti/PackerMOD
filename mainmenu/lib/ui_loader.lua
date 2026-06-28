@@ -322,4 +322,13 @@ function M.tab_yaml_path(tabname)
     return dir .. ".." .. sep .. "ui" .. sep .. "tab_" .. tabname .. ".yml"
 end
 
+-- Resolve mainmenu/ui/<filename>.yml (no tab_ prefix). Phase 8+ Library uses this.
+function M.ui_yaml_path(filename)
+    local src = debug.getinfo(1, "S").source
+    if src:sub(1, 1) == "@" then src = src:sub(2) end
+    local dir = src:match("(.*[/\\])") or ("." .. (rawget(_G, "DIR_DELIM") or "/"))
+    local sep = (rawget(_G, "DIR_DELIM") or "/")
+    return dir .. ".." .. sep .. "ui" .. sep .. filename .. ".yml"
+end
+
 return M

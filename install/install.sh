@@ -38,6 +38,24 @@ else
     echo "Copied $repo_root/mainmenu -> $target_mainmenu"
 fi
 
+# Install icon textures into the user-level texture dir so the main menu
+# `image_button[...]` can find them. Without this, icon-button buttons fall
+# back to a blank background and only the label is visible.
+target_textures="$user_data/textures"
+mkdir -p "$target_textures"
+for src in "$repo_root"/textures/packermod_icon_*.png; do
+    [[ -f "$src" ]] || continue
+    base="$(basename "$src")"
+    dst="$target_textures/$base"
+    if [[ -e "$dst" || -L "$dst" ]]; then rm -f "$dst"; fi
+    if [[ "$mode" == "symlink" ]]; then
+        ln -s "$src" "$dst"
+    else
+        cp "$src" "$dst"
+    fi
+done
+echo "Installed icon textures into $target_textures"
+
 conf="$user_data/minetest.conf"
 abs_init="$target_mainmenu/init.lua"
 

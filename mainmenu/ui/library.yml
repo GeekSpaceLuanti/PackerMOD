@@ -1,0 +1,136 @@
+page:
+  size:
+    w: 15.5
+    h: 8.0
+  children:
+    - row:
+        flex: 1
+        children:
+          - col:
+              w: 5.0
+              children:
+                - card:
+                    flex: 1
+                    children:
+                      - section:
+                          title: Packs
+                          flex: 1
+                          children:
+                            - list:
+                                name: packlist
+                                items: "${packs | format_pack_label}"
+                                selected: "${selected_pack}"
+                                flex: 1
+                            - row:
+                                spacing: sm
+                                children:
+                                  - icon-button:
+                                      name: btn_import
+                                      icon: download
+                                      label: Import
+                                      w: 1.4
+                                      h: 0.8
+                                  - icon-button:
+                                      name: btn_create
+                                      icon: plus
+                                      label: Create
+                                      w: 1.4
+                                      h: 0.8
+                                  - icon-button:
+                                      name: btn_settings
+                                      icon: sliders
+                                      label: Settings
+                                      w: 1.4
+                                      h: 0.8
+          - col:
+              flex: 1
+              children:
+                - card:
+                    flex: 1
+                    children:
+                      - status:
+                          text: "No pack selected. Use Import to install one or Create to start fresh."
+                          when: "${no_pack}"
+                      - label:
+                          text: "${pack_name}"
+                          style: section
+                          when: "${has_pack}"
+                      - label:
+                          text: "v${pack_version}   base=${pack_base}   mods=${pack_mods_count}"
+                          style: dim
+                          when: "${has_pack}"
+                      - row:
+                          when: "${has_pack}"
+                          children:
+                            - button:
+                                name: subtab_worlds
+                                label: Worlds
+                                variant: "${variant_worlds}"
+                                flex: 1
+                                h: 0.7
+                            - button:
+                                name: subtab_multi
+                                label: Multiplayer
+                                variant: "${variant_multi}"
+                                flex: 1
+                                h: 0.7
+                            - button:
+                                name: subtab_mods
+                                label: Mods
+                                variant: "${variant_mods}"
+                                flex: 1
+                                h: 0.7
+                            - button:
+                                name: subtab_info
+                                label: Info
+                                variant: "${variant_info}"
+                                flex: 1
+                                h: 0.7
+                      - section:
+                          flex: 1
+                          when: "${show_worlds}"
+                          children:
+                            - list:
+                                name: worldlist
+                                items: "${worlds | format_world_label}"
+                                selected: "${selected_world}"
+                                flex: 1
+                            - status:
+                                text: "No worlds yet. Press New World to create one."
+                                when: "${no_world}"
+                            - actions:
+                                children:
+                                  - icon-button:
+                                      name: new_world
+                                      icon: plus
+                                      label: New World
+                                      w: 3.0
+                                      h: 0.8
+                                  - icon-button:
+                                      name: play_world
+                                      icon: play
+                                      label: Play
+                                      variant: primary
+                                      when: "${has_world}"
+                                      w: 3.0
+                                      h: 0.8
+                      - section:
+                          flex: 1
+                          when: "${show_multi}"
+                          children:
+                            - text:
+                                text: "Multiplayer arrives in Phase 9."
+                                style: dim
+                      - section:
+                          flex: 1
+                          when: "${show_mods}"
+                          children:
+                            - text:
+                                text: "Mod editor arrives in Phase 10."
+                                style: dim
+                      - section:
+                          flex: 1
+                          when: "${show_info}"
+                          children:
+                            - text:
+                                text: "${pack_description}"

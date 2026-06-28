@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Capture the PackerMOD main menu under Xvfb and save a PNG.
 #
-# Usage:
-#   scripts/screenshot_mainmenu.sh [tab] [out_path]
-#     tab: packs | import | create | settings   (default: create)
-#     out: PNG path                              (default: /tmp/mainmenu_<tab>.png)
+# Phase 8+: メニューは単一の Library 画面に統合された。引数は subtab を指す:
 #
-# Tab switching is settings-driven via `packermod_initial_tab` so we don't
-# need pixel-perfect xdotool clicks. The setting is written to
+# Usage:
+#   scripts/screenshot_mainmenu.sh [subtab] [out_path]
+#     subtab: library | worlds | multi | mods | info   (default: library)
+#     out:    PNG path                                 (default: /tmp/mainmenu_<subtab>.png)
+#
+# Subtab switching is settings-driven via `packermod_initial_subtab` so we
+# don't need pixel-perfect xdotool clicks. The setting is written to
 # minetest.conf before launching Luanti and removed afterwards.
 #
 # Requires: Xvfb, xdotool, luanti (>= 5.16 for in-menu F12).
@@ -15,12 +17,12 @@
 
 set -euo pipefail
 
-TAB="${1:-create}"
-OUT="${2:-/tmp/mainmenu_${TAB}.png}"
+SUBTAB="${1:-library}"
+OUT="${2:-/tmp/mainmenu_${SUBTAB}.png}"
 
-case "$TAB" in
-    packs|import|create|settings) ;;
-    *) echo "unknown tab: $TAB (expected packs|import|create|settings)" >&2; exit 2 ;;
+case "$SUBTAB" in
+    library|worlds|multi|mods|info) ;;
+    *) echo "unknown subtab: $SUBTAB (expected library|worlds|multi|mods|info)" >&2; exit 2 ;;
 esac
 
 DISPLAY_NUM="${DISPLAY_NUM:-99}"
@@ -30,7 +32,7 @@ WIN_W="${WIN_W:-1280}"
 WIN_H="${WIN_H:-960}"
 SHOT_DIR="${HOME}/.minetest/screenshots"
 CONF="${HOME}/.minetest/minetest.conf"
-LOG="${LOG:-/tmp/luanti_${TAB}.log}"
+LOG="${LOG:-/tmp/luanti_${SUBTAB}.log}"
 
 mkdir -p "$SHOT_DIR"
 
@@ -43,16 +45,18 @@ cleanup() {
     [[ -n "$XVFB_PID"  ]] && wait "$XVFB_PID"   2>/dev/null || true
     # Always strip the dev hook so it doesn't leak into normal runs.
     if [[ -f "$CONF" ]]; then
-        sed -i '/^packermod_initial_tab/d' "$CONF"
+        sed -i '/^packermod_initial_subtab/d;/^packermod_initial_tab/d' "$CONF"
     fi
 }
 trap cleanup EXIT
 
-# Inject the initial-tab setting and strip any previous value.
+# Inject the initial-subtab setting and strip any previous value.
 if [[ -f "$CONF" ]]; then
-    sed -i '/^packermod_initial_tab/d' "$CONF"
+    sed -i '/^packermod_initial_subtab/d;/^packermod_initial_tab/d' "$CONF"
 fi
-echo "packermod_initial_tab = $TAB" >> "$CONF"
+if [[ "$SUBTAB" != "library" ]]; then
+    echo "packermod_initial_subtab = $SUBTAB" >> "$CONF"
+fi
 
 # Start Xvfb (auth disabled so xdotool can attach without juggling Xauthority).
 Xvfb ":$DISPLAY_NUM" -screen 0 "${WIN_W}x${WIN_H}x24" -ac -nolisten tcp \

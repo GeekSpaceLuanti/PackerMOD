@@ -11,6 +11,34 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 23:20 (main)
+
+**変更概要**:
+メインメニュー再設計 Phase 8。タブビューを撤廃し、CurseForge / Modrinth 風の単一画面(Library + Pack 詳細)に置き換え。Worlds サブタブで複数ワールド一覧表示・新規ワールド作成 + Play まで動くようになった。Multiplayer / Mods / Info サブタブはプレースホルダ(Phase 9/10/11 で実装)。
+- `mainmenu/library.lua` + `mainmenu/ui/library.yml` を新設。`dialog_create("packermod_library", ...)` で formspec を出す
+- `init.lua` から tabview を削除(`library.show()` に置換)。旧 `tabs/tab_*.lua` + `ui/tab_*.yml` は Phase 11 でモーダル化するときに転用するので残置
+- レイアウト: page > row[col(w=5.0) Pack list + Imp/Cre/Set 3 ボタン | col(flex=1) 詳細パネル(タイトル + サブナビ + Worlds/Multi/Mods/Info の when 切替セクション)]
+- サブナビボタンの「アクティブ表示」は `variant: primary/secondary` を ctx で動的に切替
+- 起動時 subtab 指定: `core.settings:packermod_initial_subtab` → screenshot スクリプトが利用
+- `scripts/screenshot_mainmenu.sh` と Makefile を tab 概念から subtab 概念に書き換え。引数は `library | worlds | multi | mods | info`。`packermod_initial_tab` 互換削除予定の cleanup も入れた
+- `install/install.sh` に `textures/packermod_icon_*.png` の symlink 追加(以前から `~/.minetest/textures` にコピーされておらず icon-button が背景 blank になっていた)
+- 実機(Xvfb)で Sample Pack 選択 → Worlds サブタブ表示 → Mods サブタブ切替を確認。アイコン PNG が白系で background に同化して見えにくいのは別 issue
+- 全 137 spec 緑(+10 件: library 純粋ロジック 5 件 + library.yml ui_loader 展開 3 件 + format_pack_label/format_world_label 2 件)
+
+**主な変更ファイル**:
+- mainmenu/library.lua (新規)
+- mainmenu/ui/library.yml (新規)
+- mainmenu/lib/ui_loader.lua (ui_yaml_path 追加 — tab_ プレフィックス無しの YAML 用)
+- mainmenu/init.lua (tabview → library.show())
+- scripts/screenshot_mainmenu.sh (tab → subtab、`packermod_initial_subtab` driven)
+- Makefile (TAB → SUBTAB, `screenshot-all` の対象を library/worlds/multi/mods/info に)
+- install/install.sh (textures/packermod_icon_*.png を user textures dir に installed)
+- spec/library_spec.lua (新規, 10 case)
+
+**コミット**: (push 時に追記)
+
+**次のTODO**: Phase 9 = Multiplayer サブタブ。`<pack_root>/servers.yaml` の編集 UI(モーダル or 詳細パネル内)+ `core.start` を address/port 付きで呼ぶ接続実装。アイコン PNG の視認性問題(白系 → ボタン背景に同化)も Phase 9 のついでに対応(stroke/fill 反転 or accent 色)。
+
 ## 2026-06-28 23:00 (main)
 
 **変更概要**:

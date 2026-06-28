@@ -91,20 +91,9 @@ packermod = {
 -- ui_loader is loaded after the packermod table so it can read packermod.layout.
 packermod.ui_loader = dofile(self_path .. "lib" .. DIR_DELIM .. "ui_loader.lua")
 
-local tabs = {
-    packs    = dofile(self_path .. "tabs" .. DIR_DELIM .. "tab_packs.lua"),
-    import   = dofile(self_path .. "tabs" .. DIR_DELIM .. "tab_import.lua"),
-    create   = dofile(self_path .. "tabs" .. DIR_DELIM .. "tab_create.lua"),
-    settings = dofile(self_path .. "tabs" .. DIR_DELIM .. "tab_settings.lua"),
-}
-
-local function event_handler(tabview, event)
-    if event == "MenuQuit" then
-        core.close()
-        return true
-    end
-    return true
-end
+-- Phase 8+: Library 単一画面。旧 tab_*.lua は Phase 11 でモーダル化するまで残置。
+local library = dofile(self_path .. "library.lua")
+packermod.library = library
 
 local function init()
     if core.is_debug_build then
@@ -113,27 +102,7 @@ local function init()
 
     pack_manager.ensure_dirs(packermod.user_path)
 
-    local tv = tabview_create("packermod_main",
-        { x = PACKERMOD_TAB_W, y = PACKERMOD_TAB_H },
-        { x = 0, y = 0 })
-
-    tv:set_autosave_tab(true)
-    tv:add(tabs.packs)
-    tv:add(tabs.import)
-    tv:add(tabs.create)
-    tv:add(tabs.settings)
-
-    tv:set_global_event_handler(event_handler)
-    tv:set_fixed_size(false)
-    ui.set_default("maintab")
-    tv:show()
-    -- Dev hook: jump to a specific tab on startup, used by
-    -- scripts/screenshot_mainmenu.sh so it can capture each tab without
-    -- relying on pixel-precise xdotool clicks.
-    local initial = core.settings and core.settings:get("packermod_initial_tab")
-    if initial and initial ~= "" then
-        tv:set_tab(initial)
-    end
+    library.show()
     ui.update()
 
     core.sound_play("main_menu", true)

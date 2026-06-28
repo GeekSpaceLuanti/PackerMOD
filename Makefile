@@ -8,15 +8,16 @@ test:
 e2e:
 	bash spec/e2e/run.sh
 
-# Capture a Luanti main menu tab to /tmp/mainmenu_<tab>.png under Xvfb.
-# Usage: make screenshot TAB=create
-TAB ?= create
+# Capture a Library subtab to /tmp/mainmenu_<subtab>.png under Xvfb.
+# Phase 8+: メインメニューは 1 画面化されたので引数は subtab を指す。
+# Usage: make screenshot SUBTAB=worlds
+SUBTAB ?= library
 screenshot:
-	bash scripts/screenshot_mainmenu.sh $(TAB)
+	bash scripts/screenshot_mainmenu.sh $(SUBTAB)
 
 screenshot-all:
-	@for t in packs import create settings; do \
-	    bash scripts/screenshot_mainmenu.sh $$t /tmp/mainmenu_$$t.png; \
+	@for s in library worlds multi mods info; do \
+	    bash scripts/screenshot_mainmenu.sh $$s /tmp/mainmenu_$$s.png; \
 	done
 
 vendor-icons:
