@@ -42,6 +42,7 @@ local pack_importer = dofile(self_path .. "pack_importer.lua")
 local pack_builder = dofile(self_path .. "pack_builder.lua")
 local layout = dofile(self_path .. "lib" .. DIR_DELIM .. "layout.lua")
 local theme = dofile(self_path .. "lib" .. DIR_DELIM .. "theme.lua")
+local icons = dofile(self_path .. "lib" .. DIR_DELIM .. "icons.lua")
 
 local user_path = core.get_user_path()
 local fs = world_builder._default_fs()
@@ -74,6 +75,7 @@ packermod = {
     pack_builder = pack_builder,
     layout = layout,
     theme = theme,
+    icons = icons,
     user_path = user_path,
     fs = fs,
     client = client,
