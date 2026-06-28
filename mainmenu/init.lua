@@ -36,6 +36,7 @@ local pack_manager = dofile(self_path .. "pack_manager.lua")
 local contentdb_mod = dofile(self_path .. "contentdb.lua")
 local mod_installer = dofile(self_path .. "mod_installer.lua")
 local pack_launcher = dofile(self_path .. "pack_launcher.lua")
+local pack_importer = dofile(self_path .. "pack_importer.lua")
 
 local user_path = core.get_user_path()
 local fs = world_builder._default_fs()
@@ -50,6 +51,12 @@ local launcher = pack_launcher.new({
     world_builder = world_builder,
     mod_installer = installer,
 })
+local importer = pack_importer.new({
+    fs = fs,
+    user_path = user_path,
+    manifest = manifest_mod,
+    contentdb_client = client,
+})
 packermod = {
     yaml = yaml,
     manifest = manifest_mod,
@@ -58,11 +65,13 @@ packermod = {
     contentdb_mod = contentdb_mod,
     mod_installer_mod = mod_installer,
     pack_launcher_mod = pack_launcher,
+    pack_importer_mod = pack_importer,
     user_path = user_path,
     fs = fs,
     client = client,
     installer = installer,
     launcher = launcher,
+    importer = importer,
 }
 
 local tabs = {

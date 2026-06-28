@@ -69,6 +69,20 @@ function M._default_fs()
             if f then f:close(); return true end
             return (rawget(_G, "core") and core.get_dir_list and core.get_dir_list(path, nil)) ~= nil
         end,
+        read_file = function(path)
+            local f = io.open(path, "rb")
+            if not f then return nil end
+            local s = f:read("*a")
+            f:close()
+            return s
+        end,
+        delete_dir = function(path)
+            if rawget(_G, "core") and core.delete_dir then
+                return core.delete_dir(path)
+            end
+            os.execute(('rm -rf "%s"'):format(path))
+            return true
+        end,
         copy_dir = function(src, dst, keep)
             if rawget(_G, "core") and core.copy_dir then
                 return core.copy_dir(src, dst, keep)
