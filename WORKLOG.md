@@ -11,6 +11,43 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 18:58 (main)
+
+**変更概要**:
+Main menu の UI 崩れ修正。formspec v6 の `label` は宣言高さが無いのに実描画 0.5
+単位を取るため、Create タブで label と直下の入力欄/textlist が 4 箇所重なって
+いた(視覚的に「Query」が「ContentDB search」に被り、「Add」ボタンが mod_list
+の裏に隠れる)。
+
+座標数学を人手から外すため、薄い宣言型 layout lib `mainmenu/lib/layout.lua`
+を新規追加(VBox / HBox / Stack / Field / Label / Button / TextList / Spacer
+など、約 200 行・core 依存ゼロ・他 MOD 再利用可能)。全 4 タブを宣言 API へ
+書き換え。
+
+再現テストは `spec/layout_spec.lua` に追加: AABB 重なり検出器 +
+formspec パーサ +「旧 Create スナップショット」リテラルで検出器自体の
+回帰防止 + 現行 4 タブの「重なり 0 / size 内収まり」アサート。busted で 8
+追加 / 合計 61 pass。
+
+視覚検証は Xvfb + Luanti F12 (PR #16749, Luanti 5.16+) を `scripts/screenshot_mainmenu.sh`
+にまとめ、`make screenshot TAB=<name>` で実行可能。Before/After PNG を
+`/tmp/mainmenu_<tab>_{before,after}.png` に保存して目視確認済み。
+
+**主な変更ファイル**:
+- 新規: `mainmenu/lib/layout.lua` (宣言型 formspec layout)
+- 新規: `spec/layout_spec.lua` (重なり検出 + 全タブ回帰)
+- 新規: `scripts/screenshot_mainmenu.sh` (Xvfb スクショ)
+- `mainmenu/init.lua` (layout を `packermod.layout` として公開)
+- `mainmenu/tabs/tab_create.lua` (全面書き換え、4 件の重なりを根治)
+- `mainmenu/tabs/tab_packs.lua` (書き換え、2 件の重なりを根治)
+- `mainmenu/tabs/tab_import.lua` (書き換え)
+- `mainmenu/tabs/tab_settings.lua` (書き換え)
+- `Makefile` (`screenshot` ターゲット追加)
+
+**次のTODO**:
+- HBox/VBox に `flex` を入れて Spacer の手動幅指定を不要にする (任意)
+- スクショ click 座標を window resolution から自動算出 (固定ピクセル依存をやめる)
+
 ## 2026-06-28 17:24 (main)
 
 **変更概要**:

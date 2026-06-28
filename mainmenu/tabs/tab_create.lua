@@ -1,66 +1,86 @@
-local function escape(s) return core.formspec_escape(s or "") end
-
 local function format_search_result(r)
-    return escape(("%s/%s — %s"):format(r.author or "?", r.name or "?", r.title or r.short_description or ""))
+    return ("%s/%s — %s"):format(r.author or "?", r.name or "?", r.title or r.short_description or "")
 end
 
 local function format_mod_entry(m)
     if m.source == "contentdb" then
-        return escape(("%s   [contentdb %s @%s]"):format(m.name, m.package, tostring(m.release or "?")))
+        return ("%s   [contentdb %s @%s]"):format(m.name, m.package, tostring(m.release or "?"))
     elseif m.source == "bundle" then
-        return escape(("%s   [bundle %s]"):format(m.name, m.path or "?"))
+        return ("%s   [bundle %s]"):format(m.name, m.path or "?")
     elseif m.source == "url" then
-        return escape(("%s   [url]"):format(m.name))
+        return ("%s   [url]"):format(m.name)
     end
-    return escape(m.name)
+    return m.name
 end
 
 local function get_formspec(tabview, name, tabdata)
-    tabdata.pack_version = tabdata.pack_version or "0.1.0"
-    tabdata.base_id = tabdata.base_id or "packerbase"
-    tabdata.base_version = tabdata.base_version or "0.91"
-    tabdata.mods = tabdata.mods or {}
+    tabdata.pack_version  = tabdata.pack_version  or "0.1.0"
+    tabdata.base_id       = tabdata.base_id       or "packerbase"
+    tabdata.base_version  = tabdata.base_version  or "0.91"
+    tabdata.mods          = tabdata.mods          or {}
     tabdata.search_results = tabdata.search_results or {}
     local status = tabdata.status or ""
 
-    local fs = {
-        "formspec_version[6]",
-        "size[15.5,7.1]",
-        "field[0.3,0.3;3.5,0.7;pack_id;Pack id;" .. escape(tabdata.pack_id) .. "]",
-        "field[3.9,0.3;5.2,0.7;pack_name;Name;" .. escape(tabdata.pack_name) .. "]",
-        "field[9.2,0.3;2.5,0.7;pack_version;Version;" .. escape(tabdata.pack_version) .. "]",
-        "field[11.8,0.3;3.4,0.7;pack_author;Author;" .. escape(tabdata.pack_author) .. "]",
-        "field[0.3,1.2;3.5,0.7;base_id;Base id;" .. escape(tabdata.base_id) .. "]",
-        "field[3.9,1.2;2.0,0.7;base_version;Base ver;" .. escape(tabdata.base_version) .. "]",
-        "field[6.0,1.2;9.2,0.7;pack_description;Description;" .. escape(tabdata.pack_description) .. "]",
-        "label[0.3,2.2;ContentDB search]",
-        "field[0.3,2.5;5.5,0.7;search_query;Query;" .. escape(tabdata.search_query) .. "]",
-        "field[5.9,2.5;1.5,0.7;search_release;Release id;" .. escape(tabdata.search_release) .. "]",
-        "button[7.5,2.5;1.5,0.7;search;Search]",
-        "button[9.1,2.5;1.5,0.7;add_search;Add]",
-        "textlist[0.3,3.3;9.0,2.1;search_results;",
-    }
-    local items = {}
+    local search_items = {}
     for _, r in ipairs(tabdata.search_results) do
-        table.insert(items, format_search_result(r))
+        search_items[#search_items + 1] = format_search_result(r)
     end
-    table.insert(fs, table.concat(items, ","))
-    table.insert(fs, ";" .. (tabdata.search_selected or 0) .. ";false]")
-
-    table.insert(fs, "label[9.5,2.2;Current mods]")
-    table.insert(fs, "textlist[9.5,2.5;5.7,2.9;mod_list;")
-    local mitems = {}
+    local mod_items = {}
     for _, m in ipairs(tabdata.mods) do
-        table.insert(mitems, format_mod_entry(m))
+        mod_items[#mod_items + 1] = format_mod_entry(m)
     end
-    table.insert(fs, table.concat(mitems, ","))
-    table.insert(fs, ";" .. (tabdata.mod_selected or 0) .. ";false]")
-    table.insert(fs, "button[9.5,5.5;2.0,0.7;remove_mod;Remove]")
-    table.insert(fs, "button[12.0,5.5;3.2,0.7;export;Export manifest]")
 
-    table.insert(fs, "label[0.3,5.5;" .. escape(status) .. "]")
+    local L = packermod.layout
+    local root = L.VBox{
+        spacing = 0.2, padding = 0.3,
 
-    return table.concat(fs, "")
+        -- Row 1: pack identity
+        L.HBox{
+            L.Field{name="pack_id",      label="Pack id", w=3.5, default=tabdata.pack_id},
+            L.Field{name="pack_name",    label="Name",    w=5.0, default=tabdata.pack_name},
+            L.Field{name="pack_version", label="Version", w=2.5, default=tabdata.pack_version},
+            L.Field{name="pack_author",  label="Author",  w=3.3, default=tabdata.pack_author},
+        },
+
+        -- Row 2: base game + description
+        L.HBox{
+            L.Field{name="base_id",          label="Base id",     w=3.5, default=tabdata.base_id},
+            L.Field{name="base_version",     label="Base ver",    w=2.0, default=tabdata.base_version},
+            L.Field{name="pack_description", label="Description", w=9.0, default=tabdata.pack_description},
+        },
+
+        -- Row 3: split into left (search) and right (mod list) columns
+        L.HBox{
+            spacing = 0.2,
+
+            -- Left column: ContentDB search + status
+            L.VBox{
+                L.Label{text="ContentDB search"},
+                L.HBox{
+                    L.Field{name="search_query",   label="Query",   w=4.8, default=tabdata.search_query},
+                    L.Field{name="search_release", label="Release", w=1.4, default=tabdata.search_release},
+                    L.Button{name="search",     label="Search", w=1.2},
+                    L.Button{name="add_search", label="Add",    w=1.0},
+                },
+                L.TextList{name="search_results", items=search_items,
+                    selected=tabdata.search_selected, w=9.0, h=2.4},
+                L.Label{text=status},
+            },
+
+            -- Right column: current mods + action buttons
+            L.VBox{
+                L.Label{text="Current mods"},
+                L.TextList{name="mod_list", items=mod_items,
+                    selected=tabdata.mod_selected, w=5.7, h=3.1},
+                L.HBox{
+                    L.Button{name="remove_mod", label="Remove",          w=2.0},
+                    L.Button{name="export",     label="Export manifest", w=3.5},
+                },
+            },
+        },
+    }
+
+    return L.build_formspec(root, { w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6 })
 end
 
 local function handle_search(tabdata, fields)
@@ -138,10 +158,10 @@ local function button_handler(tabview, fields, name, tabdata)
         local ev = core.explode_textlist_event(fields.mod_list)
         if ev.type == "CHG" or ev.type == "DCL" then tabdata.mod_selected = ev.index end
     end
-    if fields.search then handle_search(tabdata, fields); return true end
-    if fields.add_search then handle_add_search(tabdata); return true end
-    if fields.remove_mod then handle_remove(tabdata); return true end
-    if fields.export then handle_export(tabdata); return true end
+    if fields.search     then handle_search(tabdata, fields); return true end
+    if fields.add_search then handle_add_search(tabdata);     return true end
+    if fields.remove_mod then handle_remove(tabdata);         return true end
+    if fields.export     then handle_export(tabdata);         return true end
     return false
 end
 

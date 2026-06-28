@@ -4,10 +4,9 @@ end
 
 local function format_pack_label(p)
     local m = p.manifest
-    return core.formspec_escape(
-        ("%s   [%s]   base=%s/%s   mods=%d"):format(
-            m.name, m.version, m.base_game.id, m.base_game.version,
-            m.mods and #m.mods or 0))
+    return ("%s   [%s]   base=%s/%s   mods=%d"):format(
+        m.name, m.version, m.base_game.id, m.base_game.version,
+        m.mods and #m.mods or 0)
 end
 
 local function get_formspec(tabview, name, tabdata)
@@ -16,31 +15,45 @@ local function get_formspec(tabview, name, tabdata)
 
     local list_items = {}
     for _, p in ipairs(packs) do
-        table.insert(list_items, format_pack_label(p))
+        list_items[#list_items + 1] = format_pack_label(p)
     end
 
     local selected = tabdata.selected or 1
     local has_selection = #packs > 0
-
-    local fs = {
-        "formspec_version[6]",
-        "size[15.5,7.1]",
-        "label[0.5,0.5;Installed Packs]",
-        "textlist[0.5,0.9;14.5,4.8;packlist;" .. table.concat(list_items, ",") .. ";" .. selected .. "]",
-    }
-
+    local description
     if has_selection then
-        local p = packs[selected]
-        local description = p.manifest.description or ""
-        table.insert(fs, "label[0.5,5.9;" .. core.formspec_escape(description:sub(1, 200)) .. "]")
-        table.insert(fs, "button[11.5,6.2;3.5,0.8;play;Play]")
+        description = (packs[selected].manifest.description or ""):sub(1, 200)
     else
-        table.insert(fs, "label[0.5,5.9;No packs installed. Use the Import tab to add one.]")
+        description = "No packs installed. Use the Import tab to add one."
     end
 
-    table.insert(fs, "button[0.5,6.2;3.5,0.8;refresh;Refresh]")
+    local L = packermod.layout
+    local INNER_W = PACKERMOD_TAB_W - 0.6  -- 15.5 - padding*2 = 14.9
+    local BTN_W   = 3.5
+    local BTN_H   = 0.8
 
-    return table.concat(fs, "")
+    local bottom_row = L.HBox{
+        L.Button{name="refresh", label="Refresh", w=BTN_W, h=BTN_H},
+        L.Spacer{w = INNER_W - BTN_W * 2 - 0.4, h = BTN_H},
+        L.Button{name="play",    label="Play",    w=BTN_W, h=BTN_H},
+    }
+    -- The Play button is only meaningful with a selection; render an empty
+    -- spacer in its place so the row still aligns left-edge with the rest.
+    if not has_selection then
+        bottom_row = L.HBox{
+            L.Button{name="refresh", label="Refresh", w=BTN_W, h=BTN_H},
+        }
+    end
+
+    local root = L.VBox{
+        spacing = 0.2, padding = 0.3,
+        L.Label{text="Installed Packs"},
+        L.TextList{name="packlist", items=list_items, selected=selected, w=INNER_W, h=4.0},
+        L.Label{text=description, w=INNER_W},
+        bottom_row,
+    }
+
+    return L.build_formspec(root, { w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6 })
 end
 
 local function button_handler(tabview, fields, name, tabdata)

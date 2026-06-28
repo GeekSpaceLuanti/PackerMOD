@@ -1,16 +1,20 @@
 local function get_formspec(tabview, name, tabdata)
     local status = tabdata.status or ""
-    local fs = {
-        "formspec_version[6]",
-        "size[15.5,7.1]",
-        "label[0.5,0.5;Import a Pack]",
-        "label[0.5,1.0;Paste an http(s) URL or a local path to a .zip / manifest.yaml]",
-        "field[0.5,1.6;12.5,0.8;source;Source;" .. core.formspec_escape(tabdata.source or "") .. "]",
-        "field_close_on_enter[source;false]",
-        "button[13.1,1.6;1.9,0.8;import;Import]",
-        "label[0.5,3.0;" .. core.formspec_escape(status) .. "]",
+    local L = packermod.layout
+    local INNER_W = PACKERMOD_TAB_W - 0.6  -- 14.9
+    local FIELD_W = INNER_W - 1.9 - 0.2    -- leave space for Import button
+    local root = L.VBox{
+        spacing = 0.2, padding = 0.3,
+        L.Label{text="Import a Pack"},
+        L.Label{text="Paste an http(s) URL or a local path to a .zip / manifest.yaml"},
+        L.HBox{
+            L.Field{name="source", label="Source", w=FIELD_W, h=0.8, default=tabdata.source,
+                    close_on_enter=false},
+            L.Button{name="import", label="Import", w=1.9, h=0.8},
+        },
+        L.Label{text=status, w=INNER_W},
     }
-    return table.concat(fs, "")
+    return L.build_formspec(root, { w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6 })
 end
 
 local function button_handler(tabview, fields, name, tabdata)
