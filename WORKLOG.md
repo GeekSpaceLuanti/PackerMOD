@@ -33,7 +33,7 @@ Phase 11 (#9)。Library 左下の [Import][Create][Settings] を fstk dialog mod
 - scripts/screenshot_mainmenu.sh (modal_* 引数対応)
 - Makefile (screenshot-all に modal_* 追加)
 
-**コミット**: (push 時に追記)
+**コミット**: dc339a2
 
 **次のTODO**: Phase 12 (#10) = 旧 `tabs/tab_*.lua` + `ui/tab_*.yml` + `tab_yaml_path()` + `packermod_initial_tab` 互換コードを全削除して仕上げ。並行して派生 issue (#11 アイコン、#12 textarea、#13 Mods タブ高さ)も対応。
 
