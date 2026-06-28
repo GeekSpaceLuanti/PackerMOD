@@ -16,13 +16,16 @@ function M.world_name(pack_id, timestamp)
     return pack_id .. "__" .. tostring(timestamp)
 end
 
-function M.build_world_mt(manifest)
+function M.build_world_mt(manifest, opts)
+    opts = opts or {}
     local lines = {}
     table.insert(lines, "gameid = " .. M.gameid_for(manifest.base_game))
     table.insert(lines, "backend = sqlite3")
     table.insert(lines, "player_backend = sqlite3")
     table.insert(lines, "auth_backend = sqlite3")
-    table.insert(lines, "world_name = " .. manifest.name)
+    table.insert(lines, "world_name = " .. (opts.world_name or manifest.name))
+    -- PackerMOD 専用フィールド: Pack 一覧 → World 一覧フィルタに使う
+    table.insert(lines, "packermod_pack_id = " .. manifest.id)
 
     if manifest.mods then
         local names = {}
@@ -103,7 +106,7 @@ function M.create_world(manifest, user_data_path, opts)
     opts = opts or {}
     local fs = opts.fs or M._default_fs()
     local timestamp = opts.timestamp or os.time()
-    local world = M.world_name(manifest.id, timestamp)
+    local world = opts.world_name or M.world_name(manifest.id, timestamp)
     local world_path = user_data_path .. "/worlds/" .. world
 
     local gameid = M.gameid_for(manifest.base_game)
@@ -112,11 +115,16 @@ function M.create_world(manifest, user_data_path, opts)
         return false, ("base game not installed: %s (expected at %s)"):format(gameid, game_path)
     end
 
+    if fs.exists(world_path) then
+        return false, ("world already exists: %s"):format(world)
+    end
+
     fs.mkdir(user_data_path .. "/worlds")
     local ok, err = fs.mkdir(world_path)
     if not ok then return false, "mkdir failed: " .. tostring(err) end
 
-    local ok2, err2 = fs.write_file(world_path .. "/world.mt", M.build_world_mt(manifest))
+    local mt_text = M.build_world_mt(manifest, { world_name = opts.display_name })
+    local ok2, err2 = fs.write_file(world_path .. "/world.mt", mt_text)
     if not ok2 then return false, "write world.mt failed: " .. tostring(err2) end
 
     return true, { world_path = world_path, world_name = world, gameid = gameid }

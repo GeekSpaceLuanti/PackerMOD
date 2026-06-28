@@ -67,4 +67,33 @@ function M.delete_pack(user_path, pack_id)
     return false
 end
 
+-- world.mt の `packermod_pack_id = <id>` を見て pack に紐づく world だけ返す。
+-- 戻り値: { { index = <core.get_worlds の 1-origin index>, name, path, gameid, display_name }, ... }
+function M.list_worlds(pack_id, opts)
+    opts = opts or {}
+    local worlds_fn = opts.get_worlds or (core and core.get_worlds)
+    local read = opts.read_file or read_file
+    if not worlds_fn then return {} end
+
+    local raw = worlds_fn() or {}
+    local result = {}
+    for i, w in ipairs(raw) do
+        local text = read(join(w.path, "world.mt"))
+        if text then
+            local found = text:match("packermod_pack_id%s*=%s*([%w_%-%.]+)")
+            if found == pack_id then
+                local display = text:match("world_name%s*=%s*([^\n\r]+)")
+                table.insert(result, {
+                    index = i,
+                    name = w.name,
+                    path = w.path,
+                    gameid = w.gameid,
+                    display_name = display and display:gsub("%s+$", "") or w.name,
+                })
+            end
+        end
+    end
+    return result
+end
+
 return M

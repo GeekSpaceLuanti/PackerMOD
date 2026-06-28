@@ -11,6 +11,33 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 23:00 (main)
+
+**変更概要**:
+メインメニュー再設計 Phase 7。CurseForge / Modrinth 風の「Library + Pack 詳細」構造に向けたデータモデル基盤を追加。UI は現状維持(回帰なし)。
+- ユーザ要望: タブが使いづらい、Pack 選択しても複数ワールド・マルチプレイが選べない、Import/Create/Settings がタブで枠を取りすぎ。プランファイル: `~/.claude/plans/pack-import-createto-effervescent-sun.md`
+- 識別子設計: `world.mt` に `packermod_pack_id = <id>` を埋め込んで Pack ↔ World を識別。gameid(`<base_id>_<base_ver>`)は複数 Pack で衝突しうるため別フィールドが必要だった
+- `world_builder.create_world` が任意 `opts.world_name` を受け取れるよう拡張(衝突時はエラー)。既存 autogen `<pack_id>__<ts>` は default のまま
+- `pack_manager.list_worlds(pack_id)` を追加。`core.get_worlds()` を回して各 `world.mt` の `packermod_pack_id` で filter
+- `mainmenu/server_list.lua` 新設。Pack ごとの `<pack_root>/servers.yaml` に load/save/add/remove/update。YAML は `{ servers: [...] }` 形式、後方互換で top-level array も受ける
+- `pack_launcher` に `new_world` / `list_worlds` / `list_servers` を追加。既存 `launch(pack)` は `new_world(pack)` の alias として残置(`tab_packs.lua` は無改修で動く)
+- 全 127 spec 緑(108 → 127, +19 件追加)。手動 UI 確認は Phase 8 で左右分割レイアウトに着手するときにまとめて行う
+
+**主な変更ファイル**:
+- mainmenu/world_builder.lua (opts.world_name 対応、packermod_pack_id 埋込)
+- mainmenu/pack_manager.lua (list_worlds 追加)
+- mainmenu/server_list.lua (新規)
+- mainmenu/pack_launcher.lua (new_world / list_worlds / list_servers, launch は alias)
+- mainmenu/init.lua (server_list の dofile と launcher への inject)
+- spec/world_builder_spec.lua (4 case 追加)
+- spec/pack_manager_spec.lua (新規, 4 case)
+- spec/server_list_spec.lua (新規, 7 case)
+- spec/pack_launcher_spec.lua (4 case 追加)
+
+**コミット**: (push 時に追記)
+
+**次のTODO**: Phase 8 = 左右分割レイアウト + Worlds サブタブ。`library.yml` / `library.lua` を新設し、tabview を撤去。実機の formspec 動作確認(`screenshot` script を library 画面に対応)はこのタイミングで。
+
 ## 2026-06-28 22:50 (main)
 
 **変更概要**:
