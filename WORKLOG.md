@@ -11,6 +11,41 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 00:55 (main)
+
+**変更概要**:
+Phase 12 (#9)。旧 tabview 時代の遺物を全削除して仕上げ。コードベースが Library + modal 構造に完全に切り替わった。
+- 削除: `mainmenu/tabs/tab_*.lua` (4) / `mainmenu/ui/tab_*.yml` (4) / `ui_loader.tab_yaml_path()` / `init.lua` の `PACKERMOD_TAB_W` `PACKERMOD_TAB_H` `MAIN_TAB_W` `MAIN_TAB_H` `TABHEADER_H` `GAMEBAR_*` (旧 tabview 時代の global 定数) / `screenshot_mainmenu.sh` の `packermod_initial_tab` 互換コード
+- `spec/layout_spec.lua` の "live tabs" セクション(4 件)を削除。これらは `mainmenu/tabs/tab_*.lua` を dofile していたため。同等の overlap / OOB 検査の復活は #14 で別途
+- `library.lua` の旧コメント(「旧 4 タブは Phase 11 でモーダル化するまで残置」)を最新の状態に書き換え
+- 全 151 spec 緑(155 → 151 は live tabs 4 件削除分のみ、他は無回帰)
+- 実機(Xvfb)で Library が削除前と同じ見た目で動くことを確認
+
+**Issue ナビゲーション修正**: Phase 11 の commit message では `Closes #9` と書いたが、実際の Phase 11 issue は #12(`gh issue create` の並列実行で issue 番号順序が逆になっていた)。GitHub 上で #12 を close、#9 を reopen して整合させた。**正しい対応関係**:
+- #9 = Phase 12 (本コミットで close 予定)
+- #10 = アイコン視認性 (open)
+- #11 = Mods タブ高さ (open)
+- #12 = Phase 11 (closed)
+- #13 = Description textarea (open)
+- #14 = Library/Modal overlap regression テスト復活 (open) ← Phase 12 から派生
+
+**主な変更ファイル**:
+- mainmenu/tabs/ (削除)
+- mainmenu/ui/tab_*.yml (削除)
+- mainmenu/lib/ui_loader.lua (tab_yaml_path 削除)
+- mainmenu/init.lua (旧 global 定数削除)
+- mainmenu/library.lua (コメント更新)
+- scripts/screenshot_mainmenu.sh (packermod_initial_tab 互換削除)
+- spec/layout_spec.lua (live tabs セクション削除)
+
+**コミット**: (push 時に追記)
+
+**次のTODO**: メインメニュー再設計の本筋(Phase 7→12)はこれで終わり。残課題は派生 Issue:
+- #10 アイコン視認性(button 背景に同化、テーマ調整 + アイコン再生成)
+- #11 Mods サブタブの textlist 高さ(左右分割への組換え)
+- #13 Description を textarea に
+- #14 Library/Modal overlap regression テスト復活
+
 ## 2026-06-29 00:20 (main)
 
 **変更概要**:

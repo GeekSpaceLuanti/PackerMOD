@@ -47,14 +47,14 @@ cleanup() {
     [[ -n "$XVFB_PID"  ]] && wait "$XVFB_PID"   2>/dev/null || true
     # Always strip the dev hook so it doesn't leak into normal runs.
     if [[ -f "$CONF" ]]; then
-        sed -i '/^packermod_initial_subtab/d;/^packermod_initial_modal/d;/^packermod_initial_tab/d' "$CONF"
+        sed -i '/^packermod_initial_subtab/d;/^packermod_initial_modal/d' "$CONF"
     fi
 }
 trap cleanup EXIT
 
 # Inject the initial-subtab / initial-modal setting and strip previous values.
 if [[ -f "$CONF" ]]; then
-    sed -i '/^packermod_initial_subtab/d;/^packermod_initial_modal/d;/^packermod_initial_tab/d' "$CONF"
+    sed -i '/^packermod_initial_subtab/d;/^packermod_initial_modal/d' "$CONF"
 fi
 if [[ "$SUBTAB" != "library" ]]; then
     echo "packermod_initial_subtab = $SUBTAB" >> "$CONF"

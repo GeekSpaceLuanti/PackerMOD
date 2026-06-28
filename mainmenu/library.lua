@@ -1,6 +1,6 @@
--- Library: 単一画面のメイン UI(Phase 8)。
+-- Library: 単一画面のメイン UI(Phase 8 以降)。
 -- 左に Pack 一覧、右に選択中 Pack の詳細(Worlds / Multi / Mods / Info のサブナビ)。
--- 旧 4 タブ(tabs/tab_*.lua + ui/tab_*.yml)は Phase 11 でモーダル化するまで残置。
+-- Import / Create / Settings は Phase 11 で modal dialog 化(packermod.dialogs.dlg_*)。
 
 local M = {}
 

@@ -1,15 +1,8 @@
 PACKERMOD_VERSION = "0.1.0"
-PACKERMOD_TAB_W = 15.5
--- Bumped from 7.1 to 8.0 so labelled fields (which reserve a 0.4-unit label
--- band each) have enough room without crushing the result/mod text lists.
-PACKERMOD_TAB_H = 8.0
 
-MAIN_TAB_W = PACKERMOD_TAB_W
-MAIN_TAB_H = PACKERMOD_TAB_H
-TABHEADER_H = 0.85
-GAMEBAR_H = 1.25
-GAMEBAR_OFFSET_DESKTOP = 0.375
-GAMEBAR_OFFSET_TOUCH = 0.15
+-- Phase 12 以前は PACKERMOD_TAB_W/H / MAIN_TAB_W/H / TABHEADER_H /
+-- GAMEBAR_* を global に持っていたが、tabview を撤廃したので削除。
+-- library.yml / modal_*.yml が画面サイズを hard-coded で持つ。
 
 local function script_dir()
     local src = debug.getinfo(1, "S").source

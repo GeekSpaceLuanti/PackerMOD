@@ -291,20 +291,10 @@ describe("formspec layout", function()
         end)
     end)
 
-    describe("live tabs", function()
-        local tabs_to_check = { "packs", "import", "create", "settings" }
-        for _, name in ipairs(tabs_to_check) do
-            it("tab '" .. name .. "' renders without overlaps or out-of-bounds", function()
-                local tab = dofile("mainmenu/tabs/tab_" .. name .. ".lua")
-                local fs  = tab.cbf_formspec({}, name, {})
-                local size, elements = parse_formspec(fs)
-                local overlaps = find_overlaps(elements, { label_h = 0.5 })
-                assert.equal(0, #overlaps, format_overlaps(overlaps))
-                local ok, el = fits_in_size(elements, size, { label_h = 0.5 })
-                assert.is_true(ok, ok and "" or ("out of bounds: " .. describe_el(el)))
-            end)
-        end
-    end)
+    -- Phase 12: 旧 tabs/tab_*.lua + ui/tab_*.yml は削除済み。
+    -- 同等の overlap / out-of-bounds 検査は library_spec.lua / 各 modal の
+    -- 描画テストでカバー(packermod global を組み立てた状態で ui_loader を
+    -- 呼ぶ形)。
 
     describe("theme rendering", function()
         local L, theme
