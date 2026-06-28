@@ -41,6 +41,7 @@ local pack_launcher = dofile(self_path .. "pack_launcher.lua")
 local pack_importer = dofile(self_path .. "pack_importer.lua")
 local pack_builder = dofile(self_path .. "pack_builder.lua")
 local layout = dofile(self_path .. "lib" .. DIR_DELIM .. "layout.lua")
+local theme = dofile(self_path .. "lib" .. DIR_DELIM .. "theme.lua")
 
 local user_path = core.get_user_path()
 local fs = world_builder._default_fs()
@@ -72,6 +73,7 @@ packermod = {
     pack_importer_mod = pack_importer,
     pack_builder = pack_builder,
     layout = layout,
+    theme = theme,
     user_path = user_path,
     fs = fs,
     client = client,
@@ -79,6 +81,9 @@ packermod = {
     launcher = launcher,
     importer = importer,
 }
+
+-- ui_loader is loaded after the packermod table so it can read packermod.layout.
+packermod.ui_loader = dofile(self_path .. "lib" .. DIR_DELIM .. "ui_loader.lua")
 
 local tabs = {
     packs    = dofile(self_path .. "tabs" .. DIR_DELIM .. "tab_packs.lua"),

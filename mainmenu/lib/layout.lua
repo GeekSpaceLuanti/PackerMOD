@@ -72,6 +72,8 @@ M.Image    = class("Image",    {})                 -- {texture=, w=, h=}
 M.Box      = class("Box",      {})                 -- {color=, w=, h=}
 M.Spacer   = class("Spacer",   {})                 -- {[w], [h]}
 M.Raw      = class("Raw",      {})                 -- {text=}: arbitrary snippet, zero footprint
+M.Icon       = class("Icon",       { w = 0.7, h = 0.7 }) -- {texture=, w=, h=}
+M.IconButton = class("IconButton", { w = 0.9, h = 0.9 }) -- {name=, texture=, label="", w=, h=}
 
 -- ---- measure: bottom-up natural size ----
 
@@ -197,14 +199,36 @@ end
 
 -- ---- render: leaf widgets to formspec elements ----
 
-local function render(w, out)
+local KIND_TO_THEME_KIND = {
+    Button = "button", Field = "field", Label = "label", TextList = "textlist",
+}
+
+local function maybe_emit_style(w, out, theme)
+    if not theme or not w.style then return end
+    local tk = KIND_TO_THEME_KIND[w._kind]
+    if not tk then return end
+    local s = theme.style_for(tk, w.style)
+    if not s or not s.props then return end
+    local sel = w.name
+    if not sel or sel == "" then return end
+    local line = theme.emit_style(sel, s.props)
+    if line then out[#out + 1] = line end
+end
+
+local function render(w, out, theme)
     out = out or {}
     local k = w._kind
     if k == "VBox" or k == "HBox" or k == "Stack" then
-        for _, child in ipairs(w) do render(child, out) end
+        if w.bgcolor then
+            out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
+                fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.bgcolor)
+        end
+        for _, child in ipairs(w) do render(child, out, theme) end
     elseif k == "Label" then
+        maybe_emit_style(w, out, theme)
         out[#out + 1] = ("label[%s,%s;%s]"):format(fnum(w._x), fnum(w._y), fs_escape(w.text))
     elseif k == "Field" then
+        maybe_emit_style(w, out, theme)
         -- The reserved label band sits at the top; the actual box lives below.
         local box_y = w._y + (w._label_h or 0)
         local box_h = w._box_h or w.h
@@ -215,9 +239,11 @@ local function render(w, out)
             out[#out + 1] = ("field_close_on_enter[%s;%s]"):format(w.name, tostring(w.close_on_enter))
         end
     elseif k == "Button" then
+        maybe_emit_style(w, out, theme)
         out[#out + 1] = ("button[%s,%s;%s,%s;%s;%s]"):format(
             fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.name, fs_escape(w.label))
     elseif k == "TextList" then
+        maybe_emit_style(w, out, theme)
         local items = {}
         for _, item in ipairs(w.items or {}) do
             items[#items + 1] = fs_escape(item)
@@ -226,9 +252,13 @@ local function render(w, out)
             fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h),
             w.name, table.concat(items, ","),
             tostring(w.selected or 0), tostring(w.transparent or false))
-    elseif k == "Image" then
+    elseif k == "Image" or k == "Icon" then
         out[#out + 1] = ("image[%s,%s;%s,%s;%s]"):format(
             fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.texture)
+    elseif k == "IconButton" then
+        out[#out + 1] = ("image_button[%s,%s;%s,%s;%s;%s;%s]"):format(
+            fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h),
+            w.texture, w.name, fs_escape(w.label or ""))
     elseif k == "Box" then
         out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
             fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.color)
@@ -254,8 +284,13 @@ function M.build_formspec(root, opts)
         ("formspec_version[%s]"):format(opts.version or 6),
         ("size[%s,%s]"):format(fnum(root.w), fnum(root.h)),
     }
+    if opts.theme and opts.theme.emit_global_prelude then
+        for _, line in ipairs(opts.theme.emit_global_prelude()) do
+            parts[#parts + 1] = line
+        end
+    end
     for _, line in ipairs(opts.prepend or {}) do parts[#parts + 1] = line end
-    render(root, parts)
+    render(root, parts, opts.theme)
     for _, line in ipairs(opts.append or {}) do parts[#parts + 1] = line end
     return table.concat(parts, "")
 end

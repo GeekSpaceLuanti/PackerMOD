@@ -300,4 +300,88 @@ describe("formspec layout", function()
             end)
         end
     end)
+
+    describe("theme rendering", function()
+        local L, theme
+        setup(function()
+            L = dofile("mainmenu/lib/layout.lua")
+            theme = dofile("mainmenu/lib/theme.lua")
+        end)
+
+        it("emits the same formspec as before when theme is omitted", function()
+            local root = L.VBox{ L.Button{name="a", label="A"} }
+            local without = L.build_formspec(root, { w = 5, h = 2, version = 6 })
+            assert.is_falsy(without:find("style_type[", 1, true))
+            assert.is_falsy(without:find("bgcolor[",   1, true))
+        end)
+
+        it("prepends global style_type + bgcolor when theme is given", function()
+            local root = L.VBox{ L.Button{name="a", label="A"} }
+            local fs = L.build_formspec(root, { w = 5, h = 2, version = 6, theme = theme })
+            assert.is_truthy(fs:find("style_type[button", 1, true))
+            assert.is_truthy(fs:find("style_type[field",  1, true))
+            assert.is_truthy(fs:find("bgcolor[",          1, true))
+        end)
+
+        it("emits per-widget style[] for buttons with a variant", function()
+            local root = L.VBox{ L.Button{name="play", label="Play", style="primary"} }
+            local fs = L.build_formspec(root, { w = 5, h = 2, version = 6, theme = theme })
+            assert.is_truthy(fs:find("style[play;", 1, true),
+                "expected style[play;...] for primary-variant button")
+            assert.is_truthy(fs:find("bgcolor=#3FA63F", 1, true),
+                "expected primary bgcolor in style[]")
+        end)
+
+        it("emits per-widget style[] for labels with a variant", function()
+            local root = L.VBox{ L.Label{text="Heading", name="hd", style="section"} }
+            local fs = L.build_formspec(root, { w = 5, h = 2, version = 6, theme = theme })
+            assert.is_truthy(fs:find("style[hd;", 1, true))
+            assert.is_truthy(fs:find("textcolor=#55FF55", 1, true))
+        end)
+
+        it("preserves user prepend after theme prelude", function()
+            local root = L.VBox{ L.Button{name="a", label="A"} }
+            local fs = L.build_formspec(root, {
+                w = 5, h = 2, version = 6, theme = theme,
+                prepend = { "real_coordinates[true]" },
+            })
+            local prelude_end = fs:find("bgcolor[", 1, true)
+            local user_at    = fs:find("real_coordinates[true]", 1, true)
+            assert.is_truthy(user_at)
+            assert.is_truthy(prelude_end)
+            assert.is_true(user_at > prelude_end,
+                "user prepend must come after theme prelude")
+        end)
+    end)
+
+    describe("Icon and IconButton widgets", function()
+        local L
+        setup(function() L = dofile("mainmenu/lib/layout.lua") end)
+
+        it("Icon renders as image[]", function()
+            local root = L.VBox{ L.Icon{texture="foo.png", w=1, h=1} }
+            local fs = L.build_formspec(root, { w = 2, h = 2, version = 6 })
+            assert.is_truthy(fs:find("image[", 1, true))
+            assert.is_truthy(fs:find("foo.png", 1, true))
+        end)
+
+        it("IconButton renders as image_button[]", function()
+            local root = L.VBox{ L.IconButton{name="go", texture="foo.png", label="Go", w=1, h=1} }
+            local fs = L.build_formspec(root, { w = 2, h = 2, version = 6 })
+            assert.is_truthy(fs:find("image_button[", 1, true))
+            assert.is_truthy(fs:find("foo.png", 1, true))
+            assert.is_truthy(fs:find(";go;", 1, true))
+        end)
+
+        it("Icon and IconButton have natural size (don't stretch)", function()
+            -- Inside a stretch VBox, leaf icon widgets should keep their natural size.
+            local root = L.VBox{ align = "stretch",
+                L.Icon{texture="x.png", w=0.7, h=0.7},
+                L.IconButton{name="b", texture="x.png", label="", w=0.7, h=0.7},
+            }
+            local els = L.iter_elements(root, { w = 5, h = 5 })
+            assert.equal(0.7, els[1].w)
+            assert.equal(0.7, els[2].w)
+        end)
+    end)
 end)

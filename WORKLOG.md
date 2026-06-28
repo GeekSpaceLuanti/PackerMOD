@@ -11,6 +11,30 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 21:00 (main)
+
+**変更概要**:
+MainMenu UI モダン化 (マイクラ風 + YAML DSL) の Phase 0 基盤。UI 出力は変えず、後段フェーズで使う 3 つのライブラリと既存 PMLayout の後方互換拡張だけを入れる。
+- `mainmenu/lib/theme.lua` (新規): 色・spacing・アイコンサイズ・ボタン variant のトークンと style[] 出力 API
+- `mainmenu/lib/ui_loader.lua` (新規): YAML/テーブルのセマンティック DSL (page/card/section/actions/row/col/label/text/status/field/button/icon-button/icon/list/spacer) を PMLayout ツリーに展開、`${var}` と `${list | fmt}` バインディング、`when:` 条件で child skip
+- `mainmenu/lib/layout.lua` 拡張: widget に `style="primary"` を受ける、`build_formspec(opts.theme=...)` で theme prelude (bgcolor[]/style_type[]) を挿入、VBox/HBox/Stack の `bgcolor` で box[] 背景塗り、新 widget Icon / IconButton。**theme 未指定時の出力は現行とバイト一致** (既存テスト維持)
+- `mainmenu/init.lua` で `packermod.theme` / `packermod.ui_loader` を公開
+
+再現テスト先行で書き、全 102 spec 緑。Phase 1 以降のアイコンパイプラインとタブ YAML 化はこの上に積む。
+
+**主な変更ファイル**:
+- mainmenu/lib/theme.lua (新規)
+- mainmenu/lib/ui_loader.lua (新規)
+- mainmenu/lib/layout.lua (style/theme/bgcolor/Icon/IconButton 対応)
+- mainmenu/init.lua (theme + ui_loader 配線)
+- spec/theme_spec.lua (新規、11 case)
+- spec/ui_loader_spec.lua (新規、15 case)
+- spec/layout_spec.lua (theme/Icon 系 8 case 追加)
+
+**コミット**: (push 後に追記)
+
+**次のTODO**: Phase 1 アイコンパイプライン (Pixelarticons MIT サブセット → PNG ラスタライズ → `lib/icons.lua` 配線)
+
 ## 2026-06-28 19:25 (main)
 
 **変更概要**:
