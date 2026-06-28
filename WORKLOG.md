@@ -11,6 +11,26 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 01:45 (main)
+
+**変更概要**:
+コード変更なし。残作業を全部 GitHub Issue 化した。以降の作業は Issue 駆動。
+- #17 Settings dialog の Luanti core 設定実装(現状 placeholder)
+- #18 Library に Pack の Delete UI を追加
+- #19 Worlds サブタブに Configure ボタン
+- #20 e2e/run.sh を Library 構造に追従
+
+これで open Issue は計 7 件:
+- (派生品質) #15 layout shrink-to-fit / #16 アイコン PNG 再生成
+- (未実装機能) #17 Settings / #18 Pack Delete / #19 World Configure / #20 e2e
+- (無関連) #8 PackerMOD-Base 別リポジトリ
+
+**主な変更ファイル**: なし(本セクション = WORKLOG.md のみ)
+
+**コミット**: (push 時に追記)
+
+**次のTODO**: GitHub Issue を見て個別に着手。優先度は #18 (Pack Delete UI) > #17 (Settings) > #19 (World Configure) > #20 (e2e) > #15/#16(品質)あたりが妥当。
+
 ## 2026-06-29 01:30 (main)
 
 **変更概要**:
