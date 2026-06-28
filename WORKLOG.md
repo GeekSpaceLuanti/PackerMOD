@@ -34,7 +34,7 @@
 - spec/server_list_spec.lua (新規, 7 case)
 - spec/pack_launcher_spec.lua (4 case 追加)
 
-**コミット**: (push 時に追記)
+**コミット**: bca975f
 
 **次のTODO**: Phase 8 = 左右分割レイアウト + Worlds サブタブ。`library.yml` / `library.lua` を新設し、tabview を撤去。実機の formspec 動作確認(`screenshot` script を library 画面に対応)はこのタイミングで。
 
