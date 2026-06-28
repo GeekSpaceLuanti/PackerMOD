@@ -195,6 +195,40 @@ describe("formspec layout", function()
         end)
     end)
 
+    describe("Field reserves vertical space for its label", function()
+        local L
+        setup(function() L = dofile("mainmenu/lib/layout.lua") end)
+
+        it("includes the on-top label band in the field's effective height", function()
+            -- formspec v6 prints the field `label` ABOVE the box (Luanti
+            -- lua_api.md 'top left above the field'). Reserving 0 px there
+            -- lets the next row's label bleed into this row's box.
+            local field = L.Field{name="x", label="X", w=3, h=0.7}
+            L.iter_elements(L.VBox{ field })
+            assert.is_true(field.h > 0.7, "label-bearing field should reserve > 0.7 units of height")
+        end)
+
+        it("packs two labeled fields without their labels colliding", function()
+            local root = L.VBox{ spacing = 0.2,
+                L.Field{name="a", label="A label", w=3, h=0.7},
+                L.Field{name="b", label="B label", w=3, h=0.7},
+            }
+            local els = L.iter_elements(root, { w = 3, h = 5 })
+            -- The second field's y must clear the first field's effective bottom.
+            assert.is_true(els[2].y >= els[1].y + els[1].h,
+                ("field b at y=%g vs field a bottom at y=%g"):format(els[2].y, els[1].y + els[1].h))
+        end)
+
+        it("emits the field box below the label band, not at the declared y", function()
+            local root = L.VBox{ L.Field{name="a", label="A", w=3, h=0.7} }
+            local fs = L.build_formspec(root, { w = 3, h = 2, version = 6 })
+            -- After header `formspec_version[6]size[3,2]`, the field y should
+            -- be > 0 (offset by the label band).
+            local y = tonumber(fs:match("field%[%d+%.?%d*,([%d.]+);"))
+            assert.is_true(y and y > 0, "field box y should be offset below 0 to leave room for the label")
+        end)
+    end)
+
     describe("AABB detector", function()
         it("flags overlapping rectangles", function()
             local hits = find_overlaps({

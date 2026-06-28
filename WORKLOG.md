@@ -11,6 +11,42 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 19:25 (main)
+
+**変更概要**:
+ユーザー指摘: 「Pack id の入力欄に Base id という表示が被ってる」。
+直前まで通っていた重なり検出 spec ですり抜けていたバグ。
+
+調査で確定: Luanti `lua_api.md:3288` の field 仕様
+「`label`, if not blank, will be text printed on the top left **above** the field」。
+formspec v6 では field の label は box の **上** に描画される(box の y より
+約 0.4 単位はみ出す)。私の Layout は field の縦スペースを box 高さだけで
+予約していて、上方向の label band を考慮していなかった。結果として、
+Pack id field の真下に置いた Base id field の「Base id」文字が Pack id の
+入力欄に侵食していた。
+
+修正:
+- `Field` widget が `label != ""` のとき、measure で実効 h に
+  `FIELD_LABEL_H = 0.4` を加算 (`w._label_h` / `w._box_h` に内訳を保持)
+- render は box を `_y + label_h` から描画し、Luanti が label band を上に
+  描いても他要素と衝突しない
+- spec に Field-Field 縦並びの再現テストを 3 件追加 (RED → GREEN)
+
+連鎖修正:
+- field 高さが +0.4 されて Create タブが従来の TAB_H=7.1 に入らなく
+  なったため、`PACKERMOD_TAB_H` を 8.0 に拡張
+- Create タブのカラム area と textlists を `flex=1` に切り替えて、
+  textlist が残りの縦スペースに自動追従するように
+
+busted 68 件 pass、4 タブ目視確認で Pack id ↔ Base id の被りが解消、
+Import の Source field と status label の被りも解消(副作用で見つけたバグ)。
+
+**主な変更ファイル**:
+- `mainmenu/lib/layout.lua` (Field の measure / render に label band 反映)
+- `mainmenu/init.lua` (PACKERMOD_TAB_H 7.1 → 8.0)
+- `mainmenu/tabs/tab_create.lua` (textlists を flex 化)
+- `spec/layout_spec.lua` (Field label band の 3 件追加)
+
 ## 2026-06-28 19:12 (main)
 
 **変更概要**:

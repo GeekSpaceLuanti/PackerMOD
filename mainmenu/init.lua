@@ -1,6 +1,8 @@
 PACKERMOD_VERSION = "0.1.0"
 PACKERMOD_TAB_W = 15.5
-PACKERMOD_TAB_H = 7.1
+-- Bumped from 7.1 to 8.0 so labelled fields (which reserve a 0.4-unit label
+-- band each) have enough room without crushing the result/mod text lists.
+PACKERMOD_TAB_H = 8.0
 
 MAIN_TAB_W = PACKERMOD_TAB_W
 MAIN_TAB_H = PACKERMOD_TAB_H

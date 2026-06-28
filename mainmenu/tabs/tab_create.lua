@@ -49,9 +49,12 @@ local function get_formspec(tabview, name, tabdata)
             L.Field{name="pack_description", label="Description", w=9.0, default=tabdata.pack_description},
         },
 
-        -- Row 3: split into left (search) and right (mod list) columns
+        -- Row 3: split into left (search) and right (mod list) columns.
+        -- flex=1 lets the column row absorb whatever vertical space is left
+        -- after the two header rows, and inside each column the textlist
+        -- grows to fill the column.
         L.HBox{
-            spacing = 0.2,
+            spacing = 0.2, flex = 1,
 
             -- Left column: ContentDB search + status
             L.VBox{
@@ -63,7 +66,7 @@ local function get_formspec(tabview, name, tabdata)
                     L.Button{name="add_search", label="Add",    w=1.0},
                 },
                 L.TextList{name="search_results", items=search_items,
-                    selected=tabdata.search_selected, w=9.0, h=2.4},
+                    selected=tabdata.search_selected, w=9.0, flex = 1},
                 L.Label{text=status},
             },
 
@@ -71,7 +74,7 @@ local function get_formspec(tabview, name, tabdata)
             L.VBox{
                 L.Label{text="Current mods"},
                 L.TextList{name="mod_list", items=mod_items,
-                    selected=tabdata.mod_selected, w=5.7, h=3.1},
+                    selected=tabdata.mod_selected, w=5.7, flex = 1},
                 L.HBox{
                     L.Button{name="remove_mod", label="Remove",          w=2.0},
                     L.Button{name="export",     label="Export manifest", w=3.5},
