@@ -28,29 +28,20 @@ local function get_formspec(tabview, name, tabdata)
     end
 
     local L = packermod.layout
-    local INNER_W = PACKERMOD_TAB_W - 0.6  -- 15.5 - padding*2 = 14.9
-    local BTN_W   = 3.5
-    local BTN_H   = 0.8
+    local BTN_W, BTN_H = 3.5, 0.8
 
-    local bottom_row = L.HBox{
-        L.Button{name="refresh", label="Refresh", w=BTN_W, h=BTN_H},
-        L.Spacer{w = INNER_W - BTN_W * 2 - 0.4, h = BTN_H},
-        L.Button{name="play",    label="Play",    w=BTN_W, h=BTN_H},
-    }
-    -- The Play button is only meaningful with a selection; render an empty
-    -- spacer in its place so the row still aligns left-edge with the rest.
-    if not has_selection then
-        bottom_row = L.HBox{
-            L.Button{name="refresh", label="Refresh", w=BTN_W, h=BTN_H},
-        }
+    local bottom_children = { L.Button{name="refresh", label="Refresh", w=BTN_W, h=BTN_H} }
+    if has_selection then
+        table.insert(bottom_children, L.Spacer{flex = 1})
+        table.insert(bottom_children, L.Button{name="play", label="Play", w=BTN_W, h=BTN_H})
     end
 
     local root = L.VBox{
         spacing = 0.2, padding = 0.3,
         L.Label{text="Installed Packs"},
-        L.TextList{name="packlist", items=list_items, selected=selected, w=INNER_W, h=4.0},
-        L.Label{text=description, w=INNER_W},
-        bottom_row,
+        L.TextList{name="packlist", items=list_items, selected=selected, flex = 1},
+        L.Label{text=description},
+        L.HBox(bottom_children),
     }
 
     return L.build_formspec(root, { w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6 })

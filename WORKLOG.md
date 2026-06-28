@@ -11,6 +11,32 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 19:12 (main)
+
+**変更概要**:
+直前コミットの残 TODO 2 件を片付け。
+
+1. PMLayout に **flex** を追加: HBox/VBox 子の `flex` で余り空間を比率分配。
+   default align を `stretch` に変更し、container と Spacer/TextList は
+   cross 軸を自動充填するように(leaf は naturalsize 維持で意図しない伸長を防ぐ)。
+   tab_packs/tab_import/tab_settings の手動 `Spacer{w=INNER_W - ...}` を
+   `Spacer{flex=1}` に置換、`INNER_W` 算出も不要に。
+2. screenshot のタブ切替を **設定駆動**に: init.lua が
+   `packermod_initial_tab` 設定を読んで `tv:set_tab(...)` を呼ぶように。
+   `scripts/screenshot_mainmenu.sh` は xdotool クリック座標(壊れやすい)
+   を捨てて、conf に書く→撮る→消す方式へ。
+
+flex の spec を `spec/layout_spec.lua` に 4 件追加 (RED → GREEN)、
+busted 全 65 件 / E2E 1 件 pass。4 タブを撮影し直して
+レイアウトに異常がないことを目視確認。
+
+**主な変更ファイル**:
+- `mainmenu/lib/layout.lua` (flex 分配 + stretchable kind + class default)
+- `mainmenu/init.lua` (packermod_initial_tab フック)
+- `mainmenu/tabs/tab_packs.lua`, `tab_import.lua`, `tab_settings.lua` (flex 移行)
+- `scripts/screenshot_mainmenu.sh` (設定駆動切替)
+- `spec/layout_spec.lua` (flex 仕様)
+
 ## 2026-06-28 18:58 (main)
 
 **変更概要**:

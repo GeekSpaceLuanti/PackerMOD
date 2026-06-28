@@ -114,6 +114,13 @@ local function init()
     tv:set_fixed_size(false)
     ui.set_default("maintab")
     tv:show()
+    -- Dev hook: jump to a specific tab on startup, used by
+    -- scripts/screenshot_mainmenu.sh so it can capture each tab without
+    -- relying on pixel-precise xdotool clicks.
+    local initial = core.settings and core.settings:get("packermod_initial_tab")
+    if initial and initial ~= "" then
+        tv:set_tab(initial)
+    end
     ui.update()
 
     core.sound_play("main_menu", true)

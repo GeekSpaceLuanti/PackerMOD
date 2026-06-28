@@ -38,6 +38,10 @@ local function class(kind, defaults)
     return function(t)
         t = t or {}
         t._kind = kind
+        -- Remember whether the caller pinned the cross-axis sizes so default
+        -- stretch can leave them alone.
+        if t.w ~= nil then t._user_w = true end
+        if t.h ~= nil then t._user_h = true end
         for k, v in pairs(defaults) do
             if t[k] == nil then t[k] = v end
         end
@@ -45,10 +49,17 @@ local function class(kind, defaults)
     end
 end
 
+-- Widgets that fill the cross axis when the parent has align="stretch".
+-- Discrete leaf widgets (Button, Field, Label, Image, Box) keep their natural
+-- size; fluid widgets stretch.
+local STRETCHABLE_KINDS = {
+    VBox = true, HBox = true, Stack = true, Spacer = true, TextList = true,
+}
+
 -- ---- widget constructors ----
 
-M.VBox     = class("VBox",     { spacing = 0.2, padding = 0, align = "start" })
-M.HBox     = class("HBox",     { spacing = 0.2, padding = 0, align = "start" })
+M.VBox     = class("VBox",     { spacing = 0.2, padding = 0, align = "stretch" })
+M.HBox     = class("HBox",     { spacing = 0.2, padding = 0, align = "stretch" })
 M.Stack    = class("Stack",    {})
 M.Label    = class("Label",    {})                 -- {text=, [w], [h]}
 M.Field    = class("Field",    { w = 3, h = 0.7 }) -- {name=, [label], [default], [close_on_enter]}
@@ -106,44 +117,68 @@ local function measure(w)
     w.h = w.h or 0
 end
 
--- ---- layout: top-down absolute positions ----
+-- ---- layout: top-down absolute positions, flex distribution ----
+--
+-- Containers fill the available rectangle the parent gives them. Along the
+-- main axis (Y for VBox, X for HBox), any space left over after summing
+-- children's natural sizes is split among children with `flex` > 0 in proportion
+-- to their flex weights. Along the cross axis, children keep their natural size
+-- and are placed by `align` (start/center/end), except for `align="stretch"`
+-- which sizes each child to the inner cross extent.
 
-local function layout(w, x, y, parent_cross)
+local function layout(w, x, y, avail_w, avail_h)
     w._x, w._y = x, y
+    if avail_w then w.w = avail_w end
+    if avail_h then w.h = avail_h end
+
     local k = w._kind
-    if k == "VBox" then
-        local cx = x + w.padding
-        local cy = y + w.padding
-        local inner = (parent_cross or w.w) - 2 * w.padding
-        for i, child in ipairs(w) do
-            local child_x = cx
-            if w.align == "center" then
-                child_x = cx + (inner - child.w) / 2
-            elseif w.align == "end" then
-                child_x = cx + (inner - child.w)
-            end
-            layout(child, child_x, cy, child.w)
-            cy = cy + child.h
-            if i < #w then cy = cy + w.spacing end
+    if k == "VBox" or k == "HBox" then
+        local inner_w = w.w - 2 * w.padding
+        local inner_h = w.h - 2 * w.padding
+        local main_avail  = (k == "VBox") and inner_h or inner_w
+        local cross_avail = (k == "VBox") and inner_w or inner_h
+
+        local n = #w
+        local natural_main, total_flex = 0, 0
+        for _, child in ipairs(w) do
+            natural_main = natural_main + ((k == "VBox") and child.h or child.w)
+            total_flex   = total_flex   + (child.flex or 0)
         end
-    elseif k == "HBox" then
+        if n > 1 then natural_main = natural_main + w.spacing * (n - 1) end
+        local extra = math.max(0, main_avail - natural_main)
+
         local cx = x + w.padding
         local cy = y + w.padding
-        local inner = (parent_cross or w.h) - 2 * w.padding
         for i, child in ipairs(w) do
-            local child_y = cy
-            if w.align == "center" then
-                child_y = cy + (inner - child.h) / 2
+            local base = (k == "VBox") and child.h or child.w
+            local grow = (total_flex > 0) and (extra * (child.flex or 0) / total_flex) or 0
+            local main_size = base + grow
+            local cross_size = (k == "VBox") and child.w or child.h
+
+            local cross_axis_flag = (k == "VBox") and "_user_w" or "_user_h"
+            local stretchable = STRETCHABLE_KINDS[child._kind] and not child[cross_axis_flag]
+            local off = 0
+            if w.align == "stretch" and stretchable then
+                cross_size = cross_avail
+            elseif w.align == "center" then
+                off = (cross_avail - cross_size) / 2
             elseif w.align == "end" then
-                child_y = cy + (inner - child.h)
+                off = cross_avail - cross_size
             end
-            layout(child, cx, child_y, child.h)
-            cx = cx + child.w
-            if i < #w then cx = cx + w.spacing end
+
+            if k == "VBox" then
+                layout(child, cx + off, cy, cross_size, main_size)
+                cy = cy + main_size
+                if i < n then cy = cy + w.spacing end
+            else
+                layout(child, cx, cy + off, main_size, cross_size)
+                cx = cx + main_size
+                if i < n then cx = cx + w.spacing end
+            end
         end
     elseif k == "Stack" then
         for _, child in ipairs(w) do
-            layout(child, x + (child.x or 0), y + (child.y or 0), child.w)
+            layout(child, x + (child.x or 0), y + (child.y or 0), child.w, child.h)
         end
     end
 end
@@ -194,7 +229,7 @@ local function compute(root, opts)
     measure(root)
     if opts.w then root.w = opts.w end
     if opts.h then root.h = opts.h end
-    layout(root, opts.x or 0, opts.y or 0, root.w)
+    layout(root, opts.x or 0, opts.y or 0, root.w, root.h)
 end
 
 function M.build_formspec(root, opts)

@@ -141,6 +141,60 @@ end
 describe("formspec layout", function()
     setup(setup_mocks)
 
+    describe("flex distribution", function()
+        local L
+        setup(function() L = dofile("mainmenu/lib/layout.lua") end)
+
+        it("HBox child with flex grows to fill leftover width", function()
+            local root = L.HBox{ spacing = 0,
+                L.Button{name="a", label="A", w=2, h=1},
+                L.Spacer{flex = 1},
+                L.Button{name="b", label="B", w=2, h=1},
+            }
+            local els = L.iter_elements(root, { w = 10, h = 1 })
+            assert.equal(2, #els)
+            assert.equal(0, els[1].x)
+            assert.equal(8, els[2].x) -- 10 - 2 = 8
+        end)
+
+        it("splits leftover space by flex ratio", function()
+            local root = L.HBox{ spacing = 0,
+                L.Spacer{flex = 1},
+                L.Button{name="m", label="M", w=2, h=1},
+                L.Spacer{flex = 3},
+            }
+            local els = L.iter_elements(root, { w = 10, h = 1 })
+            -- leftover = 10 - 2 = 8; ratio 1:3 → spacer1 = 2, spacer2 = 6
+            -- button sits at x = 2
+            assert.equal(1, #els)
+            assert.is_true(math.abs(els[1].x - 2) < 1e-6)
+        end)
+
+        it("VBox flex stretches a child vertically", function()
+            local root = L.VBox{ spacing = 0,
+                L.Label{text = "top",    w = 5, h = 0.5},
+                L.TextList{name = "mid", items = {}, w = 5, flex = 1},
+                L.Label{text = "bot",    w = 5, h = 0.5},
+            }
+            local els = L.iter_elements(root, { w = 5, h = 10 })
+            -- bot label sits at y = 10 - 0.5 = 9.5
+            assert.equal(3, #els)
+            assert.is_true(math.abs(els[3].y - 9.5) < 1e-6)
+            -- textlist now spans the available 10 - 0.5 - 0.5 = 9
+            assert.is_true(math.abs(els[2].h - 9) < 1e-6)
+        end)
+
+        it("leaves non-flex children at natural size when there's no leftover", function()
+            local root = L.HBox{ spacing = 0,
+                L.Button{name="a", label="A", w=4, h=1},
+                L.Button{name="b", label="B", w=4, h=1},
+            }
+            local els = L.iter_elements(root, { w = 8, h = 1 })
+            assert.equal(0, els[1].x)
+            assert.equal(4, els[2].x)
+        end)
+    end)
+
     describe("AABB detector", function()
         it("flags overlapping rectangles", function()
             local hits = find_overlaps({
