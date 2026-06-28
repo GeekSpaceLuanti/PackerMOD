@@ -11,6 +11,25 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 22:30 (main)
+
+**変更概要**:
+Phase 5 Create タブを YAML 化。4 タブのうち最も複雑(7 field + 2 column + 検索 row + mod list + 6 button)を `mainmenu/ui/tab_create.yml` に置き換え、`tab_create.lua` は動的データの集約とハンドラだけに薄くした。これで 4 タブすべて YAML/DSL に移行済み。
+- 構造: page > [card(Pack identity: 2 row × field), row(flex) > card(ContentDB search) + card(Current mods)]
+- アイコン: Search=search, Add=plus (secondary), Remove=trash (danger), Export=save (primary)
+- 横幅調整: 右カード actions の Remove/Export と左カード search row の Query/Release/Search/Add の w を縮めて、page の内側 14.7 unit に 2 card + spacing が収まるように
+- バグ修正: `spec/layout_spec.lua` の `setup_mocks` で `PACKERMOD_TAB_H = 7.1` が残っていたのを `8.0` に更新(init.lua は前のセッションで 7.1→8.0 にしたが spec の mock 値が追従していなかった)。 これが Create タブで「label OOB」のエラーを引き起こしていた本当の原因
+- 全 107 spec 緑、live-tabs 4 タブ overlap/OOB なし
+
+**主な変更ファイル**:
+- mainmenu/ui/tab_create.yml (新規, 約 130 行)
+- mainmenu/tabs/tab_create.lua (簡素化, 177 → 145 行)
+- spec/layout_spec.lua (setup_mocks の TAB_H 修正)
+
+**コミット**: (push 後に追記)
+
+**次のTODO**: Phase 6 仕上げ (実機目視確認、YAML 内の size 指定を ui_loader に取り込み)
+
 ## 2026-06-28 22:00 (main)
 
 **変更概要**:
@@ -25,7 +44,7 @@ Phase 3 と Phase 4: Import タブと Settings タブを YAML 化。Packs と同
 - mainmenu/tabs/tab_import.lua (簡素化, 45 → 41 行)
 - mainmenu/tabs/tab_settings.lua (簡素化, 32 → 32 行)
 
-**コミット**: (push 後に追記)
+**コミット**: 0447cdf
 
 **次のTODO**: Phase 5 Create タブ YAML 化 (最も複雑)
 

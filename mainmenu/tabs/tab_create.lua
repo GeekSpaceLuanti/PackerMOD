@@ -19,71 +19,35 @@ local function get_formspec(tabview, name, tabdata)
     tabdata.base_version  = tabdata.base_version  or "0.91"
     tabdata.mods          = tabdata.mods          or {}
     tabdata.search_results = tabdata.search_results or {}
-    local status = tabdata.status or ""
 
-    local search_items = {}
-    for _, r in ipairs(tabdata.search_results) do
-        search_items[#search_items + 1] = format_search_result(r)
-    end
-    local mod_items = {}
-    for _, m in ipairs(tabdata.mods) do
-        mod_items[#mod_items + 1] = format_mod_entry(m)
-    end
-
-    local L = packermod.layout
-    local root = L.VBox{
-        spacing = 0.2, padding = 0.3,
-
-        -- Row 1: pack identity
-        L.HBox{
-            L.Field{name="pack_id",      label="Pack id", w=3.5, default=tabdata.pack_id},
-            L.Field{name="pack_name",    label="Name",    w=5.0, default=tabdata.pack_name},
-            L.Field{name="pack_version", label="Version", w=2.5, default=tabdata.pack_version},
-            L.Field{name="pack_author",  label="Author",  w=3.3, default=tabdata.pack_author},
-        },
-
-        -- Row 2: base game + description
-        L.HBox{
-            L.Field{name="base_id",          label="Base id",     w=3.5, default=tabdata.base_id},
-            L.Field{name="base_version",     label="Base ver",    w=2.0, default=tabdata.base_version},
-            L.Field{name="pack_description", label="Description", w=9.0, default=tabdata.pack_description},
-        },
-
-        -- Row 3: split into left (search) and right (mod list) columns.
-        -- flex=1 lets the column row absorb whatever vertical space is left
-        -- after the two header rows, and inside each column the textlist
-        -- grows to fill the column.
-        L.HBox{
-            spacing = 0.2, flex = 1,
-
-            -- Left column: ContentDB search + status
-            L.VBox{
-                L.Label{text="ContentDB search"},
-                L.HBox{
-                    L.Field{name="search_query",   label="Query",   w=4.8, default=tabdata.search_query},
-                    L.Field{name="search_release", label="Release", w=1.4, default=tabdata.search_release},
-                    L.Button{name="search",     label="Search", w=1.2},
-                    L.Button{name="add_search", label="Add",    w=1.0},
-                },
-                L.TextList{name="search_results", items=search_items,
-                    selected=tabdata.search_selected, w=9.0, flex = 1},
-                L.Label{text=status},
-            },
-
-            -- Right column: current mods + action buttons
-            L.VBox{
-                L.Label{text="Current mods"},
-                L.TextList{name="mod_list", items=mod_items,
-                    selected=tabdata.mod_selected, w=5.7, flex = 1},
-                L.HBox{
-                    L.Button{name="remove_mod", label="Remove",          w=2.0},
-                    L.Button{name="export",     label="Export manifest", w=3.5},
-                },
-            },
-        },
+    local ctx = {
+        pack_id           = tabdata.pack_id,
+        pack_name         = tabdata.pack_name,
+        pack_version      = tabdata.pack_version,
+        pack_author       = tabdata.pack_author,
+        pack_description  = tabdata.pack_description,
+        base_id           = tabdata.base_id,
+        base_version      = tabdata.base_version,
+        search_query      = tabdata.search_query,
+        search_release    = tabdata.search_release,
+        search_results    = tabdata.search_results,
+        search_selected   = tabdata.search_selected,
+        mods              = tabdata.mods,
+        mod_selected      = tabdata.mod_selected,
+        status            = tabdata.status or "",
+        format_search_result = format_search_result,
+        format_mod_entry     = format_mod_entry,
+        icon_path = function(n) return packermod.icons.path(n, "md") end,
     }
 
-    return L.build_formspec(root, { w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6 })
+    return packermod.ui_loader.build_tab_formspec(
+        packermod.ui_loader.tab_yaml_path("create"),
+        ctx,
+        {
+            w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6,
+            theme = packermod.theme,
+        }
+    )
 end
 
 local function handle_search(tabdata, fields)

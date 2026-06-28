@@ -24,7 +24,7 @@ local function setup_mocks()
     _G.DIR_DELIM = _G.DIR_DELIM or "/"
     _G.PACKERMOD_VERSION = _G.PACKERMOD_VERSION or "0.1.0"
     _G.PACKERMOD_TAB_W = _G.PACKERMOD_TAB_W or 15.5
-    _G.PACKERMOD_TAB_H = _G.PACKERMOD_TAB_H or 7.1
+    _G.PACKERMOD_TAB_H = _G.PACKERMOD_TAB_H or 8.0
     _G.packermod = _G.packermod or {}
     packermod.user_path = "/tmp/_user"
     packermod.pack_manager = packermod.pack_manager or {
