@@ -232,6 +232,19 @@ handlers.field = function(body, ctx, theme)
     }
 end
 
+handlers.textarea = function(body, ctx, theme)
+    local L = get_layout()
+    local props = resolve_props(body, ctx)
+    return L.TextArea{
+        name    = props.name,
+        label   = props.label,
+        default = props.default,
+        w       = props.w, h = props.h,
+        flex    = props.flex,
+        style   = props.style,
+    }
+end
+
 handlers.button = function(body, ctx, theme)
     local L = get_layout()
     local props = resolve_props(body, ctx)

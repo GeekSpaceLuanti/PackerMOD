@@ -234,6 +234,31 @@ describe("formspec layout", function()
         end)
     end)
 
+    describe("TextArea (#13)", function()
+        local L
+        setup(function() L = dofile("mainmenu/lib/layout.lua") end)
+
+        it("emits textarea[X,Y;W,H;name;label;default] with label band offset", function()
+            local root = L.VBox{ L.TextArea{name="d", label="Desc", default="hello\nworld", w=5, h=2} }
+            local fs = L.build_formspec(root, { w = 5, h = 4, version = 6 })
+            local x, y, w, h, name, label, default =
+                fs:match("textarea%[([%d.]+),([%d.]+);([%d.]+),([%d.]+);([^;]+);([^;]*);([^%]]*)%]")
+            assert.equal("d", name)
+            assert.equal("Desc", label)
+            assert.is_truthy(default:find("hello", 1, true))
+            assert.is_truthy(default:find("world", 1, true))
+            assert.is_true(tonumber(y) > 0, "textarea y should be offset below label band")
+            assert.is_true(math.abs(tonumber(w) - 5) < 1e-6)
+            assert.is_true(math.abs(tonumber(h) - 2) < 1e-6)
+        end)
+
+        it("reserves vertical space for its label like Field does", function()
+            local ta = L.TextArea{name="d", label="Desc", w=4, h=2}
+            L.iter_elements(L.VBox{ ta })
+            assert.is_true(ta.h > 2, "label-bearing textarea should reserve > 2 units of height")
+        end)
+    end)
+
     describe("AABB detector", function()
         it("flags overlapping rectangles", function()
             local hits = find_overlaps({

@@ -253,7 +253,7 @@ page:
                                   - label:
                                       text: "Base: ${pack_base}"
                                       style: dim
-                            - field:
+                            - textarea:
                                 name: info_description
                                 label: Description
                                 flex: 1

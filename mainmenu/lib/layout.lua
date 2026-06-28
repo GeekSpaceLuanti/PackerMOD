@@ -66,6 +66,7 @@ M.Label    = class("Label",    {})                 -- {text=, [w], [h]}
 -- for it; ~0.4 units matches the rendered text + gap.
 M.FIELD_LABEL_H = 0.4
 M.Field    = class("Field",    { w = 3, h = 0.7 }) -- {name=, [label], [default], [close_on_enter]}
+M.TextArea = class("TextArea", { w = 4, h = 2.0 }) -- {name=, [label], [default]}
 M.Button   = class("Button",   { w = 2, h = 0.7 }) -- {name=, label=}
 M.TextList = class("TextList", {})                 -- {name=, items={}, [selected], [transparent], w=, h=}
 M.Image    = class("Image",    {})                 -- {texture=, w=, h=}
@@ -125,6 +126,13 @@ local function measure(w)
         local has_label = w.label ~= nil and w.label ~= ""
         w._label_h = has_label and M.FIELD_LABEL_H or 0
         w._box_h   = w.h or 0.7
+        w.h = w._box_h + w._label_h
+    elseif k == "TextArea" then
+        -- formspec textarea[X,Y;W,H;name;label;default]: label is also printed
+        -- ABOVE the box in v6, so reserve the same band as Field.
+        local has_label = w.label ~= nil and w.label ~= ""
+        w._label_h = has_label and M.FIELD_LABEL_H or 0
+        w._box_h   = w.h or 2.0
         w.h = w._box_h + w._label_h
     end
     w.w = w.w or 0
@@ -200,7 +208,8 @@ end
 -- ---- render: leaf widgets to formspec elements ----
 
 local KIND_TO_THEME_KIND = {
-    Button = "button", Field = "field", Label = "label", TextList = "textlist",
+    Button = "button", Field = "field", TextArea = "field",
+    Label = "label", TextList = "textlist",
 }
 
 local function maybe_emit_style(w, out, theme)
@@ -238,6 +247,13 @@ local function render(w, out, theme)
         if w.close_on_enter ~= nil then
             out[#out + 1] = ("field_close_on_enter[%s;%s]"):format(w.name, tostring(w.close_on_enter))
         end
+    elseif k == "TextArea" then
+        maybe_emit_style(w, out, theme)
+        local box_y = w._y + (w._label_h or 0)
+        local box_h = w._box_h or w.h
+        out[#out + 1] = ("textarea[%s,%s;%s,%s;%s;%s;%s]"):format(
+            fnum(w._x), fnum(box_y), fnum(w.w), fnum(box_h),
+            w.name, fs_escape(w.label or ""), fs_escape(w.default or ""))
     elseif k == "Button" then
         maybe_emit_style(w, out, theme)
         out[#out + 1] = ("button[%s,%s;%s,%s;%s;%s]"):format(
