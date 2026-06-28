@@ -33,20 +33,43 @@ local yaml = dofile(self_path .. "yaml.lua")
 local manifest_mod = dofile(self_path .. "manifest.lua")
 local world_builder = dofile(self_path .. "world_builder.lua")
 local pack_manager = dofile(self_path .. "pack_manager.lua")
+local contentdb_mod = dofile(self_path .. "contentdb.lua")
+local mod_installer = dofile(self_path .. "mod_installer.lua")
+local pack_launcher = dofile(self_path .. "pack_launcher.lua")
+
+local user_path = core.get_user_path()
+local fs = world_builder._default_fs()
+local client = contentdb_mod.new()
+local installer = mod_installer.new({
+    fs = fs,
+    contentdb_client = client,
+    cache_dir = user_path .. DIR_DELIM .. "PackerMOD" .. DIR_DELIM .. "cache",
+})
+local launcher = pack_launcher.new({
+    user_path = user_path,
+    world_builder = world_builder,
+    mod_installer = installer,
+})
+packermod = {
+    yaml = yaml,
+    manifest = manifest_mod,
+    world_builder = world_builder,
+    pack_manager = pack_manager,
+    contentdb_mod = contentdb_mod,
+    mod_installer_mod = mod_installer,
+    pack_launcher_mod = pack_launcher,
+    user_path = user_path,
+    fs = fs,
+    client = client,
+    installer = installer,
+    launcher = launcher,
+}
 
 local tabs = {
     packs    = dofile(self_path .. "tabs" .. DIR_DELIM .. "tab_packs.lua"),
     import   = dofile(self_path .. "tabs" .. DIR_DELIM .. "tab_import.lua"),
     create   = dofile(self_path .. "tabs" .. DIR_DELIM .. "tab_create.lua"),
     settings = dofile(self_path .. "tabs" .. DIR_DELIM .. "tab_settings.lua"),
-}
-
-packermod = {
-    yaml = yaml,
-    manifest = manifest_mod,
-    world_builder = world_builder,
-    pack_manager = pack_manager,
-    user_path = core.get_user_path(),
 }
 
 local function event_handler(tabview, event)

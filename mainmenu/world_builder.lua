@@ -69,6 +69,19 @@ function M._default_fs()
             if f then f:close(); return true end
             return (rawget(_G, "core") and core.get_dir_list and core.get_dir_list(path, nil)) ~= nil
         end,
+        copy_dir = function(src, dst, keep)
+            if rawget(_G, "core") and core.copy_dir then
+                return core.copy_dir(src, dst, keep)
+            end
+            os.execute(('cp -r "%s" "%s"'):format(src, dst))
+            return true
+        end,
+        extract_zip = function(zip, dst)
+            if rawget(_G, "core") and core.extract_zip then
+                return core.extract_zip(zip, dst)
+            end
+            return false
+        end,
     }
 end
 

@@ -57,8 +57,7 @@ local function button_handler(tabview, fields, name, tabdata)
     if fields.play and tabdata.packs and tabdata.selected then
         local pack = tabdata.packs[tabdata.selected]
         if not pack then return true end
-        local ok, info_or_err = packermod.world_builder.create_world(
-            pack.manifest, packermod.user_path)
+        local ok, info_or_err = packermod.launcher.launch(pack)
         if not ok then
             gamedata.errormessage = info_or_err
             return true
