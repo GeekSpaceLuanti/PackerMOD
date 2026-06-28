@@ -11,6 +11,35 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 01:30 (main)
+
+**変更概要**:
+Phase 12 後の派生 Issue を 4 連続で対応。すべて Library + modal の品質改善で、メインメニュー再設計の本筋とは独立。
+- **#11 Mods サブタブを左右分割** (commit 0917d86): mod_list と search_results を縦並びから左 col / 右 col の分割に変更。各 textlist が flex=1 で十分な高さを取れる。Remove / Add ボタンに w=2.5 明示(natural 0.9 では Remove が "Remov" で切れていた)
+- **#13 Description を textarea で編集可能に** (commit 5aa8ca3): PMLayout に TextArea widget 追加(`textarea[X,Y;W,H;name;label;default]` を emit、label 上方バンド = Field と同じ)。ui_loader に textarea タグハンドラ。library.yml の info_description を field → textarea。spec も 2 case 追加(layout_spec.lua)
+- **#14 library/modal の overlap regression テストを復活** (commit 989e32f): spec/support/formspec_helpers.lua にヘルパ抽出(layout_spec から)、library_spec.lua に library 7 シナリオ + 3 modal の overlap+OOB 検査を追加。過程で発覚した OOB を YAML 側で修正(modal_import/settings/create のサイズ、library の no_pack ステータス長文短縮、library page h 8.0→8.5)。library/info は #15 で別対応(layout shrink-to-fit 無しが原因)、pending
+- **#10 アイコン視認性 (部分対応)** (commit 213928b): theme.button.default の bgcolor を #3A3A3A → #5A5A5A、hovered #4A4A4A → #7A7A7A、pressed #2A2A2A → #3A3A3A。emit_global_prelude に style_type[image_button;...] 追加(button の style_type は image_button に inherit しないため)。アイコン PNG 自体の単色問題は #16 で別途
+- **新規 Issue 発見**: #15 layout が shrink-to-fit しない(子の natural h が parent を超えると OOB)/ #16 アイコン PNG を accent 色で再生成
+
+**主な変更ファイル**:
+- mainmenu/ui/library.yml (Mods 左右分割、Info textarea 化、page h 8.5、no_pack 文短縮)
+- mainmenu/lib/layout.lua (M.TextArea + measure + render、KIND_TO_THEME_KIND に TextArea=field 追加)
+- mainmenu/lib/ui_loader.lua (textarea タグ)
+- mainmenu/lib/theme.lua (button bgcolor brighter + style_type[image_button])
+- mainmenu/ui/modal_*.yml (各サイズ調整)
+- spec/support/formspec_helpers.lua (新規, 共通ヘルパ)
+- spec/layout_spec.lua (helpers 使用、TextArea spec 2 case)
+- spec/library_spec.lua (overlap+OOB regression セクション、library 7 + modal 3 シナリオ)
+
+**コミット**: 0917d86 (#11) / 5aa8ca3 (#13) / 989e32f (#14) / 213928b (#10)
+
+**最終状態**: 163 spec 緑 + 1 pending(#15)。Issue: #9/#10/#11/#12/#13/#14 closed、#8/#15/#16 open。
+- #8 Fork VoxeLibre 0.91 → PackerMOD-Base(別リポジトリの作業、無関連)
+- #15 layout shrink-to-fit(library/info で顕在化、別途対応)
+- #16 アイコン PNG 再生成(#10 のフォロー、SVG/PNG ビルドフローの作業)
+
+メインメニュー再設計(Phase 7→12)+ 直接派生品質改善(#11/#13/#14/#10)を完了。
+
 ## 2026-06-29 00:55 (main)
 
 **変更概要**:
