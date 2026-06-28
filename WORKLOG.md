@@ -27,7 +27,7 @@
 
 **主な変更ファイル**: なし(本セクション = WORKLOG.md のみ)
 
-**コミット**: (push 時に追記)
+**コミット**: 94ad2cd
 
 **次のTODO**: GitHub Issue を見て個別に着手。優先度は #18 (Pack Delete UI) > #17 (Settings) > #19 (World Configure) > #20 (e2e) > #15/#16(品質)あたりが妥当。
 
