@@ -11,6 +11,27 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-28 22:50 (main)
+
+**変更概要**:
+Phase 6 仕上げ。YAML を一次情報源に寄せる小改良。
+- `ui_loader.handlers.page` が `body.size.{w,h}` を root VBox の w/h に伝播するように。これで YAML だけ見ればタブのキャンバスサイズが分かる。
+- 4 つのタブ Lua から `w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H` を削除。layout.lua の compute は opts.w/h が無いとき root.w/h を尊重するので、サイズは YAML から流れる。
+- 動作は変わらず (108 spec すべて緑、live-tabs 4 タブ overlap/OOB なし)
+
+実機での目視確認は人手 (Xvfb での screenshot もユーザ側で実行可能): `make screenshot TAB=packs|import|create|settings` または `make screenshot-all`。テーマトークン (色・spacing) の微調整は `mainmenu/lib/theme.lua` の M.colors / M.spacing / M.button を直接いじれば即反映される。
+
+**4 タブ YAML 化 + マイクラ風テーマ + Pixelarticons アイコン化** がこれで完成。
+
+**主な変更ファイル**:
+- mainmenu/lib/ui_loader.lua (page.size 反映)
+- mainmenu/tabs/tab_packs.lua / tab_import.lua / tab_create.lua / tab_settings.lua (w/h 重複削除)
+- spec/ui_loader_spec.lua (page.size の 1 case 追加)
+
+**コミット**: (push 後に追記)
+
+**次のTODO**: 実機で配色・サイズの微調整(必要であれば)。9-slice 石/木テクスチャに進化させる案は Phase 6 以降の課題として保留。
+
 ## 2026-06-28 22:30 (main)
 
 **変更概要**:
@@ -26,7 +47,7 @@ Phase 5 Create タブを YAML 化。4 タブのうち最も複雑(7 field + 2 co
 - mainmenu/tabs/tab_create.lua (簡素化, 177 → 145 行)
 - spec/layout_spec.lua (setup_mocks の TAB_H 修正)
 
-**コミット**: (push 後に追記)
+**コミット**: 8bfa9c5
 
 **次のTODO**: Phase 6 仕上げ (実機目視確認、YAML 内の size 指定を ui_loader に取り込み)
 

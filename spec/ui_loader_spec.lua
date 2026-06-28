@@ -15,6 +15,12 @@ describe("ui_loader.expand", function()
         assert.equal(theme.colors.bg, tree.bgcolor)
     end)
 
+    it("propagates page.size into root w/h", function()
+        local tree = loader.expand({ page = { size = {w=12.3,h=4.5}, children = {} } }, {}, theme)
+        assert.equal(12.3, tree.w)
+        assert.equal(4.5,  tree.h)
+    end)
+
     it("expands a card with bg_panel", function()
         local tree = loader.expand({ card = { children = {} } }, {}, theme)
         assert.equal("VBox", tree._kind)

@@ -119,11 +119,16 @@ end
 handlers.page = function(body, ctx, theme)
     local L = get_layout()
     local children = expand_children(body.children, ctx, theme)
-    return attach(L.VBox{
+    local node = L.VBox{
         bgcolor = theme.colors.bg,
         padding = theme.spacing.padding_page,
         spacing = theme.spacing.md,
-    }, children)
+    }
+    if body.size then
+        node.w = body.size.w
+        node.h = body.size.h
+    end
+    return attach(node, children)
 end
 
 handlers.card = function(body, ctx, theme)

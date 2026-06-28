@@ -8,10 +8,7 @@ local function get_formspec(tabview, name, tabdata)
     return packermod.ui_loader.build_tab_formspec(
         packermod.ui_loader.tab_yaml_path("settings"),
         ctx,
-        {
-            w = PACKERMOD_TAB_W, h = PACKERMOD_TAB_H, version = 6,
-            theme = packermod.theme,
-        }
+        { version = 6, theme = packermod.theme }
     )
 end
 
