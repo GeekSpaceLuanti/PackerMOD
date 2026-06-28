@@ -28,7 +28,7 @@ Phase 6 仕上げ。YAML を一次情報源に寄せる小改良。
 - mainmenu/tabs/tab_packs.lua / tab_import.lua / tab_create.lua / tab_settings.lua (w/h 重複削除)
 - spec/ui_loader_spec.lua (page.size の 1 case 追加)
 
-**コミット**: (push 後に追記)
+**コミット**: 4e21f16
 
 **次のTODO**: 実機で配色・サイズの微調整(必要であれば)。9-slice 石/木テクスチャに進化させる案は Phase 6 以降の課題として保留。
 
