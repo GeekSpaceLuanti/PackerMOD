@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>PackerMOD — CRT Amber Terminal</title>
+<link rel="stylesheet" href="_shared.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg:        #1a0e00;
+  --bg-panel:  #2a1700;
+  --bg-card:   #1a0e00;
+  --fg:        #ffb000;       /* phosphor amber */
+  --fg-dim:    #b07700;
+  --accent:    #ffb000;
+  --accent2:   #ff8800;
+  --border:    #ffb000;
+  --border-w:  1px;
+  --font:        "VT323", monospace;
+  --font-display:"VT323", monospace;
+}
+
+body {
+  background:
+    radial-gradient(ellipse at 50% 50%, #2a1700, #0a0500 90%);
+  position: relative;
+}
+
+/* Strong CRT scanlines + flicker */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,176,0,0.10) 0px,
+    rgba(255,176,0,0.10) 1px,
+    rgba(0,0,0,0.25)     1px,
+    rgba(0,0,0,0.25)     2px
+  );
+  pointer-events: none;
+  z-index: 100;
+  animation: flicker 0.15s infinite;
+}
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.6));
+  pointer-events: none;
+  z-index: 101;
+}
+@keyframes flicker {
+  0%   { opacity: 1.00; }
+  50%  { opacity: 0.97; }
+  100% { opacity: 1.00; }
+}
+
+.app-header { border-bottom-color: var(--accent); }
+.app-header .title {
+  color: var(--accent);
+  font-size: 36px;
+  text-shadow: 0 0 6px rgba(255,176,0,0.8), 0 0 16px rgba(255,136,0,0.4);
+  letter-spacing: 0.1em;
+}
+.app-header .title::before { content: "[ "; }
+.app-header .title::after  { content: " ]_"; animation: blink 1s steps(1) infinite; }
+.app-header .subtitle {
+  color: var(--fg-dim);
+  font-size: 18px;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.pack-card {
+  border-color: var(--accent);
+  background: transparent;
+}
+.pack-card::before {
+  content: "* ";
+  position: absolute; top: 8px; left: 10px;
+  color: var(--accent);
+  font-size: 18px;
+}
+.pack-card .thumb {
+  background: rgba(255,176,0,0.05);
+  border: 1px solid var(--accent);
+}
+.pack-card .name {
+  color: var(--accent);
+  font-size: 22px;
+  text-shadow: 0 0 6px rgba(255,176,0,0.6);
+  letter-spacing: 0.05em;
+}
+.pack-card .base {
+  color: var(--fg-dim);
+  font-size: 16px;
+}
+
+.actions { border-top-color: var(--accent); }
+
+.icon-btn {
+  border-color: var(--accent);
+  background: transparent;
+  padding: 14px 20px;
+}
+.icon-btn .ico { color: var(--accent); }
+.icon-btn .lbl {
+  color: var(--accent);
+  font-size: 18px;
+  letter-spacing: 0.2em;
+  text-shadow: 0 0 4px rgba(255,176,0,0.6);
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="_shared.js"></script>
+<script>renderApp({ title: "PACKERMOD", subtitle: "TERM 86 :: PACK LIBRARY" });</script>
+</body>
+</html>

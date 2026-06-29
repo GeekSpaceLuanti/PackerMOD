@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>PackerMOD — Hacker Green</title>
+<link rel="stylesheet" href="_shared.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg:        #000000;
+  --bg-panel:  #001a08;
+  --bg-card:   #001a08;
+  --fg:        #00ff41;
+  --fg-dim:    #008820;
+  --accent:    #00ff41;
+  --accent2:   #b9ffce;
+  --border:    #00ff41;
+  --border-w:  1px;
+  --font:        "Fira Code", monospace;
+  --font-display:"Fira Code", monospace;
+}
+
+body {
+  background: #000;
+  position: relative;
+}
+
+/* Matrix rain background (subtle, canvas-driven) */
+#matrix-rain {
+  position: fixed; inset: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.app { position: relative; z-index: 1; }
+
+.app-header { border-bottom-color: var(--accent); }
+.app-header .title {
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 6px rgba(0,255,65,0.7);
+}
+.app-header .title::before {
+  content: "root@packermod:~$ ";
+  color: var(--accent2);
+  font-weight: 400;
+}
+.app-header .subtitle {
+  color: var(--accent2);
+}
+.app-header .subtitle::after {
+  content: " ▊";
+  color: var(--accent);
+  animation: blink 1s steps(1) infinite;
+}
+
+@keyframes blink { 50% { opacity: 0; } }
+
+.pack-card {
+  background: rgba(0,26,8,0.65);
+  border-color: var(--accent);
+}
+.pack-card::before {
+  content: "[ OK ] ";
+  position: absolute; top: 6px; left: 8px;
+  color: var(--fg-dim);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+}
+.pack-card:hover {
+  border-color: var(--accent2);
+  box-shadow: inset 0 0 24px rgba(0,255,65,0.25);
+}
+.pack-card .thumb {
+  background: #000;
+  border: 1px solid var(--accent);
+}
+.pack-card .name {
+  color: var(--accent);
+  text-shadow: 0 0 4px rgba(0,255,65,0.6);
+}
+.pack-card .base { color: var(--fg-dim); }
+
+.actions { border-top-color: var(--accent); }
+
+.icon-btn {
+  border-color: var(--accent);
+  background: rgba(0,26,8,0.5);
+}
+.icon-btn:hover {
+  background: rgba(0,255,65,0.1);
+}
+.icon-btn .ico { color: var(--accent); }
+.icon-btn .lbl {
+  color: var(--accent);
+  text-shadow: 0 0 4px rgba(0,255,65,0.6);
+}
+</style>
+</head>
+<body>
+<canvas id="matrix-rain"></canvas>
+<div id="app"></div>
+<script src="_shared.js"></script>
+<script>renderApp({ title: "packermod", subtitle: "// pack_library --list" });</script>
+<script>
+// Minimal matrix rain
+(() => {
+  const c = document.getElementById("matrix-rain");
+  const ctx = c.getContext("2d");
+  function resize() { c.width = innerWidth; c.height = innerHeight; }
+  resize();
+  addEventListener("resize", resize);
+  const chars = "01アイウエオカキクケコサシスセソタチツテト+-=/\\<>";
+  const fontSize = 14;
+  let cols = Math.floor(c.width / fontSize);
+  let drops = Array(cols).fill(1);
+  setInterval(() => {
+    ctx.fillStyle = "rgba(0,0,0,0.08)";
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "#00ff41";
+    ctx.font = fontSize + "px monospace";
+    cols = Math.floor(c.width / fontSize);
+    if (drops.length !== cols) drops = Array(cols).fill(1);
+    for (let i = 0; i < drops.length; i++) {
+      const t = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(t, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > c.height && Math.random() > 0.975) drops[i] = 0;
+      drops[i]++;
+    }
+  }, 60);
+})();
+</script>
+</body>
+</html>

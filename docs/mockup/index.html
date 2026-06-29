@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>PackerMOD UI Mockup — 4 案比較</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #111; color: #ddd; font-family: system-ui, sans-serif; }
+
+.head {
+  padding: 12px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid #333;
+}
+.head h1 { font-size: 16px; font-weight: 600; }
+.head .hint { font-size: 12px; color: #888; }
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+  height: calc(100vh - 50px);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  border: 1px solid #444;
+  overflow: hidden;
+}
+.cell .label {
+  padding: 6px 10px;
+  background: #1a1a1a;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid #333;
+}
+.cell .label a {
+  color: #6cf;
+  text-decoration: none;
+  font-size: 11px;
+}
+.cell .label a:hover { text-decoration: underline; }
+.cell iframe {
+  border: none;
+  flex: 1;
+  width: 100%;
+  background: #000;
+}
+</style>
+</head>
+<body>
+<div class="head">
+  <h1>PackerMOD UI mockup — 4 方向性</h1>
+  <div class="hint">各セルをクリック → "open" で単独タブで開いて細部を確認 / README.md に formspec 再現性メモあり</div>
+</div>
+<div class="grid">
+  <div class="cell">
+    <div class="label"><span>A. Neon Cyberpunk</span><a href="neon.html" target="_blank">open ↗</a></div>
+    <iframe src="neon.html"></iframe>
+  </div>
+  <div class="cell">
+    <div class="label"><span>B. CRT Amber Terminal</span><a href="crt_amber.html" target="_blank">open ↗</a></div>
+    <iframe src="crt_amber.html"></iframe>
+  </div>
+  <div class="cell">
+    <div class="label"><span>C. Synthwave Sunset</span><a href="synthwave.html" target="_blank">open ↗</a></div>
+    <iframe src="synthwave.html"></iframe>
+  </div>
+  <div class="cell">
+    <div class="label"><span>D. Hacker Green (Matrix)</span><a href="matrix.html" target="_blank">open ↗</a></div>
+    <iframe src="matrix.html"></iframe>
+  </div>
+</div>
+</body>
+</html>
