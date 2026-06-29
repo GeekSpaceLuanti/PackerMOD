@@ -1,0 +1,89 @@
+# Synthwave テーマ. library.html.yml に対するスタイル。
+# 紺→紫→ピンク→イエローの sunset グラデ + outrun 床グリッド + accent ピンク。
+
+variables:
+  --fg: "#f0e6ff"
+  --fg-dim: "#b09ad8"
+  --accent-purple: "#A06EFF"
+  --accent-pink: "#FF52A4"
+  --accent-yellow: "#FFD400"
+  --card-bg: "#28114f"
+
+rules:
+  - selector: "page"
+    style:
+      bg-image: "url(packermod_bg_synthwave.png)"
+      padding: 0.4
+      flex-direction: column
+      gap: 0.4
+
+  - selector: ".title-bar"
+    style:
+      flex-direction: row
+      gap: 0.4
+      h: 0.9
+      align: center
+
+  - selector: "#title"
+    style:
+      color: "#FF52A4"
+      font-size: "*1.8"
+
+  - selector: ".subtitle"
+    style:
+      color: "#b09ad8"
+      font-size: "*1.0"
+
+  - selector: "#no-packs-msg"
+    style:
+      color: "#f0e6ff"
+
+  - selector: ".pack-grid"
+    style:
+      display: grid
+      grid-columns: 3
+      gap: 0.3
+      flex: 1
+
+  - selector: ".pack-card"
+    style:
+      bg: "#28114f"
+      padding: 0.2
+      flex-direction: column
+      gap: 0.1
+      w: 3.8
+      h: 4.0
+
+  - selector: ".pack-thumb"
+    style:
+      w: 3.3
+      h: 3.3
+
+  - selector: ".pack-name"
+    style:
+      color: "#f0e6ff"
+      font-size: "*1.05"
+
+  - selector: ".pack-meta"
+    style:
+      color: "#FF52A4"
+      font-size: "*0.9"
+
+  - selector: ".action-bar"
+    style:
+      flex-direction: row
+      justify: end
+      gap: 0.5
+      h: 1.6
+
+  - selector: ".action-btn"
+    style:
+      w: 1.9
+      h: 1.4
+
+media:
+  - query: "max-width 10.0"
+    rules:
+      - selector: ".pack-grid"
+        style:
+          grid-columns: 2

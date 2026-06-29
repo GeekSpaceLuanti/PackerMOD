@@ -1,0 +1,70 @@
+# PackerMOD 画面1 (Pack Library) の HTML 風 DSL。
+# 対応する style は mainmenu/ui/themes/<theme>.css.yml。
+# library.lua の build_grid_formspec_pmui がこのファイルを読み込む。
+
+root:
+  tag: page
+  id: pack-library
+  children:
+    - tag: header
+      class: title-bar
+      children:
+        - tag: h1
+          id: title
+          text: PackerMOD
+        - tag: span
+          id: subtitle
+          class: subtitle
+          text: "Pack Library"
+
+    - tag: span
+      id: no-packs-msg
+      when: "${no_packs}"
+      text: "No packs yet. Use Import or Create below to add one."
+
+    - tag: main
+      class: pack-grid
+      children:
+        - tag: card
+          class: pack-card
+          for:
+            each: pack
+            in: packs
+          attrs:
+            name: "${pack.name_attr}"
+          children:
+            - tag: img
+              class: pack-thumb
+              attrs:
+                src: "${pack.thumbnail}"
+            - tag: h2
+              class: pack-name
+              text: "${pack.name}"
+            - tag: span
+              class: pack-meta
+              text: "${pack.base_label}"
+
+    - tag: footer
+      class: action-bar
+      children:
+        - tag: icon-button
+          id: btn-import
+          class: action-btn
+          attrs:
+            name: btn_import
+            icon: download
+            label: Import
+        - tag: icon-button
+          id: btn-create
+          class: action-btn
+          attrs:
+            name: btn_create
+            icon: plus
+            label: Create
+        - tag: icon-button
+          id: btn-settings
+          class: action-btn
+          attrs:
+            name: btn_settings
+            icon: sliders
+            label: Settings

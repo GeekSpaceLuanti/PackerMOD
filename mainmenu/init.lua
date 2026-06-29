@@ -95,6 +95,10 @@ packermod = {
 -- ui_loader is loaded after the packermod table so it can read packermod.layout.
 packermod.ui_loader = dofile(self_path .. "lib" .. DIR_DELIM .. "ui_loader.lua")
 
+-- PMUI: HTML/CSS 風 UI ライブラリ。画面1 (Pack Library) で使用。
+packermod.mainmenu_path = self_path
+packermod.pmui = dofile(self_path .. "lib" .. DIR_DELIM .. "pmui" .. DIR_DELIM .. "init.lua")
+
 -- Phase 8+: Library 単一画面。
 local library = dofile(self_path .. "library.lua")
 packermod.library = library

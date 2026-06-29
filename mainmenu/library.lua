@@ -268,12 +268,52 @@ local function build_detail_formspec(tabdata)
     )
 end
 
+-- ----- PMUI 版 grid 画面(画面1 を library.html.yml + synthwave.css.yml で描画) -----
+
+local function build_grid_formspec_pmui(tabdata)
+    local pmui = packermod.pmui
+    local packs = get_packs()
+    tabdata.packs = packs
+
+    local pack_ctx = {}
+    for i, p in ipairs(packs) do
+        pack_ctx[i] = {
+            name_attr  = pack_button_name(p.id),
+            name       = p.manifest.name or p.id,
+            base_label = (p.manifest.base_game.id or "?") .. " " ..
+                         (p.manifest.base_game.version or "?"),
+            thumbnail  = resolve_thumbnail(p),
+        }
+    end
+
+    local ctx = {
+        packs     = pack_ctx,
+        no_packs  = (#packs == 0),
+        icon_path = function(n) return packermod.icons.path(n, "md") end,
+    }
+
+    local DD = DIR_DELIM or "/"
+    local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
+    return pmui.build_formspec {
+        html_path = mm .. "ui" .. DD .. "library.html.yml",
+        css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
+        ctx       = ctx,
+        page_w = 13.0, page_h = 8.5,
+    }
+end
+
 -- ----- formspec ディスパッチ -----
 
 local function get_formspec(tabdata)
     tabdata.view = tabdata.view or "grid"
     if tabdata.view == "detail" then
         return build_detail_formspec(tabdata)
+    end
+    -- commit 6 では旧 path がデフォルト。PACKERMOD_USE_PMUI=1 で新 path を選択。
+    -- commit 7 でフラグ判定を反転し PMUI を default にして、PACKERMOD_LEGACY_GRID
+    -- で旧 path に戻せる安全弁に切り替える。
+    if os.getenv("PACKERMOD_USE_PMUI") then
+        return build_grid_formspec_pmui(tabdata)
     end
     return build_grid_formspec(tabdata)
 end
@@ -601,6 +641,7 @@ M._internal = {
     SUBTABS = SUBTABS,
     -- 単体テスト用に内部関数も export
     build_grid_formspec = build_grid_formspec,
+    build_grid_formspec_pmui = build_grid_formspec_pmui,
     build_detail_formspec = build_detail_formspec,
 }
 
