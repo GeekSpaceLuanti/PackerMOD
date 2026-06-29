@@ -86,6 +86,7 @@ local function build_container(L, el, ctx)
     if box.justify == "center" then
         node[#node + 1] = L.Spacer { flex = 1 }
     end
+    el._widget = node
     return node
 end
 
@@ -98,11 +99,21 @@ build = function(el, ctx)
         return build_container(L, el, ctx)
     end
     if LABEL_TAGS[el.tag] then
-        return L.Label {
+        -- Luanti label は style[name;textcolor] や <style color> tag を解釈しないため、
+        -- HUD/translation で使われる ESC color sequence \27(c@#XXXXXX) を text 前置する。
+        -- これは formspec v6 の label renderer が解釈する(色が text 末尾まで適用)。
+        -- fs_escape は ESC (0x1B) をそのまま通すので escape 衝突しない。
+        local text = el.text or ""
+        if box.color then
+            text = ("\27(c@%s)"):format(tostring(box.color)) .. text
+        end
+        local node = L.Label {
             name = el.id,
-            text = el.text or "",
+            text = text,
             w    = box.w, h = box.h,
         }
+        el._widget = node
+        return node
     end
     if el.tag == "button" then
         return L.Button {

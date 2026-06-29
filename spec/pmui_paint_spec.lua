@@ -58,7 +58,7 @@ rules:
         assert.is_truthy(s:find("bgcolor[#1a0a3a;true]", 1, true))
     end)
 
-    it("emits style[name;textcolor=...] for named labels", function()
+    it("emits inline ESC color sequence for label text (style[textcolor] is unreliable on labels)", function()
         local s = fs([[
 root:
   tag: page
@@ -72,8 +72,10 @@ rules:
     style:
       color: "#FF52A4"
 ]])
-        assert.is_truthy(s:find("style[title;textcolor=#FF52A4]", 1, true))
-        assert.is_truthy(s:find("PackerMOD", 1, true))
+        -- Label の textcolor は label[] の text 前置 ESC color sequence で埋め込む
+        assert.is_truthy(s:find("\27(c@#FF52A4)PackerMOD", 1, true))
+        -- style[label;textcolor=...] は二重指定回避のため出力しない
+        assert.is_nil(s:find("style[title;textcolor=", 1, true))
     end)
 
     it("emits style[name;font_size=*1.8] for named labels", function()
@@ -210,7 +212,30 @@ rules:
 ]]
         local off = fs(html, css)
         local on  = fs(html, css, { hover_ids = { t = true } })
-        assert.is_truthy(off:find("textcolor=#111", 1, true))
-        assert.is_truthy(on:find("textcolor=#fff", 1, true))
+        -- label の textcolor は ESC color sequence として埋め込まれる
+        assert.is_truthy(off:find("\27(c@#111)x", 1, true))
+        assert.is_truthy(on:find("\27(c@#fff)x", 1, true))
+    end)
+
+    it("emits border boxes when border-width and border-color are set", function()
+        local s = fs([[
+root:
+  tag: page
+  children:
+    - tag: card
+      id: c
+]], [[
+rules:
+  - selector: "#c"
+    style:
+      bg: "#28114f"
+      border-width: 0.04
+      border-color: "#A06EFF"
+      w: 3.0
+      h: 2.0
+]])
+        -- top / bottom / left / right の 4 辺の box[] が含まれること
+        local _, count = s:gsub("box%[[^%]]*#A06EFF%]", "")
+        assert.is_true(count >= 4, "expected at least 4 border boxes, got " .. count)
     end)
 end)

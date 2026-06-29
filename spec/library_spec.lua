@@ -356,7 +356,7 @@ describe("library grid view (画面1)", function()
         assert.equal(8.5,  size.h)
         local overlaps = helpers.find_overlaps(els)
         if #overlaps > 0 then
-            assert.fail(helpers.format_overlaps(overlaps))
+            error(helpers.format_overlaps(overlaps))
         end
         local ok, bad = helpers.fits_in_size(els, size)
         assert.is_true(ok, "OOB: " .. (bad and helpers.describe_el(bad) or ""))

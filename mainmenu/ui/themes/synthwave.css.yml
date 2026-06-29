@@ -48,6 +48,8 @@ rules:
   - selector: ".pack-card"
     style:
       bg: "#28114f"
+      border-width: 0.04
+      border-color: "#A06EFF"
       padding: 0.2
       flex-direction: column
       gap: 0.1
@@ -71,10 +73,14 @@ rules:
 
   - selector: ".action-bar"
     style:
+      bg: "#0a061faa"
+      border-width: 0.04
+      border-color: "#A06EFF"
       flex-direction: row
       justify: end
       gap: 0.5
       h: 1.6
+      padding: 0.15
 
   - selector: ".action-btn"
     style:

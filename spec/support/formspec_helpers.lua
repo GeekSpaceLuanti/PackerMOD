@@ -45,9 +45,20 @@ function M.parse_formspec(s)
     return size, elements
 end
 
+-- 不可視 inline tag は表示文字数に含めないため除去。
+--   - Luanti の ESC color sequence: \27(c@#XXXXXX)
+--   - 旧 inline tag: <style color=...>...</style> や <color=...>...</color>
+local function visible_text(s)
+    s = s or ""
+    s = s:gsub("\27%(c@[^)]*%)", "")
+    s = s:gsub("<style[^>]*>", ""):gsub("</style>", "")
+    s = s:gsub("<color[^>]*>", ""):gsub("</color>", "")
+    return s
+end
+
 local function label_visual(el, opts)
     local h = opts.label_h or 0.5
-    local w = math.max((#(el.text or "")) * (opts.label_char_w or 0.18), 0.5)
+    local w = math.max((#visible_text(el.text)) * (opts.label_char_w or 0.18), 0.5)
     return el.x, el.y, w, h
 end
 
