@@ -11,6 +11,38 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-30 00:25 (main)
+
+**変更概要**:
+PMUI フェーズの仕上げ 2 件。実機 screenshot で確認したユーザーから「背景の雲がそのまま」「アイコンがドットのまま」「HTML mockup と全然違う」と指摘を受け、原因を調査して対処。
+
+**雲消去 (f214a1b)**:
+- 原因調査: A 案 `background[];auto_clip=true` 単独では効果なし。`auto_clip=true` は formspec 内側 (0,0)-(w,h) のテクスチャ clip を外すだけで、画面全体には拡大されない
+- 解: Luanti formspec の `bgcolor[<bg>;<fullscreen>;<fbgcolor>]` で `fullscreen=both` を指定すると formspec 外側 (Luanti のメインメニュー雲・青空) を `fbgcolor` で塗り潰せる
+- 副次的バグ: PMLayout の VBox bgcolor が `box[0,0;13,8.5;<bg>]` を出して背景画像を上から塗り潰す → page タグだけ VBox bgcolor を nil にして box[] 発行を抑止
+
+**default thumbnail のテーマ別生成 (0b79421)**:
+- 旧 `packermod_default_pack_thumbnail.png` はグレー単色で Synthwave テーマと合わなかった
+- bgimg と同じ流儀で SVG → rsvg-convert パイプライン (`scripts/thumb_emit.lua` + `build_thumb.sh` + `make thumb`) を追加
+- Synthwave 用は紫 (#28114f) + ピンク (#FF52A4) の T-icon (HTML mockup の defaultThumb と同等)
+- `packermod.active_theme = "synthwave"` を init.lua で一箇所に集約、`library.lua` の `default_thumbnail_texture()` がテーマ別 PNG を返す
+
+**主な変更ファイル**:
+- `mainmenu/lib/pmui/paint.lua`, `mainmenu/lib/pmui/layout.lua`, `mainmenu/ui/themes/synthwave.css.yml`
+- `scripts/thumb_emit.lua`, `scripts/build_thumb.sh` (新規)
+- `mainmenu/ui/themes/synthwave.thumb.yml` (新規)
+- `textures/packermod_default_pack_thumbnail_synthwave.png` (生成済み)
+- `mainmenu/library.lua`, `mainmenu/init.lua`, `Makefile`
+
+**コミット**:
+- f214a1b: 雲消去 (bgcolor fullscreen=both + page VBox bgcolor 抑止)
+- 0b79421: テーマ別 default thumbnail パイプライン
+
+**次のTODO**:
+- 画面1 で残る違和感: formspec 領域の境界が画面の中央付近に見える (Luanti formspec の固定 size 13.0x8.5 が window と違うアスペクト)。size を window アスペクトに合わせる改修が要れば別検討
+- 画面2 / modal の PMUI 移行
+- commit 8: 数日運用後に `PACKERMOD_LEGACY_GRID` フラグと旧 `build_grid_formspec` を撤去
+
 ## 2026-06-29 23:50 (main)
 
 **変更概要**:
