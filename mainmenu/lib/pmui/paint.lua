@@ -73,7 +73,9 @@ local function emit_background(root, page_w, page_h, texture_dir)
     if texture_dir and not (img:find("/", 1, true) or img:find("\\", 1, true)) then
         img = texture_dir .. img
     end
-    return ("background[%s,%s;%s,%s;%s;false;0]"):format(
+    -- auto_clip = true: formspec の枠外まで背景を拡大し、Luanti メインメニューの
+    -- 雲アニメーション/青空背景を覆い隠す。これで PackerMOD の世界観が画面全体に広がる。
+    return ("background[%s,%s;%s,%s;%s;true;0]"):format(
         fnum(0), fnum(0), fnum(page_w), fnum(page_h), img)
 end
 
@@ -120,9 +122,13 @@ function M.render(root, opts)
         prepend[#prepend + 1] = line
     end
 
-    -- bgcolor: page の box.bg があれば formspec の bgcolor[] (全体背景色)
+    -- bgcolor: page の box.bg があれば formspec の bgcolor[].
+    -- fullscreen=both + fbgcolor で formspec の枠外 (= Luanti のメインメニュー雲/
+    -- 青空アニメーション) も同じ色で塗りつぶす。これで画面全体に PackerMOD の
+    -- 世界観が広がり、Luanti デフォルト背景に邪魔されない。
     if root.box and root.box.bg then
-        table.insert(prepend, 1, "bgcolor[" .. tostring(root.box.bg) .. ";true]")
+        local c = tostring(root.box.bg)
+        table.insert(prepend, 1, "bgcolor[" .. c .. ";both;" .. c .. "]")
     end
 
     -- border は widget の _x, _y が確定してから出すので append で末尾に

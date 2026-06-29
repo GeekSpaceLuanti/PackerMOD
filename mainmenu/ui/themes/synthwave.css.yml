@@ -12,6 +12,7 @@ variables:
 rules:
   - selector: "page"
     style:
+      bg: "#1a0a3a"
       bg-image: "url(packermod_bg_synthwave.png)"
       padding: 0.4
       flex-direction: column

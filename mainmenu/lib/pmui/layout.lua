@@ -48,6 +48,12 @@ local function build_container(L, el, ctx)
     local box = el.box
     local children = build_children(el, ctx)
 
+    -- page は背景の責務を paint.lua の bgcolor[]/background[] に渡しているので、
+    -- VBox の bgcolor として box[] を出すと background[] の上を塗り潰して PNG が
+    -- 見えなくなる。page だけ bgcolor を nil にして box[] 発行を抑止する。
+    local bgcolor_for_widget = box.bg
+    if el.tag == "page" then bgcolor_for_widget = nil end
+
     -- display: grid を N 個ごとの行に分割
     if box.display == "grid" and box.grid_columns and box.grid_columns > 0 then
         local cols = box.grid_columns
@@ -63,7 +69,7 @@ local function build_container(L, el, ctx)
             spacing = box.gap, padding = box.padding,
             w = box.w, h = box.h, flex = box.flex,
             align = "stretch",
-            bgcolor = box.bg,
+            bgcolor = bgcolor_for_widget,
         }
         for _, r in ipairs(rows) do g[#g + 1] = r end
         return g
@@ -75,7 +81,7 @@ local function build_container(L, el, ctx)
         spacing = box.gap, padding = box.padding,
         align = box.align,
         w = box.w, h = box.h, flex = box.flex,
-        bgcolor = box.bg,
+        bgcolor = bgcolor_for_widget,
     }
     if box.justify == "end" then
         node[#node + 1] = L.Spacer { flex = 1 }

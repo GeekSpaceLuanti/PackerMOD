@@ -42,10 +42,10 @@ rules:
     style:
       bg-image: "url(packermod_bg.png)"
 ]])
-        assert.is_truthy(s:find("background[0,0;13,8.5;packermod_bg.png;false;0]", 1, true))
+        assert.is_truthy(s:find("background[0,0;13,8.5;packermod_bg.png;true;0]", 1, true))
     end)
 
-    it("emits bgcolor[] when page has bg", function()
+    it("emits bgcolor[ ;both; ] when page has bg (formspec 外側の Luanti 雲も塗り潰す)", function()
         local s = fs([[
 root:
   tag: page
@@ -55,7 +55,7 @@ rules:
     style:
       bg: "#1a0a3a"
 ]])
-        assert.is_truthy(s:find("bgcolor[#1a0a3a;true]", 1, true))
+        assert.is_truthy(s:find("bgcolor[#1a0a3a;both;#1a0a3a]", 1, true))
     end)
 
     it("emits inline ESC color sequence for label text (style[textcolor] is unreliable on labels)", function()
