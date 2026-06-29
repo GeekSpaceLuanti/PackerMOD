@@ -1,0 +1,30 @@
+output:
+  bg:
+    name: packermod_bg_synthwave
+    w: 1664
+    h: 1088
+  grid:
+    name: packermod_grid_synthwave
+    w: 1664
+    h: 544
+
+gradient:
+  type: vertical
+  stops:
+    - pos: 0.00
+      color: "#1a0a3a"
+    - pos: 0.45
+      color: "#3a0e5a"
+    - pos: 0.80
+      color: "#FF52A4"
+    - pos: 1.00
+      color: "#FFD400"
+
+grid:
+  line_color: "#FF52A4"
+  alt_color: "#A06EFF"
+  cols: 24
+  rows: 12
+  vanishing_point:
+    x: 0.5
+    y: 0.0

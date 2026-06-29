@@ -1,6 +1,7 @@
-.PHONY: test e2e all screenshot screenshot-all icons vendor-icons
+.PHONY: test e2e all screenshot screenshot-all icons vendor-icons bgimg
 
 ICON_NAMES := play reload download search plus trash save settings-2 folder cloud package box
+THEMES ?= synthwave
 
 test:
 	busted spec/
@@ -25,5 +26,8 @@ vendor-icons:
 
 icons:
 	bash scripts/build_icons.sh
+
+bgimg:
+	@for t in $(THEMES); do bash scripts/build_bgimg.sh $$t; done
 
 all: test e2e
