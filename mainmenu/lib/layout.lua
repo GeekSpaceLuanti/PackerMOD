@@ -80,21 +80,38 @@ M.IconButton = class("IconButton", { w = 0.9, h = 0.9 }) -- {name=, texture=, la
 -- Luanti formspec の image_button label が画像中央に重なる問題(#21)を回避する。
 -- label="" の場合は IconButton 1つだけ返す(画面1 のサムネカード等)。
 -- name は image_button 側に付くのでクリックイベントは従来通り発火する。
+--
+-- 画像部分は正方形(w = img_h)に固定し、左右に Spacer を入れて中央寄せする。
+-- これは Luanti image_button が画像をボタン領域に縦横独立に拡大する仕様で、
+-- 横長ボタンだと正方形アイコンが横に潰れて見える(#21 派生)のを回避するため。
 function M.LabeledIconButton(t)
     local label = t.label or ""
     if label == "" then
         return M.IconButton{ name = t.name, texture = t.texture, w = t.w, h = t.h, flex = t.flex }
     end
     local label_band_h = 0.45
-    local btn_w = t.w
     local btn_h = t.h or 0.9
     local img_h = math.max(0.4, btn_h - label_band_h)
+    -- btn_w が未指定なら親が決める(IconButton の natural w = h で扱う)
+    local btn_w = t.w or img_h
+    local img_w = math.min(btn_w, img_h)  -- 画像は正方形に
     return M.VBox{
         spacing = 0,
         w = btn_w, h = btn_h, flex = t.flex,
         align = "stretch",
-        M.IconButton{ name = t.name, texture = t.texture, label = "", w = btn_w, h = img_h },
-        M.Label{ text = label, h = label_band_h, w = btn_w },
+        M.HBox{
+            spacing = 0, w = btn_w, h = img_h,
+            M.Spacer{ flex = 1 },
+            M.IconButton{ name = t.name, texture = t.texture, label = "",
+                          w = img_w, h = img_h },
+            M.Spacer{ flex = 1 },
+        },
+        M.HBox{
+            spacing = 0, w = btn_w, h = label_band_h,
+            M.Spacer{ flex = 1 },
+            M.Label{ text = label, h = label_band_h },
+            M.Spacer{ flex = 1 },
+        },
     }
 end
 

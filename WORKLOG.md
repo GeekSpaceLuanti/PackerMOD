@@ -11,6 +11,27 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 12:15 (main)
+
+**変更概要**:
+#21 派生問題: icon-button のアイコンが横長ボタンで横に潰れて見えていたのを修正。
+
+Luanti `image_button[X,Y;W,H;tex]` は画像を W×H 領域に縦横独立に拡大する(アスペクト比保持なし)仕様で、48×48 の正方形アイコンが横長ボタン (例 w=1.8, h=0.95 → ストレッチ比 1.9) で潰れていた。
+
+修正: `layout.LabeledIconButton` のアイコン部を **正方形 (w = img_h)** にして、`HBox(Spacer + IconButton + Spacer)` で中央寄せ。ラベル側も同様に `HBox(Spacer + Label + Spacer)` で中央寄せして、アイコン中央とラベル中央が縦に揃うようにした。
+
+検証(screenshot):
+- 画面1: Import / Create / Settings のアイコンが正方形、ラベル中央 ✓
+- 画面2 Worlds: New World / Delete / Play 同様 ✓
+- Back ボタンも整列 ✓
+- 全 190 spec 緑(1 pending は既存 #15)
+
+**主な変更ファイル**:
+- `mainmenu/lib/layout.lua` (LabeledIconButton をアイコン正方形 + 中央寄せに)
+- `spec/ui_loader_spec.lua` (新構造に追従)
+
+**コミット**: (push 後に追記)
+
 ## 2026-06-29 12:00 (main)
 
 **変更概要**:

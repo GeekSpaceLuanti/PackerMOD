@@ -66,21 +66,31 @@ describe("ui_loader.expand", function()
         assert.equal("primary", tree.style)
     end)
 
-    it("expands icon-button (with label) to VBox of image_button + Label (#21)", function()
+    it("expands icon-button (with label) into icon/label rows both centered with Spacers (#21)", function()
         local tree = loader.expand({
             ["icon-button"] = { name = "play", icon = "play", label = "Play", variant = "primary" },
         }, {
             icon_path = function(name) return "packermod_icon_" .. name .. "_md.png" end,
         }, theme)
-        -- LabeledIconButton: ラベルありは VBox(IconButton + Label)
+        -- LabeledIconButton: VBox(HBox(spacer+icon+spacer) + HBox(spacer+label+spacer))。
+        -- 各 HBox で Spacer により中央寄せ。
         assert.equal("VBox", tree._kind)
-        local btn, lbl = tree[1], tree[2]
-        assert.equal("IconButton", btn._kind)
+        local icon_row, label_row = tree[1], tree[2]
+        assert.equal("HBox", icon_row._kind)
+        assert.equal("Spacer", icon_row[1]._kind)
+        assert.equal("IconButton", icon_row[2]._kind)
+        assert.equal("Spacer", icon_row[3]._kind)
+        local btn = icon_row[2]
         assert.equal("play", btn.name)
         assert.equal("packermod_icon_play_md.png", btn.texture)
         assert.equal("", btn.label)
-        assert.equal("Label", lbl._kind)
-        assert.equal("Play", lbl.text)
+        assert.equal(btn.h, btn.w)  -- 正方形
+
+        assert.equal("HBox", label_row._kind)
+        assert.equal("Spacer", label_row[1]._kind)
+        assert.equal("Label", label_row[2]._kind)
+        assert.equal("Spacer", label_row[3]._kind)
+        assert.equal("Play", label_row[2].text)
     end)
 
     it("expands icon-button (without label) to a bare IconButton", function()
