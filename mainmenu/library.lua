@@ -61,8 +61,16 @@ local function pack_button_name(pack_id)
 end
 
 local function default_thumbnail_texture()
-    -- 絶対パスで返す(Luanti mainmenu は name 解決できないため)
-    local base = "packermod_default_pack_thumbnail.png"
+    -- 絶対パスで返す(Luanti mainmenu は name 解決できないため)。
+    -- packermod.active_theme が設定されていれば、テーマ別 default thumbnail
+    -- (packermod_default_pack_thumbnail_<theme>.png) を返す。これは make thumb で
+    -- scripts/build_thumb.sh から生成される。未設定なら旧 dark 用のフォールバック。
+    local base
+    if packermod and packermod.active_theme then
+        base = "packermod_default_pack_thumbnail_" .. packermod.active_theme .. ".png"
+    else
+        base = "packermod_default_pack_thumbnail.png"
+    end
     if packermod and packermod.textures_dir then
         return packermod.textures_dir .. base
     end

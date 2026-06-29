@@ -98,6 +98,9 @@ packermod.ui_loader = dofile(self_path .. "lib" .. DIR_DELIM .. "ui_loader.lua")
 -- PMUI: HTML/CSS 風 UI ライブラリ。画面1 (Pack Library) で使用。
 packermod.mainmenu_path = self_path
 packermod.pmui = dofile(self_path .. "lib" .. DIR_DELIM .. "pmui" .. DIR_DELIM .. "init.lua")
+-- アクティブテーマ。default thumbnail などテーマ依存アセットの命名規則で参照される。
+-- 切り替えは将来 packermod.active_theme = <name> で済むよう、ここで一箇所に集約する。
+packermod.active_theme = "synthwave"
 
 -- Phase 8+: Library 単一画面。
 local library = dofile(self_path .. "library.lua")

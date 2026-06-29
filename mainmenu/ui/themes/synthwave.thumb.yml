@@ -1,0 +1,29 @@
+# Synthwave テーマ用 default Pack thumbnail PNG の生成パラメータ。
+# scripts/build_thumb.sh が thumb_emit.lua 経由で SVG → PNG にラスタライズする。
+#
+# 16x16 ドットグリッド上に rect を並べた pixel-art。HTML mockup
+# (docs/mockup/_shared.js の defaultThumb) と同等デザインを Synthwave 配色で。
+
+output:
+  default:
+    name: packermod_default_pack_thumbnail_synthwave
+    w: 256
+    h: 256
+
+bg: "#28114f"
+
+shapes:
+  # T-icon の横棒
+  - x: 2
+    y: 3
+    w: 12
+    h: 2
+    color: "#FF52A4"
+    opacity: 1.0
+  # T-icon の縦棒
+  - x: 7
+    y: 3
+    w: 2
+    h: 10
+    color: "#FF52A4"
+    opacity: 1.0
