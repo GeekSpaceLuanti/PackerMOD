@@ -12,8 +12,22 @@ function M.gameid_for(base_game)
     return id .. "_" .. (ver:gsub("[^%w]", "_"))
 end
 
-function M.world_name(pack_id, timestamp)
-    return pack_id .. "__" .. tostring(timestamp)
+-- ユーザー入力をディレクトリ名として安全な文字列に正規化する。
+-- 戻り値: 1文字以上の sanitized 文字列、または nil(空 / 不正)
+function M.sanitize_world_name(name)
+    if type(name) ~= "string" then return nil end
+    -- ASCII の英数字・アンダースコア・ハイフン以外を全部 _ に
+    local s = name:gsub("[^%w_%-]", "_")
+    -- 連続 _ を 1個に潰す
+    s = s:gsub("_+", "_")
+    -- 先頭末尾の _- を削る
+    s = s:gsub("^[_%-]+", ""):gsub("[_%-]+$", "")
+    if s == "" then return nil end
+    return s
+end
+
+function M.pack_worlds_dir(pack_id, user_data_path)
+    return user_data_path .. "/PackerMOD/packs/" .. pack_id .. "/worlds"
 end
 
 function M.build_world_mt(manifest, opts)
@@ -102,12 +116,22 @@ function M._default_fs()
     }
 end
 
+-- 物理配置: <user>/PackerMOD/packs/<pack_id>/worlds/<sanitized_world_name>/
+-- opts.world_name はユーザーが入力した raw 表示名。sanitize してディレクトリ名に使い、
+-- world.mt の `world_name` には raw 入力をそのまま書き込む(display 用)。
 function M.create_world(manifest, user_data_path, opts)
     opts = opts or {}
     local fs = opts.fs or M._default_fs()
-    local timestamp = opts.timestamp or os.time()
-    local world = opts.world_name or M.world_name(manifest.id, timestamp)
-    local world_path = user_data_path .. "/worlds/" .. world
+
+    local raw = opts.world_name
+    local sanitized = M.sanitize_world_name(raw)
+    if not sanitized then
+        return false, "invalid world name: please enter at least one alphanumeric character"
+    end
+
+    local pack_id = manifest.id
+    local pack_worlds = M.pack_worlds_dir(pack_id, user_data_path)
+    local world_path = pack_worlds .. "/" .. sanitized
 
     local gameid = M.gameid_for(manifest.base_game)
     local game_path = user_data_path .. "/games/" .. gameid
@@ -116,18 +140,54 @@ function M.create_world(manifest, user_data_path, opts)
     end
 
     if fs.exists(world_path) then
-        return false, ("world already exists: %s"):format(world)
+        return false, ("world already exists in pack %s: %s"):format(pack_id, sanitized)
     end
 
-    fs.mkdir(user_data_path .. "/worlds")
+    -- 階層を上から順に作る(Luanti の sandbox 対策。安全な親→子の順)
+    fs.mkdir(user_data_path .. "/PackerMOD")
+    fs.mkdir(user_data_path .. "/PackerMOD/packs")
+    fs.mkdir(user_data_path .. "/PackerMOD/packs/" .. pack_id)
+    fs.mkdir(pack_worlds)
     local ok, err = fs.mkdir(world_path)
     if not ok then return false, "mkdir failed: " .. tostring(err) end
 
-    local mt_text = M.build_world_mt(manifest, { world_name = opts.display_name })
+    -- world.mt の world_name は raw 入力(display)。サニタイズ済みはディレクトリ名のみで使う。
+    local mt_text = M.build_world_mt(manifest, { world_name = raw })
     local ok2, err2 = fs.write_file(world_path .. "/world.mt", mt_text)
     if not ok2 then return false, "write world.mt failed: " .. tostring(err2) end
 
-    return true, { world_path = world_path, world_name = world, gameid = gameid }
+    return true, {
+        world_path = world_path,
+        world_name = sanitized,
+        display_name = raw,
+        gameid = gameid,
+    }
+end
+
+function M.delete_world(pack_id, sanitized_name, user_data_path, opts)
+    opts = opts or {}
+    local fs = opts.fs or M._default_fs()
+    local world_path = M.pack_worlds_dir(pack_id, user_data_path) .. "/" .. sanitized_name
+    if not fs.exists(world_path) then
+        return false, "world not found: " .. world_path
+    end
+    local ok, err = fs.delete_dir(world_path)
+    if not ok then return false, "delete failed: " .. tostring(err) end
+    return true
+end
+
+-- 旧 flat 構造 (<user>/worlds/<pack_id>__<timestamp>) のワールドを削除する。
+-- 互換のため UI から呼べるようにしておく。
+function M.delete_legacy_world(world_dir_name, user_data_path, opts)
+    opts = opts or {}
+    local fs = opts.fs or M._default_fs()
+    local world_path = user_data_path .. "/worlds/" .. world_dir_name
+    if not fs.exists(world_path) then
+        return false, "world not found: " .. world_path
+    end
+    local ok, err = fs.delete_dir(world_path)
+    if not ok then return false, "delete failed: " .. tostring(err) end
+    return true
 end
 
 return M

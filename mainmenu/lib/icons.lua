@@ -28,7 +28,13 @@ function M.path(name, size)
     local resolved = M.resolve(name)
     if not resolved then return "blank.png" end
     if not SIZES[size or "md"] then size = "md" end
-    return ("packermod_icon_%s_%s.png"):format(resolved, size or "md")
+    local fname = ("packermod_icon_%s_%s.png"):format(resolved, size or "md")
+    -- Luanti の mainmenu image[…] は name resolve できないので絶対パスを返す。
+    -- 動的解決: packermod.textures_dir が init.lua から渡される。
+    if rawget(_G, "packermod") and packermod.textures_dir then
+        return packermod.textures_dir .. fname
+    end
+    return fname
 end
 
 function M.names()

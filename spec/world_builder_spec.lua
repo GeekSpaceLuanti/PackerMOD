@@ -111,42 +111,143 @@ describe("world_builder._default_fs.mkdir under Luanti sandbox", function()
     end)
 end)
 
-describe("world_builder.create_world", function()
-    it("creates world directory and writes world.mt when base game exists", function()
+describe("world_builder.sanitize_world_name", function()
+    it("keeps alphanumerics and underscores/hyphens", function()
+        assert.are.equal("my_world-1", wb.sanitize_world_name("my_world-1"))
+    end)
+    it("replaces other characters with underscore", function()
+        assert.are.equal("my_world", wb.sanitize_world_name("my world"))
+        assert.are.equal("hello_world", wb.sanitize_world_name("hello/world"))
+        assert.are.equal("foo_bar_baz", wb.sanitize_world_name("foo.bar+baz"))
+    end)
+    it("collapses leading/trailing separators", function()
+        assert.are.equal("foo", wb.sanitize_world_name("  foo  "))
+        assert.are.equal("foo", wb.sanitize_world_name("__foo__"))
+    end)
+    it("returns nil for empty or all-junk input", function()
+        assert.is_nil(wb.sanitize_world_name(""))
+        assert.is_nil(wb.sanitize_world_name("   "))
+        assert.is_nil(wb.sanitize_world_name("///"))
+        assert.is_nil(wb.sanitize_world_name(nil))
+    end)
+    it("preserves multi-byte input by replacing each non-ascii byte", function()
+        -- 日本語などは _ に潰れる(ascii safe)
+        local out = wb.sanitize_world_name("テスト_world")
+        assert.is_truthy(out)
+        assert.is_truthy(out:find("world", 1, true))
+    end)
+end)
+
+describe("world_builder.create_world (subdir layout)", function()
+    it("creates world under PackerMOD/packs/<pack>/worlds/<name>/ when base game exists", function()
         local _, m = manifest_mod.parse(read_fixture("sample_pack.yaml"))
         local t = fake_fs({ "/user/games/packerbase_0_91" })
-        local ok, info = wb.create_world(m, "/user", { fs = fs_iface(t), timestamp = 1234567 })
+        local ok, info = wb.create_world(m, "/user",
+            { fs = fs_iface(t), world_name = "my_first_world" })
         assert.is_true(ok)
-        assert.are.equal("sample_pack__1234567", info.world_name)
-        assert.are.equal("/user/worlds/sample_pack__1234567", info.world_path)
+        assert.are.equal("my_first_world", info.world_name)
+        assert.are.equal("/user/PackerMOD/packs/sample_pack/worlds/my_first_world", info.world_path)
         assert.are.equal("packerbase_0_91", info.gameid)
-        assert.is_truthy(t.writes["/user/worlds/sample_pack__1234567/world.mt"])
+        assert.is_truthy(t.writes["/user/PackerMOD/packs/sample_pack/worlds/my_first_world/world.mt"])
+    end)
+
+    it("sanitizes user-provided world_name and uses raw as display in world.mt", function()
+        local _, m = manifest_mod.parse(read_fixture("sample_pack.yaml"))
+        local t = fake_fs({ "/user/games/packerbase_0_91" })
+        local ok, info = wb.create_world(m, "/user",
+            { fs = fs_iface(t), world_name = "My First!" })
+        assert.is_true(ok)
+        assert.are.equal("My_First", info.world_name)
+        local mt = t.writes["/user/PackerMOD/packs/sample_pack/worlds/My_First/world.mt"]
+        assert.is_truthy(mt)
+        -- world.mt の `world_name` は raw 入力(display)
+        assert.is_truthy(mt:find("world_name = My First!", 1, true))
     end)
 
     it("fails when base game is missing", function()
         local _, m = manifest_mod.parse(read_fixture("sample_pack.yaml"))
         local t = fake_fs({})
-        local ok, err = wb.create_world(m, "/user", { fs = fs_iface(t) })
+        local ok, err = wb.create_world(m, "/user",
+            { fs = fs_iface(t), world_name = "main" })
         assert.is_false(ok)
         assert.is_truthy(err:find("base game"))
     end)
 
-    it("creates world at custom name when opts.world_name is given", function()
+    it("fails when an empty/invalid world_name is given", function()
         local _, m = manifest_mod.parse(read_fixture("sample_pack.yaml"))
         local t = fake_fs({ "/user/games/packerbase_0_91" })
-        local ok, info = wb.create_world(m, "/user",
-            { fs = fs_iface(t), world_name = "my_world" })
-        assert.is_true(ok)
-        assert.are.equal("my_world", info.world_name)
-        assert.are.equal("/user/worlds/my_world", info.world_path)
+        local ok, err = wb.create_world(m, "/user", { fs = fs_iface(t), world_name = "" })
+        assert.is_false(ok)
+        assert.is_truthy(err:find("world name"))
     end)
 
-    it("fails when world_name already exists", function()
+    it("rejects duplicate world in the same pack", function()
         local _, m = manifest_mod.parse(read_fixture("sample_pack.yaml"))
-        local t = fake_fs({ "/user/games/packerbase_0_91", "/user/worlds/dup" })
+        local t = fake_fs({
+            "/user/games/packerbase_0_91",
+            "/user/PackerMOD/packs/sample_pack/worlds/main",
+        })
         local ok, err = wb.create_world(m, "/user",
-            { fs = fs_iface(t), world_name = "dup" })
+            { fs = fs_iface(t), world_name = "main" })
         assert.is_false(ok)
         assert.is_truthy(err:find("already exists"))
+        assert.is_truthy(err:find("sample_pack"))
+    end)
+
+    it("allows the same world name across different packs", function()
+        local _, m1 = manifest_mod.parse(read_fixture("sample_pack.yaml"))
+        local m2 = {
+            id = "another_pack", name = "Another", version = "1.0.0", schema_version = 1,
+            base_game = { id = "packerbase", version = "0.91" },
+        }
+        local t = fake_fs({
+            "/user/games/packerbase_0_91",
+            "/user/PackerMOD/packs/sample_pack/worlds/main",
+        })
+        local ok = wb.create_world(m2, "/user", { fs = fs_iface(t), world_name = "main" })
+        assert.is_true(ok)
+        assert.is_truthy(t.writes["/user/PackerMOD/packs/another_pack/worlds/main/world.mt"])
+    end)
+end)
+
+describe("world_builder.delete_world", function()
+    it("deletes <user>/PackerMOD/packs/<pack>/worlds/<world>/", function()
+        local deleted = {}
+        local fs = {
+            mkdir = function() return true end,
+            write_file = function() return true end,
+            exists = function(p) return p == "/user/PackerMOD/packs/sample/worlds/main" end,
+            delete_dir = function(p) deleted[#deleted + 1] = p; return true end,
+        }
+        local ok = wb.delete_world("sample", "main", "/user", { fs = fs })
+        assert.is_true(ok)
+        assert.are.equal("/user/PackerMOD/packs/sample/worlds/main", deleted[1])
+    end)
+
+    it("returns false when the target is missing", function()
+        local fs = {
+            mkdir = function() return true end,
+            write_file = function() return true end,
+            exists = function() return false end,
+            delete_dir = function() return true end,
+        }
+        local ok, err = wb.delete_world("sample", "missing", "/user", { fs = fs })
+        assert.is_false(ok)
+        assert.is_truthy(err:find("not found"))
+    end)
+end)
+
+describe("world_builder.delete_legacy_world", function()
+    it("deletes <user>/worlds/<flat_dir>/ for legacy flat layout", function()
+        local deleted = {}
+        local fs = {
+            mkdir = function() return true end,
+            write_file = function() return true end,
+            exists = function(p) return p == "/user/worlds/sample_pack__1782641958" end,
+            delete_dir = function(p) deleted[#deleted + 1] = p; return true end,
+        }
+        local ok = wb.delete_legacy_world("sample_pack__1782641958", "/user", { fs = fs })
+        assert.is_true(ok)
+        assert.are.equal("/user/worlds/sample_pack__1782641958", deleted[1])
     end)
 end)

@@ -38,23 +38,25 @@ else
     echo "Copied $repo_root/mainmenu -> $target_mainmenu"
 fi
 
-# Install icon textures into the user-level texture dir so the main menu
-# `image_button[...]` can find them. Without this, icon-button buttons fall
-# back to a blank background and only the label is visible.
-target_textures="$user_data/textures"
-mkdir -p "$target_textures"
-for src in "$repo_root"/textures/packermod_icon_*.png; do
-    [[ -f "$src" ]] || continue
-    base="$(basename "$src")"
-    dst="$target_textures/$base"
-    if [[ -e "$dst" || -L "$dst" ]]; then rm -f "$dst"; fi
-    if [[ "$mode" == "symlink" ]]; then
-        ln -s "$src" "$dst"
-    else
-        cp "$src" "$dst"
-    fi
-done
-echo "Installed icon textures into $target_textures"
+# Place a sibling `textures/` directory next to mainmenu so init.lua can
+# resolve PackerMOD textures by an absolute path. Luanti's mainmenu only
+# name-resolves textures under <share>/textures/base/pack/, which is
+# write-protected; using an absolute path bypasses that limitation.
+target_pm_textures="$target_root/textures"
+if [[ -e "$target_pm_textures" || -L "$target_pm_textures" ]]; then
+    rm -rf "$target_pm_textures"
+fi
+if [[ "$mode" == "symlink" ]]; then
+    ln -s "$repo_root/textures" "$target_pm_textures"
+    echo "Linked $target_pm_textures -> $repo_root/textures"
+else
+    cp -r "$repo_root/textures" "$target_pm_textures"
+    echo "Copied $repo_root/textures -> $target_pm_textures"
+fi
+
+# (Textures are placed in $target_root/textures above and accessed by
+# absolute path from init.lua. We no longer copy them into <user>/textures
+# because Luanti's mainmenu won't resolve them by name there anyway.)
 
 conf="$user_data/minetest.conf"
 abs_init="$target_mainmenu/init.lua"

@@ -11,6 +11,60 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 11:40 (main)
+
+**変更概要**:
+メインメニュー UI を「Pack グリッド画面 (3列) → Pack 詳細画面 (subtab)」のドリルダウン形式にし、世界の物理配置を `<user>/PackerMOD/packs/<pack_id>/worlds/<world_name>/` のサブディレクトリ階層に変更した。マイクラ風の体験を目指した変更。
+
+主な変更点:
+- **World ディレクトリ階層化**: 旧 `<user>/worlds/<pack_id>__<timestamp>/` を廃止、`<user>/PackerMOD/packs/<pack_id>/worlds/<sanitized_name>/` に変更。同 Pack 内で同名 NG、Pack 間では同名 OK。
+- **起動方式**: Luanti は flat `<user>/worlds/` しか認識しないため、起動直前に `<user>/worlds/_pm_<random>` を symlink (Linux/macOS) / Junction (Windows `mklink /J`) で作成して core.start。次回起動時に `pack_launcher.cleanup_symlinks` が掃除。
+  - POC は実機で `--worldlist both` と `--server --world <symlink>` で検証済み(POC 大成功)。
+- **NewWorld バグ修正**: `os.time()` ベースの命名による衝突 (`world already exists: sample_pack__1782695620`) を解消。ユーザー入力名を `sanitize_world_name` で安全化してディレクトリ名に使う。display name は world.mt の `world_name` に保存。
+- **UI**: 画面1 = Pack グリッド(3列、サムネ + 名前 + base game version、新規 / Import / Create / Settings)。画面2 = Pack 詳細(Back ボタン + 既存 subtab)。size を 15.5×8.5 → 13×8.5 に縮小し、`style_type[…;font_size=*1.2〜1.3]` を theme prelude に追加して widget を大型化。
+- **サムネ機能**: manifest に `thumbnail: optional<string>` を追加。設定なしの Pack には `packermod_default_pack_thumbnail.png`(pixelarticons の package を rsvg-convert で 256×256 化)を表示。
+- **Delete World UI**: subdir world / legacy flat world 両方に対応。確認 modal (`dlg_world_delete`) 経由。
+- **Legacy 検出緩和**: 旧 `<pack_id>__` プレフィックス命名を `pack_id__` プレフィックスで認識し、world.mt に `packermod_pack_id` がない古いワールドも legacy として表示 + 削除可能に。
+- **テクスチャ絶対パス解決**: Luanti mainmenu は `<share>/textures/base/pack/` 以外の name 解決をしないため、`<user>/PackerMOD/textures/` を sibling として配置し、Lua 側で絶対パスに変換するよう icons.lua / library.lua を修正。install.sh / install.ps1 も対応。
+
+**再現テスト**:
+- `world_builder_spec.lua`: 同 pack 同名衝突 / 別 pack 同名 OK / sanitize / delete を spec で先行確認。実装前に失敗 → 実装後に通過の流れを踏襲(CLAUDE.md ルール)。
+
+**実機検証** (screenshot):
+- 画面1 (Pack グリッド) サムネ表示・3列レイアウト ✓
+- 画面2 各 subtab (Worlds / Multi / Mods / Info) ✓
+- Legacy `[legacy] Sample Pack` が Worlds タブに出現 ✓
+- Delete / Play / New World ボタン ✓
+- 全 189 spec 緑 (1 pending は #15 既存)
+
+**残課題 (別 issue 化推奨)**:
+- icon-button の label が画像中央に overlap する (Luanti formspec の仕様)。アイコン+ラベルを分離した DSL 追加が必要
+- 実機で New World → Play フローを通しで確認(GUI 操作なのでスクリプトでは不可)
+- Windows での Junction 動作検証
+
+**主な変更ファイル**:
+- `mainmenu/world_builder.lua` (subdir 化 + sanitize + delete)
+- `mainmenu/pack_manager.lua` (list_worlds 書き直し + list_legacy_worlds + get_thumbnail_path)
+- `mainmenu/pack_launcher.lua` (symlink trick + cleanup_symlinks + delete_world routing)
+- `mainmenu/library.lua` (state machine grid/detail + grid 直接構築)
+- `mainmenu/manifest.lua` (thumbnail field)
+- `mainmenu/lib/theme.lua` (font_size style_type prelude)
+- `mainmenu/lib/icons.lua` (絶対パス化)
+- `mainmenu/ui/library.yml` (画面2 リファクタ)
+- `mainmenu/ui/modal_world_create.yml`, `mainmenu/ui/modal_world_delete.yml` (新規)
+- `mainmenu/dialogs/dlg_world_create.lua`, `mainmenu/dialogs/dlg_world_delete.lua` (新規)
+- `mainmenu/init.lua` (textures_dir export + cleanup_symlinks 呼び出し + 新 modal 登録)
+- `textures/packermod_default_pack_thumbnail.png` (新規, 256×256)
+- `install/install.sh`, `install/install.ps1` (textures sibling 配置に変更)
+- spec: `world_builder_spec.lua`, `pack_manager_spec.lua`, `pack_launcher_spec.lua`, `library_spec.lua`, `manifest_spec.lua` を新 API 前提に更新
+
+**コミット**: (push 後に追記)
+
+**次のTODO**:
+- icon-button label overlap の改善(別 issue)
+- 実機で New World → Play の通し検証
+- Windows Junction の動作確認
+
 ## 2026-06-29 01:45 (main)
 
 **変更概要**:

@@ -13,6 +13,14 @@ end
 local self_path = script_dir()
 local basepath = core.get_builtin_path()
 
+-- Luanti のメインメニューは formspec の image[…] の name を
+-- <share>/textures/base/pack/<name>.png でしか解決しない(read-only)。
+-- PackerMOD は同梱テクスチャを <install>/PackerMOD/textures/ に配置し、
+-- formspec へは絶対パスで渡すことで上記制限を回避する。
+-- install/install.sh が <repo>/textures を <user>/PackerMOD/textures に
+-- 配置している前提。
+local textures_dir = self_path .. ".." .. DIR_DELIM .. "textures" .. DIR_DELIM
+
 defaulttexturedir = core.get_texturepath_share() .. DIR_DELIM .. "base" ..
                     DIR_DELIM .. "pack" .. DIR_DELIM
 
@@ -76,6 +84,7 @@ packermod = {
     theme = theme,
     icons = icons,
     user_path = user_path,
+    textures_dir = textures_dir,
     fs = fs,
     client = client,
     installer = installer,
@@ -93,9 +102,11 @@ packermod.library = library
 -- Phase 11: Import / Create / Settings は Library 左下のボタンから
 -- 開く modal dialog として実装。dialogs/ 配下に分離。
 packermod.dialogs = {
-    dlg_import   = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_import.lua"),
-    dlg_create   = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_create.lua"),
-    dlg_settings = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_settings.lua"),
+    dlg_import        = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_import.lua"),
+    dlg_create        = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_create.lua"),
+    dlg_settings      = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_settings.lua"),
+    dlg_world_create  = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_world_create.lua"),
+    dlg_world_delete  = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_world_delete.lua"),
 }
 
 local function init()
@@ -104,6 +115,10 @@ local function init()
     end
 
     pack_manager.ensure_dirs(packermod.user_path)
+
+    -- 前回プレイで作った起動用 symlink (worlds/_pm_*) を掃除する。
+    -- ln -s / mklink /J で作っているのでリンク先(本物の world)は無事。
+    pack_launcher.cleanup_symlinks(packermod.user_path)
 
     library.show()
     ui.update()

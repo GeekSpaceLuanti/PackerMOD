@@ -71,6 +71,40 @@ describe("manifest.parse", function()
         assert.is_false(ok)
         assert.is_truthy(e:find("schema_version"))
     end)
+
+    it("accepts optional thumbnail field", function()
+        local yaml = table.concat({
+            "schema_version: 1",
+            "id: p",
+            "name: P",
+            'version: "1"',
+            'thumbnail: "thumb.png"',
+            "base_game:",
+            "  id: packerbase",
+            '  version: "0.91"',
+            "",
+        }, "\n")
+        local ok, m = manifest.parse(yaml)
+        assert.is_true(ok)
+        assert.are.equal("thumb.png", m.thumbnail)
+    end)
+
+    it("rejects empty thumbnail string", function()
+        local yaml = table.concat({
+            "schema_version: 1",
+            "id: p",
+            "name: P",
+            'version: "1"',
+            'thumbnail: ""',
+            "base_game:",
+            "  id: packerbase",
+            '  version: "0.91"',
+            "",
+        }, "\n")
+        local ok, e = manifest.parse(yaml)
+        assert.is_false(ok)
+        assert.is_truthy(e:find("thumbnail"))
+    end)
 end)
 
 describe("manifest.dump", function()

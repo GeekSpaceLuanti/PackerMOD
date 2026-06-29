@@ -38,6 +38,28 @@ if ($Mode -eq "symlink") {
     Write-Host "Copied $sourceMainmenu -> $targetMainmenu"
 }
 
+# Place a sibling `textures/` directory next to mainmenu so init.lua can
+# resolve PackerMOD textures by an absolute path. Luanti's mainmenu only
+# name-resolves textures from <share>/textures/base/pack/, which we cannot
+# write to; absolute paths bypass this.
+$targetPmTextures = Join-Path $targetRoot "textures"
+if (Test-Path $targetPmTextures) {
+    Remove-Item -Recurse -Force $targetPmTextures
+}
+$sourceTextures = Join-Path $repoRoot "textures"
+if ($Mode -eq "symlink") {
+    try {
+        New-Item -ItemType SymbolicLink -Path $targetPmTextures -Target $sourceTextures -ErrorAction Stop | Out-Null
+        Write-Host "Linked $targetPmTextures -> $sourceTextures"
+    } catch {
+        Copy-Item -Recurse -Path $sourceTextures -Destination $targetPmTextures
+        Write-Host "Copied $sourceTextures -> $targetPmTextures (symlink failed)"
+    }
+} else {
+    Copy-Item -Recurse -Path $sourceTextures -Destination $targetPmTextures
+    Write-Host "Copied $sourceTextures -> $targetPmTextures"
+}
+
 $conf = Join-Path $userData "minetest.conf"
 $absInit = Join-Path $targetMainmenu "init.lua"
 

@@ -1,26 +1,16 @@
 package.path = "./?.lua;" .. package.path
 
--- library.lua の純粋ロジック部分(_internal)と、library.yml が ui_loader で
--- エラーなく展開できることのテスト。
+-- library.lua の純粋ロジック部分(_internal)と、library.yml(画面2 = detail)が
+-- ui_loader でエラーなく展開できることのテスト。
+-- 画面1(grid)は動的なアイテム数を持つので library.lua 内で直接構築される。
 
 local function load_library()
-    -- library.lua は dofile されるので require ではなく dofile で読む
     return dofile("mainmenu/library.lua")
 end
 
 describe("library._internal helpers", function()
     local lib
     setup(function() lib = load_library() end)
-
-    it("format_pack_label returns just the pack name (詳細は右パネルが担当)", function()
-        local s = lib._internal.format_pack_label({
-            id = "x",
-            manifest = { name = "MyPack", version = "1.2.3",
-                         base_game = { id = "packerbase", version = "0.91" },
-                         mods = { { name = "a" } } },
-        })
-        assert.are.equal("MyPack", s)
-    end)
 
     it("format_world_label uses display_name when given", function()
         assert.are.equal("My World",
@@ -29,9 +19,31 @@ describe("library._internal helpers", function()
             lib._internal.format_world_label({ name = "raw" }))
     end)
 
+    it("format_world_label prefixes [legacy] for legacy flat worlds", function()
+        assert.are.equal("[legacy] Old Save",
+            lib._internal.format_world_label({ name = "x", display_name = "Old Save", legacy = true }))
+    end)
+
     it("subtab_variant returns 'primary' for active, 'secondary' otherwise", function()
         assert.are.equal("primary",  lib._internal.subtab_variant("worlds", "worlds"))
         assert.are.equal("secondary", lib._internal.subtab_variant("worlds", "multi"))
+    end)
+
+    it("pack_button_name produces alphanumeric formspec name", function()
+        assert.are.equal("pack_select_my_pack",   lib._internal.pack_button_name("my_pack"))
+        assert.are.equal("pack_select_my_pack",   lib._internal.pack_button_name("my-pack"))
+        assert.are.equal("pack_select_a_b_c",     lib._internal.pack_button_name("a.b.c"))
+    end)
+
+    it("resolve_thumbnail returns default when manifest has no thumbnail", function()
+        local p = { id = "p", path = "/u/p", manifest = { name = "P" } }
+        local t = lib._internal.resolve_thumbnail(p)
+        assert.is_truthy(t:find("default_pack_thumbnail", 1, true))
+    end)
+
+    it("resolve_thumbnail returns pack-relative path when manifest.thumbnail is set", function()
+        local p = { id = "p", path = "/u/p", manifest = { name = "P", thumbnail = "thumb.png" } }
+        assert.are.equal("/u/p/thumb.png", lib._internal.resolve_thumbnail(p))
     end)
 
     describe("clamp_selection", function()
@@ -94,7 +106,7 @@ describe("library._internal helpers", function()
     end)
 end)
 
-describe("library.yml expansion via ui_loader", function()
+describe("library.yml (detail view) expansion via ui_loader", function()
     local loader, theme
     setup(function()
         _G.packermod = _G.packermod or {}
@@ -106,48 +118,22 @@ describe("library.yml expansion via ui_loader", function()
 
     local function build_ctx(overrides)
         local c = {
-            packs = {},
-            selected_pack = 1,
-            has_pack = false,
-            no_pack = true,
-            pack_name = "",
-            pack_version = "",
-            pack_base = "",
-            pack_mods_count = 0,
-            pack_description = "",
-            variant_worlds = "secondary",
-            variant_multi = "secondary",
-            variant_mods = "secondary",
-            variant_info = "secondary",
-            show_worlds = false,
-            show_multi = false,
-            show_mods = false,
-            show_info = false,
-            worlds = {},
-            has_world = false,
-            no_world = true,
-            selected_world = 1,
-            servers = {},
-            has_server = false,
-            no_server = true,
-            selected_server = 1,
-            form_server_name = "",
-            form_server_address = "",
-            form_server_port = "",
-            pack_mods = {},
-            has_mod = false,
-            selected_mod = 1,
-            search_query = "",
-            search_release = "",
-            search_results = {},
-            selected_search = 1,
-            has_search_result = false,
-            mod_status = "",
-            info_status = "",
-            format_pack_label = function(p) return p.manifest.name end,
-            format_world_label = function(w) return w.display_name or w.name end,
+            pack_name = "TestPack", pack_version = "1.0",
+            pack_base = "packerbase/0.91",
+            pack_mods_count = 0, pack_description = "",
+            variant_worlds = "primary", variant_multi = "secondary",
+            variant_mods = "secondary", variant_info = "secondary",
+            show_worlds = true, show_multi = false, show_mods = false, show_info = false,
+            worlds = {}, has_world = false, no_world = true, selected_world = 1,
+            servers = {}, has_server = false, no_server = true, selected_server = 1,
+            form_server_name = "", form_server_address = "", form_server_port = "",
+            pack_mods = {}, has_mod = false, selected_mod = 1,
+            search_query = "", search_release = "",
+            search_results = {}, selected_search = 1, has_search_result = false,
+            mod_status = "", info_status = "",
+            format_world_label  = function(w) return w.display_name or w.name end,
             format_server_label = function(s) return tostring(s.name or s.address) end,
-            format_mod_entry = function(m) return tostring(m.name) end,
+            format_mod_entry    = function(m) return tostring(m.name) end,
             format_search_result = function(r) return tostring(r.name) end,
             icon_path = function(n) return "icon_" .. n .. ".png" end,
         }
@@ -155,69 +141,64 @@ describe("library.yml expansion via ui_loader", function()
         return c
     end
 
-    it("expands library.yml with empty packs (no_pack branch)", function()
+    it("expands library.yml at the new compact size (13×8.5)", function()
         local tree = loader.load({
             yaml_path = "mainmenu/ui/library.yml",
             ctx = build_ctx(),
             theme = theme,
         })
         assert.equal("VBox", tree._kind)
-        assert.equal(15.5, tree.w)
+        assert.equal(13.0, tree.w)
         assert.equal(8.5,  tree.h)
     end)
 
-    it("expands library.yml with a pack selected and Worlds subtab active", function()
-        local ctx = build_ctx({
-            packs = { { id = "p", manifest = { name = "P", version = "1", base_game = {} } } },
-            has_pack = true, no_pack = false,
-            pack_name = "P",
-            variant_worlds = "primary",
-            show_worlds = true,
-            worlds = { { name = "w1", display_name = "World 1" } },
-            has_world = true,
-            no_world = false,
-        })
+    it("renders the back button and Pack name header", function()
+        local build_formspec = packermod.layout.build_formspec
         local tree = loader.load({
             yaml_path = "mainmenu/ui/library.yml",
-            ctx = ctx,
+            ctx = build_ctx({ pack_name = "Hello Pack" }),
             theme = theme,
         })
-        assert.equal("VBox", tree._kind)
+        local s = build_formspec(tree, { theme = theme })
+        assert.is_truthy(s:find("btn_back", 1, true))
+        assert.is_truthy(s:find("Hello Pack", 1, true))
     end)
 
-    it("subtab buttons are visible only when has_pack is true", function()
-        local fs_no = loader.load({
+    it("Worlds subtab: shows new_world button; Delete/Play only when has_world", function()
+        local build = packermod.layout.build_formspec
+        local fs_empty = loader.load({
             yaml_path = "mainmenu/ui/library.yml",
             ctx = build_ctx(),
             theme = theme,
         })
-        local fs_yes = loader.load({
+        local fs_with = loader.load({
             yaml_path = "mainmenu/ui/library.yml",
-            ctx = build_ctx({ has_pack = true, no_pack = false, show_worlds = true }),
+            ctx = build_ctx({
+                worlds = { { name = "w1", display_name = "World 1" } },
+                has_world = true, no_world = false,
+            }),
             theme = theme,
         })
-        local build_formspec = packermod.layout.build_formspec
-        local s_no  = build_formspec(fs_no,  { theme = theme })
-        local s_yes = build_formspec(fs_yes, { theme = theme })
-        assert.is_nil(s_no:find("subtab_worlds", 1, true),
-            "subtab_worlds button should not render when no_pack")
-        assert.is_truthy(s_yes:find("subtab_worlds", 1, true),
-            "subtab_worlds button should render when has_pack")
+        local s_empty = build(fs_empty, { theme = theme })
+        local s_with  = build(fs_with,  { theme = theme })
+        assert.is_truthy(s_empty:find("new_world", 1, true))
+        assert.is_nil(s_empty:find("delete_world", 1, true))
+        assert.is_nil(s_empty:find("play_world", 1, true))
+        assert.is_truthy(s_with:find("delete_world", 1, true))
+        assert.is_truthy(s_with:find("play_world", 1, true))
     end)
 
     it("Multi subtab shows Add only when no servers, plus Remove/Connect when servers exist", function()
         local build = packermod.layout.build_formspec
         local fs_empty = loader.load({
             yaml_path = "mainmenu/ui/library.yml",
-            ctx = build_ctx({
-                has_pack = true, no_pack = false, show_multi = true,
-            }),
+            ctx = build_ctx({ show_worlds = false, show_multi = true, variant_multi = "primary" }),
             theme = theme,
         })
         local fs_with = loader.load({
             yaml_path = "mainmenu/ui/library.yml",
             ctx = build_ctx({
-                has_pack = true, no_pack = false, show_multi = true,
+                show_worlds = false, show_multi = true, variant_multi = "primary",
                 servers = { { name = "H", address = "1.1.1.1", port = 30000 } },
                 has_server = true, no_server = false,
             }),
@@ -237,15 +218,13 @@ describe("library.yml expansion via ui_loader", function()
         local build = packermod.layout.build_formspec
         local fs_empty = loader.load({
             yaml_path = "mainmenu/ui/library.yml",
-            ctx = build_ctx({
-                has_pack = true, no_pack = false, show_mods = true,
-            }),
+            ctx = build_ctx({ show_worlds = false, show_mods = true, variant_mods = "primary" }),
             theme = theme,
         })
         local fs_with_results = loader.load({
             yaml_path = "mainmenu/ui/library.yml",
             ctx = build_ctx({
-                has_pack = true, no_pack = false, show_mods = true,
+                show_worlds = false, show_mods = true, variant_mods = "primary",
                 pack_mods = { { name = "m1", source = "contentdb", package = "a/m1", release = 1 } },
                 has_mod = true,
                 search_results = { { name = "mesecons", author = "rubenwardy" } },
@@ -269,7 +248,7 @@ describe("library.yml expansion via ui_loader", function()
         local fs = loader.load({
             yaml_path = "mainmenu/ui/library.yml",
             ctx = build_ctx({
-                has_pack = true, no_pack = false, show_info = true,
+                show_worlds = false, show_info = true, variant_info = "primary",
                 pack_name = "MyPack", pack_version = "1.0",
                 pack_description = "desc", pack_base = "base/1",
             }),
@@ -283,10 +262,57 @@ describe("library.yml expansion via ui_loader", function()
     end)
 end)
 
--- ---- overlap / OOB regression (#14): 旧 layout_spec の "live tabs" 役割を
--- library + 3 modal で再構成する。各 subtab 状態 / modal を全部一度ずつ
--- 描画して 0 overlap・OOB なしを assert。
-describe("formspec layout regression (#14)", function()
+-- ---- grid view (画面1) は library.lua 内で直接構築するので、build_grid_formspec
+-- が形式正しい formspec を吐くことだけを確認する ----
+describe("library grid view (画面1)", function()
+    local lib, theme
+    setup(function()
+        _G.packermod = _G.packermod or {}
+        packermod.layout = dofile("mainmenu/lib/layout.lua")
+        packermod.yaml = dofile("mainmenu/yaml.lua")
+        packermod.theme = dofile("mainmenu/lib/theme.lua")
+        packermod.icons = dofile("mainmenu/lib/icons.lua")
+        packermod.pack_manager = {
+            list_packs = function()
+                return {
+                    { id = "pack_a", path = "/u/pack_a",
+                      manifest = { name = "Pack A", version = "1.0",
+                                   base_game = { id = "packerbase", version = "0.91" } } },
+                    { id = "pack_b", path = "/u/pack_b",
+                      manifest = { name = "Pack B", version = "2.0",
+                                   base_game = { id = "packerbase", version = "0.91" } } },
+                }
+            end,
+        }
+        packermod.user_path = "/u"
+        packermod.manifest = {}
+        theme = packermod.theme
+        lib = dofile("mainmenu/library.lua")
+    end)
+
+    it("build_grid_formspec returns a string containing pack_select_* buttons", function()
+        local tabdata = {}
+        local fs = lib._internal.build_grid_formspec(tabdata)
+        assert.is_string(fs)
+        assert.is_truthy(fs:find("pack_select_pack_a", 1, true))
+        assert.is_truthy(fs:find("pack_select_pack_b", 1, true))
+        assert.is_truthy(fs:find("Pack A", 1, true))
+        assert.is_truthy(fs:find("Pack B", 1, true))
+        assert.is_truthy(fs:find("btn_import", 1, true))
+        assert.is_truthy(fs:find("btn_create", 1, true))
+        assert.is_truthy(fs:find("btn_settings", 1, true))
+    end)
+
+    it("renders an empty-state message when no packs exist", function()
+        packermod.pack_manager.list_packs = function() return {} end
+        local fs = lib._internal.build_grid_formspec({})
+        assert.is_truthy(fs:find("No packs yet", 1, true))
+    end)
+end)
+
+-- ---- overlap / OOB regression: detail view (library.yml) の各 subtab を全部
+-- 一度ずつ描画して 0 overlap・OOB なしを assert。grid view は動的構築なので別途。
+describe("formspec layout regression (#14, detail view)", function()
     local loader, theme, helpers, build_formspec
     setup(function()
         _G.packermod = _G.packermod or {}
@@ -303,12 +329,11 @@ describe("formspec layout regression (#14)", function()
 
     local function library_ctx(overrides)
         local c = {
-            packs = {}, selected_pack = 1, has_pack = false, no_pack = true,
-            pack_name = "", pack_version = "", pack_base = "",
+            pack_name = "P", pack_version = "1", pack_base = "base/1",
             pack_mods_count = 0, pack_description = "",
-            variant_worlds = "secondary", variant_multi = "secondary",
+            variant_worlds = "primary", variant_multi = "secondary",
             variant_mods = "secondary", variant_info = "secondary",
-            show_worlds = false, show_multi = false, show_mods = false, show_info = false,
+            show_worlds = true, show_multi = false, show_mods = false, show_info = false,
             worlds = {}, has_world = false, no_world = true, selected_world = 1,
             servers = {}, has_server = false, no_server = true, selected_server = 1,
             form_server_name = "", form_server_address = "", form_server_port = "",
@@ -316,7 +341,6 @@ describe("formspec layout regression (#14)", function()
             search_query = "", search_release = "",
             search_results = {}, selected_search = 1, has_search_result = false,
             mod_status = "", info_status = "",
-            format_pack_label   = function(p) return p.manifest.name end,
             format_world_label  = function(w) return w.display_name or w.name end,
             format_server_label = function(s) return tostring(s.name or s.address) end,
             format_mod_entry    = function(m) return tostring(m.name) end,
@@ -340,23 +364,20 @@ describe("formspec layout regression (#14)", function()
     end
 
     local scenarios = {
-        { name = "library/no-pack",       overrides = {} },
-        { name = "library/worlds-empty",  overrides = { has_pack = true, no_pack = false,
-            pack_name = "P", show_worlds = true, variant_worlds = "primary" } },
-        { name = "library/worlds-filled", overrides = { has_pack = true, no_pack = false,
-            pack_name = "P", show_worlds = true, variant_worlds = "primary",
+        { name = "library/worlds-empty",  overrides = {} },
+        { name = "library/worlds-filled", overrides = {
             worlds = { { name = "w1", display_name = "World 1" } },
             has_world = true, no_world = false } },
-        { name = "library/multi-empty",   overrides = { has_pack = true, no_pack = false,
-            pack_name = "P", show_multi = true, variant_multi = "primary" } },
-        { name = "library/multi-filled",  overrides = { has_pack = true, no_pack = false,
-            pack_name = "P", show_multi = true, variant_multi = "primary",
+        { name = "library/multi-empty",   overrides = {
+            show_worlds = false, show_multi = true, variant_multi = "primary" } },
+        { name = "library/multi-filled",  overrides = {
+            show_worlds = false, show_multi = true, variant_multi = "primary",
             servers = { { name = "H", address = "1.1.1.1", port = 30000 } },
             has_server = true, no_server = false } },
-        { name = "library/mods-empty",    overrides = { has_pack = true, no_pack = false,
-            pack_name = "P", show_mods = true, variant_mods = "primary" } },
-        { name = "library/mods-filled",   overrides = { has_pack = true, no_pack = false,
-            pack_name = "P", show_mods = true, variant_mods = "primary",
+        { name = "library/mods-empty",    overrides = {
+            show_worlds = false, show_mods = true, variant_mods = "primary" } },
+        { name = "library/mods-filled",   overrides = {
+            show_worlds = false, show_mods = true, variant_mods = "primary",
             pack_mods = { { name = "m1", source = "contentdb", package = "a/m1" } },
             has_mod = true, selected_mod = 1,
             search_results = { { name = "mesecons", author = "rubenwardy" } },
@@ -368,9 +389,6 @@ describe("formspec layout regression (#14)", function()
         end)
     end
 
-    -- library/info は #15(layout が shrink-to-fit しない問題)で別途対応。
-    -- Info section の natural h が page を超えて OOB するが、実機では
-    -- 視覚的には許容範囲。
     pending("library/info has no overlap or OOB (#15: layout shrink-to-fit)", function() end)
 
     it("modal_import has no overlap or OOB", function()

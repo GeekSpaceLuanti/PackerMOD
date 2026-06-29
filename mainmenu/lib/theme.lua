@@ -99,6 +99,16 @@ function M.emit_style_type(kind, props)
     return ("style_type[%s;%s]"):format(kind, emit_kv(props))
 end
 
+-- フォント倍率(formspec_version 6 の `*<n>` 記法。基準サイズに対する乗算)
+-- 全 widget を一括拡大して視認性を上げる(#18 系)。
+M.font = {
+    label_scale    = "*1.3",
+    button_scale   = "*1.2",
+    field_scale    = "*1.2",
+    textlist_scale = "*1.2",
+    textarea_scale = "*1.2",
+}
+
 -- Prelude lines to inject at the top of the formspec when this theme is active.
 -- Returned as a list of strings (caller concatenates with the rest of the form).
 function M.emit_global_prelude()
@@ -111,6 +121,26 @@ function M.emit_global_prelude()
     lines[#lines + 1] = M.emit_style_type("image_button", M.button.default)
     lines[#lines + 1] = M.emit_style_type("field",        M.field.default)
     lines[#lines + 1] = M.emit_style_type("textlist",     M.textlist.default)
+    -- フォントサイズを widget 種別ごとに拡大。style_type は同一 selector を
+    -- 後で上書きすると追加プロパティとしてマージされず置き換わるので、
+    -- font_size はこの最後にまとめて出す。
+    lines[#lines + 1] = ("style_type[label;font_size=%s]"):format(M.font.label_scale)
+    lines[#lines + 1] = ("style_type[textarea;font_size=%s]"):format(M.font.textarea_scale)
+    -- button / image_button / field / textlist は既に bgcolor 等を設定済みなので
+    -- font_size はマージするため再度 emit_style_type で props 含めて出す。
+    local button_with_font = {}
+    for k, v in pairs(M.button.default) do button_with_font[k] = v end
+    button_with_font.font_size = M.font.button_scale
+    lines[#lines + 1] = M.emit_style_type("button", button_with_font)
+    lines[#lines + 1] = M.emit_style_type("image_button", button_with_font)
+    local field_with_font = {}
+    for k, v in pairs(M.field.default) do field_with_font[k] = v end
+    field_with_font.font_size = M.font.field_scale
+    lines[#lines + 1] = M.emit_style_type("field", field_with_font)
+    local textlist_with_font = {}
+    for k, v in pairs(M.textlist.default) do textlist_with_font[k] = v end
+    textlist_with_font.font_size = M.font.textlist_scale
+    lines[#lines + 1] = M.emit_style_type("textlist", textlist_with_font)
     -- remove nils
     local out = {}
     for _, l in ipairs(lines) do if l then out[#out + 1] = l end end

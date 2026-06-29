@@ -81,6 +81,9 @@ function M.validate(data)
             return err("texture_pack.source must be one of contentdb|bundle|url")
         end
     end
+    if data.thumbnail ~= nil and (type(data.thumbnail) ~= "string" or data.thumbnail == "") then
+        return err("thumbnail must be a non-empty string when set (relative path from pack dir)")
+    end
     return true
 end
 
