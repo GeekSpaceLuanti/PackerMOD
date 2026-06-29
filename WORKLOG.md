@@ -58,7 +58,7 @@
 - `install/install.sh`, `install/install.ps1` (textures sibling 配置に変更)
 - spec: `world_builder_spec.lua`, `pack_manager_spec.lua`, `pack_launcher_spec.lua`, `library_spec.lua`, `manifest_spec.lua` を新 API 前提に更新
 
-**コミット**: (push 後に追記)
+**コミット**: d78b06e
 
 **次のTODO**:
 - icon-button label overlap の改善(別 issue)
