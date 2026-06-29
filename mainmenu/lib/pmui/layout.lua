@@ -56,6 +56,7 @@ local function build_container(L, el, ctx)
             spacing = box.gap, padding = box.padding,
             w = box.w, h = box.h, flex = box.flex,
             align = "stretch",
+            bgcolor = box.bg,
         }
         for _, r in ipairs(rows) do g[#g + 1] = r end
         return g
@@ -67,6 +68,7 @@ local function build_container(L, el, ctx)
         spacing = box.gap, padding = box.padding,
         align = box.align,
         w = box.w, h = box.h, flex = box.flex,
+        bgcolor = box.bg,
     }
     if box.justify == "end" then
         node[#node + 1] = L.Spacer { flex = 1 }
