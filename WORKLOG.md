@@ -37,7 +37,16 @@
 
 **テスト**: 新規 4 ファイル + 既存 library_spec に PMUI 経由テスト 2 件追加。256 件緑 (+1 pending #15)。
 
-**コミット**: 295e09f / b390e5e / c9a8525 / 3fdb763 / 8915b14 / 865eecc / 8e2d623 / 8e2d623 後 + (TBD)
+**コミット**:
+- 295e09f: HTML mockup 4 案
+- b390e5e: dom + stylesheet + parser_html/css
+- c9a8525: cascade (selector + var/calc + media)
+- 3fdb763: box_model + layout (PMLayout wrapper)
+- 8915b14: paint + init で formspec e2e
+- 865eecc: bgimg PNG パイプライン (SVG + rsvg-convert)
+- 8e2d623: 画面1 DSL + Synthwave + 配線 (flag OFF)
+- b372d40: フラグ反転で PMUI default
+- e92fe82: label inline color + border + アクションバー bg (見た目フィニッシュ)
 
 **次のTODO**:
 - 残作業: paint.lua に **border (border-width + border-color) 描画**を追加してカード/ボタンに紫枠を出す
