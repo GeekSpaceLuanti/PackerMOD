@@ -11,7 +11,7 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
-## 2026-06-29 12:15 (main)
+## 2026-06-29 12:15 (main) — d6becfa
 
 **変更概要**:
 #21 派生問題: icon-button のアイコンが横長ボタンで横に潰れて見えていたのを修正。
@@ -30,7 +30,7 @@ Luanti `image_button[X,Y;W,H;tex]` は画像を W×H 領域に縦横独立に拡
 - `mainmenu/lib/layout.lua` (LabeledIconButton をアイコン正方形 + 中央寄せに)
 - `spec/ui_loader_spec.lua` (新構造に追従)
 
-**コミット**: (push 後に追記)
+**コミット**: d6becfa
 
 ## 2026-06-29 12:00 (main)
 
