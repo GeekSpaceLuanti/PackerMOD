@@ -34,7 +34,7 @@
 - `mainmenu/lib/theme.lua` (一度入れた content_offset を撤去、ロジックは ui_loader 側で完結)
 - spec: `library_spec.lua`, `ui_loader_spec.lua`, `support/formspec_helpers.lua` 更新
 
-**コミット**: (push 後に追記)
+**コミット**: 77cb90b
 
 **残課題**:
 - #22 実機での New World → Play 通し検証
