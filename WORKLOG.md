@@ -11,6 +11,36 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 12:00 (main)
+
+**変更概要**:
+#21 を実装。icon-button の label が画像中央に重なる Luanti formspec の仕様問題を解消した。
+
+対応: `layout.LabeledIconButton` ヘルパーを新設し、label がある場合は `VBox(IconButton + Label)` で構成、label="" のサムネカード等はそのまま `IconButton` を返す。`ui_loader.icon-button` handler と `library.lua` の grid 画面 bottom action から呼び出して全 icon-button が同じ挙動になるよう統一。
+
+副作用対応:
+- ボタン高さ 0.9 → 1.4 に拡大(label 帯 0.45 + 画像 0.95)。Import / Create / Settings ボタンが視覚的に大きくなる
+- spec/support/formspec_helpers の `overlaps_rect` に epsilon=1e-3 を入れて、image_button と直下 Label の浮動小数点誤差による誤検知を回避
+
+検証(screenshot):
+- 画面1: Import / Create / Settings にアイコン上 + ラベル下のレイアウトが効いた ✓
+- 画面2 Worlds: Back / New World / Delete / Play 同様 ✓
+- 全 190 spec 緑 (1 pending は既存 #15)
+
+**主な変更ファイル**:
+- `mainmenu/lib/layout.lua` (LabeledIconButton 新設)
+- `mainmenu/lib/ui_loader.lua` (icon-button handler を LabeledIconButton にディスパッチ)
+- `mainmenu/library.lua` (grid 画面 bottom action を LabeledIconButton 化)
+- `mainmenu/lib/theme.lua` (一度入れた content_offset を撤去、ロジックは ui_loader 側で完結)
+- spec: `library_spec.lua`, `ui_loader_spec.lua`, `support/formspec_helpers.lua` 更新
+
+**コミット**: (push 後に追記)
+
+**残課題**:
+- #22 実機での New World → Play 通し検証
+- #23 Windows Junction 動作確認
+- 画面1 のサムネカードがアスペクト比固定でない (画像が横長に引き伸ばされる) のは Luanti image_button の仕様。気になるなら icon を 256×256 完全正方形のままで使い、ボタン w=h で固定する必要
+
 ## 2026-06-29 11:40 (main)
 
 **変更概要**:

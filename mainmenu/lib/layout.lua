@@ -76,6 +76,28 @@ M.Raw      = class("Raw",      {})                 -- {text=}: arbitrary snippet
 M.Icon       = class("Icon",       { w = 0.7, h = 0.7 }) -- {texture=, w=, h=}
 M.IconButton = class("IconButton", { w = 0.9, h = 0.9 }) -- {name=, texture=, label="", w=, h=}
 
+-- LabeledIconButton: image_button + 下に Label(別 widget)で構成し、
+-- Luanti formspec の image_button label が画像中央に重なる問題(#21)を回避する。
+-- label="" の場合は IconButton 1つだけ返す(画面1 のサムネカード等)。
+-- name は image_button 側に付くのでクリックイベントは従来通り発火する。
+function M.LabeledIconButton(t)
+    local label = t.label or ""
+    if label == "" then
+        return M.IconButton{ name = t.name, texture = t.texture, w = t.w, h = t.h, flex = t.flex }
+    end
+    local label_band_h = 0.45
+    local btn_w = t.w
+    local btn_h = t.h or 0.9
+    local img_h = math.max(0.4, btn_h - label_band_h)
+    return M.VBox{
+        spacing = 0,
+        w = btn_w, h = btn_h, flex = t.flex,
+        align = "stretch",
+        M.IconButton{ name = t.name, texture = t.texture, label = "", w = btn_w, h = img_h },
+        M.Label{ text = label, h = label_band_h, w = btn_w },
+    }
+end
+
 -- ---- measure: bottom-up natural size ----
 
 local function measure(w)

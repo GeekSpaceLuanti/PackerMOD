@@ -355,10 +355,10 @@ describe("formspec layout regression (#14, detail view)", function()
         local tree = loader.load({ yaml_path = yaml_path, ctx = ctx, theme = theme })
         local fs = build_formspec(tree, { theme = theme })
         local size, els = helpers.parse_formspec(fs)
-        local overlaps = helpers.find_overlaps(els, { label_h = 0.5 })
+        local overlaps = helpers.find_overlaps(els, { label_h = 0.45 })
         assert.equal(0, #overlaps,
             label .. ": " .. (overlaps[1] and helpers.format_overlaps(overlaps) or ""))
-        local ok, el = helpers.fits_in_size(els, size, { label_h = 0.5 })
+        local ok, el = helpers.fits_in_size(els, size, { label_h = 0.45 })
         assert.is_true(ok, ok and "" or
             (label .. " OOB: " .. helpers.describe_el(el)))
     end

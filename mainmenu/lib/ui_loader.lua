@@ -257,13 +257,15 @@ handlers.button = function(body, ctx, theme)
     }
 end
 
+-- icon-button: layout.LabeledIconButton にディスパッチ。label="" のときは
+-- ただの image_button、ラベルありのときは image_button + Label の縦並びを返す(#21)。
 handlers["icon-button"] = function(body, ctx, theme)
     local L = get_layout()
     local props = resolve_props(body, ctx, { "icon" })
     local icon_name = body.icon
     local resolver = ctx.icon_path
     local tex = (type(resolver) == "function") and resolver(icon_name) or icon_name
-    return L.IconButton{
+    return L.LabeledIconButton{
         name    = props.name,
         texture = tex,
         label   = props.label or "",

@@ -134,20 +134,20 @@ local function build_grid_formspec(tabdata)
 
     local actions = L.HBox{ spacing = 0.3,
         L.Spacer{ flex = 1 },
-        L.IconButton{
+        L.LabeledIconButton{
             name = "btn_import",
             texture = packermod.icons.path("download", "md"),
-            label = "Import", w = 1.8, h = 1.0,
+            label = "Import", w = 1.8, h = 1.4,
         },
-        L.IconButton{
+        L.LabeledIconButton{
             name = "btn_create",
             texture = packermod.icons.path("plus", "md"),
-            label = "Create", w = 1.8, h = 1.0,
+            label = "Create", w = 1.8, h = 1.4,
         },
-        L.IconButton{
+        L.LabeledIconButton{
             name = "btn_settings",
             texture = packermod.icons.path("sliders", "md"),
-            label = "Settings", w = 1.8, h = 1.0,
+            label = "Settings", w = 1.8, h = 1.4,
         },
     }
 

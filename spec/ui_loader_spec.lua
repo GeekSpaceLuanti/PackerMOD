@@ -66,15 +66,31 @@ describe("ui_loader.expand", function()
         assert.equal("primary", tree.style)
     end)
 
-    it("expands icon-button with texture resolved by ctx.icon_path", function()
+    it("expands icon-button (with label) to VBox of image_button + Label (#21)", function()
         local tree = loader.expand({
             ["icon-button"] = { name = "play", icon = "play", label = "Play", variant = "primary" },
         }, {
             icon_path = function(name) return "packermod_icon_" .. name .. "_md.png" end,
         }, theme)
+        -- LabeledIconButton: ラベルありは VBox(IconButton + Label)
+        assert.equal("VBox", tree._kind)
+        local btn, lbl = tree[1], tree[2]
+        assert.equal("IconButton", btn._kind)
+        assert.equal("play", btn.name)
+        assert.equal("packermod_icon_play_md.png", btn.texture)
+        assert.equal("", btn.label)
+        assert.equal("Label", lbl._kind)
+        assert.equal("Play", lbl.text)
+    end)
+
+    it("expands icon-button (without label) to a bare IconButton", function()
+        local tree = loader.expand({
+            ["icon-button"] = { name = "thumb", icon = "play" },
+        }, {
+            icon_path = function(name) return "packermod_icon_" .. name .. "_md.png" end,
+        }, theme)
         assert.equal("IconButton", tree._kind)
-        assert.equal("packermod_icon_play_md.png", tree.texture)
-        assert.equal("Play", tree.label)
+        assert.equal("thumb", tree.name)
     end)
 
     it("expands list to a TextList (optionally inside a VBox)", function()

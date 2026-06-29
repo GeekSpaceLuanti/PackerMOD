@@ -132,6 +132,9 @@ function M.emit_global_prelude()
     for k, v in pairs(M.button.default) do button_with_font[k] = v end
     button_with_font.font_size = M.font.button_scale
     lines[#lines + 1] = M.emit_style_type("button", button_with_font)
+    -- image_button のラベル overlap (#21) は ui_loader 側で
+    -- image_button + Label の縦並びに分解して回避するので、ここでは
+    -- content_offset を使わず、純粋にスタイルだけ揃える。
     lines[#lines + 1] = M.emit_style_type("image_button", button_with_font)
     local field_with_font = {}
     for k, v in pairs(M.field.default) do field_with_font[k] = v end

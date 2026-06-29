@@ -56,8 +56,13 @@ local function rect_of(el, opts)
     return el.x, el.y, el.w, el.h
 end
 
+-- 浮動小数点誤差で「ピッタリ接している」widget 同士(LabeledIconButton の
+-- image_button + 下の Label など)が誤って overlap 判定されないよう
+-- 微小 epsilon を引いて余裕を持たせる。
+local EPSILON = 1e-3
 local function overlaps_rect(ax, ay, aw, ah, bx, by, bw, bh)
-    return ax < bx + bw and bx < ax + aw and ay < by + bh and by < ay + ah
+    return ax + EPSILON < bx + bw and bx + EPSILON < ax + aw and
+           ay + EPSILON < by + bh and by + EPSILON < ay + ah
 end
 
 function M.find_overlaps(elements, opts)
