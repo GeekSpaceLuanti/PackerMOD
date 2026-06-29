@@ -30,13 +30,13 @@ root:
           for:
             each: pack
             in: packs
-          attrs:
-            name: "${pack.name_attr}"
           children:
-            - tag: img
+            - tag: icon-button
               class: pack-thumb
               attrs:
-                src: "${pack.thumbnail}"
+                name: "${pack.name_attr}"
+                icon: "${pack.thumbnail}"
+                label: ""
             - tag: h2
               class: pack-name
               text: "${pack.name}"

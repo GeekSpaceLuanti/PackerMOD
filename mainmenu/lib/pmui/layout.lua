@@ -20,8 +20,15 @@ local function get_pmlayout()
     return dofile("mainmenu/lib/layout.lua")
 end
 
--- icon name → 絶対パス。ctx.icon_path 関数が優先、なければ raw を返す。
+-- icon name → 絶対パス。
+-- 以下の場合は「既に解決済み」とみなして raw を返す:
+--   - path separator (/ or \) を含む (= 絶対 or 相対パス)
+--   - .png / .jpg などの拡張子で終わる (= ファイル名指定)
+-- それ以外 (例: "plus", "sliders") は ctx.icon_path() で size 付きアイコンに解決する。
 local function icon_path(ctx, name)
+    if not name or name == "" then return name end
+    if name:find("/", 1, true) or name:find("\\", 1, true) then return name end
+    if name:lower():find("%.png$") or name:lower():find("%.jpg$") then return name end
     if ctx and type(ctx.icon_path) == "function" then return ctx.icon_path(name) end
     return name
 end

@@ -11,6 +11,41 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 23:50 (main)
+
+**変更概要**:
+画面1 (Pack Library) の UI を **HTML/CSS 風 DSL ライブラリ PMUI** + Synthwave テーマで描く実装を入れた。前段で HTML mockup 4 案 (`docs/mockup/`) を作り、ユーザーが Synthwave を選択した結果のフォローアップ。8 段階のコミット計画 (`/home/bacon/.claude/plans/ui-html-ui-ui-drifting-sifakis.md`) のうち commit 1〜7 を完了。
+
+**PMUI モジュール構成** (`mainmenu/lib/pmui/`):
+- `dom.lua` / `stylesheet.lua` / `parser_html.lua` / `parser_css.lua` — HTML 風 DSL と CSSOM 相当のパーサ
+- `cascade.lua` — selector (tag/.class/#id/子孫/直接子/疑似クラス) + specificity + `var()` + `calc()` + media query
+- `box_model.lua` + `layout.lua` — 既存 `lib/layout.lua` (PMLayout) の VBox/HBox に組み立てる wrapper。`display: grid` の行分割もここで
+- `paint.lua` — `background[]` / `bgcolor[]` / `style[name;...]` を prelude に積んで PMLayout の `build_formspec` に渡す
+- `init.lua` — 公開 API `pmui.build_formspec(opts)`
+
+**Synthwave PNG パイプライン**:
+- `scripts/bgimg_emit.lua` で YAML → SVG、`scripts/build_bgimg.sh` で `rsvg-convert` で PNG 化 (既存 `build_icons.sh` と同じ流儀)
+- `mainmenu/ui/themes/synthwave.bgimg.yml` で sunset グラデと outrun grid を生成
+- `make bgimg` で `textures/packermod_bg_synthwave.png` + `..._grid_synthwave.png` を再生成可能
+
+**画面1 配線**:
+- `mainmenu/ui/library.html.yml` (HTML 風構造) と `mainmenu/ui/themes/synthwave.css.yml` (スタイル) を新規追加
+- `mainmenu/library.lua` に `build_grid_formspec_pmui` 追加。`PACKERMOD_LEGACY_GRID=1` で旧 path に戻せる
+- `mainmenu/init.lua` に `packermod.pmui` と `packermod.mainmenu_path` 登録
+
+**画面2 (Pack Detail) と各 modal は旧 dark テーマのまま** (段階移行 A)。視覚的不整合は許容して、PMUI の安定後に順次移行する。
+
+**テスト**: 新規 4 ファイル + 既存 library_spec に PMUI 経由テスト 2 件追加。256 件緑 (+1 pending #15)。
+
+**コミット**: 295e09f / b390e5e / c9a8525 / 3fdb763 / 8915b14 / 865eecc / 8e2d623 / 8e2d623 後 + (TBD)
+
+**次のTODO**:
+- 残作業: paint.lua に **border (border-width + border-color) 描画**を追加してカード/ボタンに紫枠を出す
+- label の textcolor を `style[name;textcolor=...]` でなく **`<style color=#...>text</style>` の inline 形式**で出して Luanti 5.16 で確実に効くようにする
+- `.action-bar` に半透明黒 bg を入れて Import/Create/Settings のラベル読みやすさを改善
+- 画面2 / modal の PMUI 移行 (将来コミット 8 の後)
+- commit 8: 数日運用してバグなければ `PACKERMOD_LEGACY_GRID` フラグと旧 `build_grid_formspec` を撤去
+
 ## 2026-06-29 12:30 (main)
 
 **変更概要**:

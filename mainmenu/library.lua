@@ -299,6 +299,7 @@ local function build_grid_formspec_pmui(tabdata)
         css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
         ctx       = ctx,
         page_w = 13.0, page_h = 8.5,
+        texture_dir = packermod.textures_dir,
     }
 end
 
@@ -309,13 +310,12 @@ local function get_formspec(tabdata)
     if tabdata.view == "detail" then
         return build_detail_formspec(tabdata)
     end
-    -- commit 6 では旧 path がデフォルト。PACKERMOD_USE_PMUI=1 で新 path を選択。
-    -- commit 7 でフラグ判定を反転し PMUI を default にして、PACKERMOD_LEGACY_GRID
-    -- で旧 path に戻せる安全弁に切り替える。
-    if os.getenv("PACKERMOD_USE_PMUI") then
-        return build_grid_formspec_pmui(tabdata)
+    -- PMUI 経由の Synthwave がデフォルト。PACKERMOD_LEGACY_GRID=1 で旧 path に
+    -- 戻せる安全弁。数日運用してバグが出なければ commit 8 でフラグと旧 path を撤去する。
+    if os.getenv("PACKERMOD_LEGACY_GRID") then
+        return build_grid_formspec(tabdata)
     end
-    return build_grid_formspec(tabdata)
+    return build_grid_formspec_pmui(tabdata)
 end
 
 -- ----- launch ヘルパ(symlink trick 経由) -----

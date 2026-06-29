@@ -265,13 +265,15 @@ end)
 -- ---- grid view (画面1) は library.lua 内で直接構築するので、build_grid_formspec
 -- が形式正しい formspec を吐くことだけを確認する ----
 describe("library grid view (画面1)", function()
-    local lib, theme
+    local lib, theme, helpers
     setup(function()
         _G.packermod = _G.packermod or {}
         packermod.layout = dofile("mainmenu/lib/layout.lua")
         packermod.yaml = dofile("mainmenu/yaml.lua")
         packermod.theme = dofile("mainmenu/lib/theme.lua")
         packermod.icons = dofile("mainmenu/lib/icons.lua")
+        packermod.pmui = dofile("mainmenu/lib/pmui/init.lua")
+        packermod.mainmenu_path = "mainmenu/"
         packermod.pack_manager = {
             list_packs = function()
                 return {
@@ -287,10 +289,11 @@ describe("library grid view (画面1)", function()
         packermod.user_path = "/u"
         packermod.manifest = {}
         theme = packermod.theme
+        helpers = dofile("spec/support/formspec_helpers.lua")
         lib = dofile("mainmenu/library.lua")
     end)
 
-    it("build_grid_formspec returns a string containing pack_select_* buttons", function()
+    it("legacy build_grid_formspec returns a string containing pack_select_* buttons", function()
         local tabdata = {}
         local fs = lib._internal.build_grid_formspec(tabdata)
         assert.is_string(fs)
@@ -303,10 +306,60 @@ describe("library grid view (画面1)", function()
         assert.is_truthy(fs:find("btn_settings", 1, true))
     end)
 
-    it("renders an empty-state message when no packs exist", function()
+    it("legacy renders an empty-state message when no packs exist", function()
+        local saved = packermod.pack_manager.list_packs
         packermod.pack_manager.list_packs = function() return {} end
         local fs = lib._internal.build_grid_formspec({})
         assert.is_truthy(fs:find("No packs yet", 1, true))
+        packermod.pack_manager.list_packs = saved
+    end)
+
+    it("pmui path renders pack cards and action bar with Synthwave background", function()
+        -- pack_manager は describe setup の正規 2 件版に戻す
+        packermod.pack_manager.list_packs = function()
+            return {
+                { id = "pack_a", path = "/u/pack_a",
+                  manifest = { name = "Pack A", version = "1.0",
+                               base_game = { id = "packerbase", version = "0.91" } } },
+                { id = "pack_b", path = "/u/pack_b",
+                  manifest = { name = "Pack B", version = "2.0",
+                               base_game = { id = "packerbase", version = "0.91" } } },
+            }
+        end
+        local fs = lib._internal.build_grid_formspec_pmui({})
+        assert.is_string(fs)
+        assert.is_truthy(fs:find("pack_select_pack_a", 1, true))
+        assert.is_truthy(fs:find("Pack A", 1, true))
+        assert.is_truthy(fs:find("btn_import", 1, true))
+        assert.is_truthy(fs:find("btn_create", 1, true))
+        assert.is_truthy(fs:find("btn_settings", 1, true))
+        -- Synthwave テーマの背景画像が出ていること
+        assert.is_truthy(fs:find("packermod_bg_synthwave.png", 1, true))
+        -- ヘッダ "PackerMOD" が出ていること (旧の "PackerMOD — Pack Library" ではない)
+        assert.is_truthy(fs:find("PackerMOD", 1, true))
+    end)
+
+    it("pmui path has no overlap and fits in page size", function()
+        packermod.pack_manager.list_packs = function()
+            return {
+                { id = "pack_a", path = "/u/pack_a",
+                  manifest = { name = "Pack A", version = "1.0",
+                               base_game = { id = "packerbase", version = "0.91" } } },
+                { id = "pack_b", path = "/u/pack_b",
+                  manifest = { name = "Pack B", version = "2.0",
+                               base_game = { id = "packerbase", version = "0.91" } } },
+            }
+        end
+        local fs = lib._internal.build_grid_formspec_pmui({})
+        local size, els = helpers.parse_formspec(fs)
+        assert.equal(13.0, size.w)
+        assert.equal(8.5,  size.h)
+        local overlaps = helpers.find_overlaps(els)
+        if #overlaps > 0 then
+            assert.fail(helpers.format_overlaps(overlaps))
+        end
+        local ok, bad = helpers.fits_in_size(els, size)
+        assert.is_true(ok, "OOB: " .. (bad and helpers.describe_el(bad) or ""))
     end)
 end)
 

@@ -56,10 +56,17 @@ local function emit_per_element_styles(root)
     return out
 end
 
-local function emit_background(root, page_w, page_h)
+local function emit_background(root, page_w, page_h, texture_dir)
     if not root.box or not root.box.bg_image then return nil end
+    local img = root.box.bg_image
+    -- Luanti のメインメニュー formspec は textures/base/pack/ しか name 解決
+    -- できないため、texture_dir を prefix して絶対パスにする (path separator が
+    -- 既に含まれる値は解決済みとみなしてそのまま使う)。
+    if texture_dir and not (img:find("/", 1, true) or img:find("\\", 1, true)) then
+        img = texture_dir .. img
+    end
     return ("background[%s,%s;%s,%s;%s;false;0]"):format(
-        fnum(0), fnum(0), fnum(page_w), fnum(page_h), root.box.bg_image)
+        fnum(0), fnum(0), fnum(page_w), fnum(page_h), img)
 end
 
 function M.render(root, opts)
@@ -70,7 +77,7 @@ function M.render(root, opts)
     local widget_tree = layout.flow(root, opts.ctx)
 
     local prepend = {}
-    local bg = emit_background(root, page_w, page_h)
+    local bg = emit_background(root, page_w, page_h, opts.texture_dir)
     if bg then prepend[#prepend + 1] = bg end
     for _, line in ipairs(emit_per_element_styles(root)) do
         prepend[#prepend + 1] = line

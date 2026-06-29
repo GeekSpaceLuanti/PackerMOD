@@ -58,6 +58,7 @@ function M.build_formspec(opts)
     M.box_model.compute_all(root)
     return M.paint.render(root, {
         page_w = page_w, page_h = page_h, ctx = opts.ctx,
+        texture_dir = opts.texture_dir,
     })
 end
 
