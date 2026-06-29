@@ -11,6 +11,22 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-29 12:30 (main)
+
+**変更概要**:
+README に「インストール / 使い方 / アンインストール」のセクションを最新の構成で書き直した。PackerMOD は通常の MOD ではなく **メインメニュー自体の置き換え** であることを冒頭で明示。
+
+`uninstall.sh` / `uninstall.ps1` に以下を追加:
+- 新規追加した `<user>/PackerMOD/textures/` symlink を削除
+- 過去 install スクリプトが残した `<user>/textures/packermod_*.png` も掃除
+- 「packs/ と cache/ は残す」旨の説明出力を追加
+
+**主な変更ファイル**:
+- `README.md` (大幅書き直し)
+- `install/uninstall.sh`, `install/uninstall.ps1`
+
+**コミット**: (push 後に追記)
+
 ## 2026-06-29 12:15 (main) — d6becfa
 
 **変更概要**:
