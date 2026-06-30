@@ -1,12 +1,15 @@
 output:
+  # Luanti のメインメニュー window (screen_w/screen_h ≈ 1608x853 ≈ 16:9 弱) に
+  # 合わせる。formspec page_w=30 / page_h=16 で 1 unit ≈ 52 px (Luanti の表示
+  # スケール) のとき window 全体を埋める。
   bg:
     name: packermod_bg_synthwave
-    w: 1664
-    h: 1088
+    w: 1920
+    h: 1024
   grid:
     name: packermod_grid_synthwave
-    w: 1664
-    h: 544
+    w: 1920
+    h: 512
 
 gradient:
   type: vertical

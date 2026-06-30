@@ -306,7 +306,9 @@ local function build_grid_formspec_pmui(tabdata)
         html_path = mm .. "ui" .. DD .. "library.html.yml",
         css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
         ctx       = ctx,
-        page_w = 13.0, page_h = 8.5,
+        -- Luanti のメインメニュー window (1608x853, 1 unit ≈ 52 px) を埋めるサイズ。
+        -- 旧 13.0/8.5 だと画面の 43%×57% にしか映らなかった。
+        page_w = 30.0, page_h = 16.0,
         texture_dir = packermod.textures_dir,
     }
 end

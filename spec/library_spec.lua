@@ -352,8 +352,8 @@ describe("library grid view (画面1)", function()
         end
         local fs = lib._internal.build_grid_formspec_pmui({})
         local size, els = helpers.parse_formspec(fs)
-        assert.equal(13.0, size.w)
-        assert.equal(8.5,  size.h)
+        assert.equal(30.0, size.w)
+        assert.equal(16.0, size.h)
         local overlaps = helpers.find_overlaps(els)
         if #overlaps > 0 then
             error(helpers.format_overlaps(overlaps))

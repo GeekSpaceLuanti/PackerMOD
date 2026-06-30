@@ -1,5 +1,7 @@
 # Synthwave テーマ. library.html.yml に対するスタイル。
 # 紺→紫→ピンク→イエローの sunset グラデ + outrun 床グリッド + accent ピンク。
+#
+# 寸法は formspec size[30, 16] (= window 1608x853, 1 unit ≈ 52 px) 前提。
 
 variables:
   --fg: "#f0e6ff"
@@ -14,82 +16,83 @@ rules:
     style:
       bg: "#1a0a3a"
       bg-image: "url(packermod_bg_synthwave.png)"
-      padding: 0.4
+      padding: 0.8
       flex-direction: column
-      gap: 0.4
+      gap: 0.8
 
   - selector: ".title-bar"
     style:
       flex-direction: row
-      gap: 0.4
-      h: 0.9
+      gap: 0.8
+      h: 1.8
       align: center
 
   - selector: "#title"
     style:
       color: "#FF52A4"
-      font-size: "*1.8"
+      font-size: "*3.5"
 
   - selector: ".subtitle"
     style:
       color: "#b09ad8"
-      font-size: "*1.0"
+      font-size: "*1.6"
 
   - selector: "#no-packs-msg"
     style:
       color: "#f0e6ff"
+      font-size: "*1.4"
 
   - selector: ".pack-grid"
     style:
       display: grid
       grid-columns: 3
-      gap: 0.3
+      gap: 0.6
       flex: 1
 
   - selector: ".pack-card"
     style:
       bg: "#28114f"
-      border-width: 0.04
+      border-width: 0.08
       border-color: "#A06EFF"
-      padding: 0.2
+      padding: 0.4
       flex-direction: column
-      gap: 0.1
-      w: 3.8
-      h: 4.0
+      gap: 0.2
+      w: 8.5
+      h: 8.0
 
   - selector: ".pack-thumb"
     style:
-      w: 3.3
-      h: 3.3
+      w: 5.5
+      h: 5.5
 
   - selector: ".pack-name"
     style:
       color: "#f0e6ff"
-      font-size: "*1.05"
+      font-size: "*1.5"
 
   - selector: ".pack-meta"
     style:
       color: "#FF52A4"
-      font-size: "*0.9"
+      font-size: "*1.2"
 
   - selector: ".action-bar"
     style:
       bg: "#0a061faa"
-      border-width: 0.04
+      border-width: 0.08
       border-color: "#A06EFF"
       flex-direction: row
       justify: end
-      gap: 0.5
-      h: 1.6
-      padding: 0.15
+      gap: 1.0
+      h: 3.0
+      padding: 0.3
 
   - selector: ".action-btn"
     style:
-      w: 1.9
-      h: 1.4
+      w: 4.0
+      h: 2.7
 
 media:
-  - query: "max-width 10.0"
+  - query: "max-width 20.0"
     rules:
       - selector: ".pack-grid"
         style:
