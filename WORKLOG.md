@@ -11,6 +11,35 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-30 22:55 (main)
+
+**変更概要**:
+5 modal (Import / Create / Settings / WorldCreate / WorldDelete) を PMUI + Synthwave に移行。各 modal は size[30, 16] 全画面で外側を Synthwave 紫紺 + 中央に紫枠の `modal-card` を配置するパターンに統一。
+
+**実装**:
+- `synthwave.css.yml` に modal 共通スタイル一式を追加 (`.modal-page`, `.modal-card`(+ `-narrow`/`-mid`/`-wide`), `.modal-title`, `.modal-dim`, `.modal-info`, `.modal-status`, `.modal-field`, `.modal-actions`, `.modal-btn`(+ `-primary`/`-danger`), `.modal-icon-btn`, modal-create 用の grid/list/section-label など)
+- `mainmenu/ui/modal_*.html.yml` を 5 ファイル新規作成
+- `mainmenu/dialogs/dlg_*.lua` の get_formspec を `packermod.pmui.build_formspec` 呼び出しに書き換え。`PACKERMOD_LEGACY_MODALS=1` で旧 ui_loader path にフォールバック可能
+- `spec/modals_spec.lua` 新規。5 modal すべて overlap=0 / fits_in_size を assert
+
+**ハマったポイント**:
+- `.modal-actions .modal-btn-primary` の子孫 selector だと modal-row 内の Import ボタンが対象外で primary 色が出なかった → `.modal-btn-primary` 単独 selector に変更
+- modal-card のデフォルト h=8 では Import の Close が card 下端を超えていた → h=9 に拡張、modal-create-wide は h=14→12.5 に縮小 (画面 16 に対して上下余白を確保)
+
+**主な変更ファイル**:
+- `mainmenu/ui/themes/synthwave.css.yml` (modal 共通スタイル追加)
+- `mainmenu/ui/modal_world_delete.html.yml`, `modal_world_create.html.yml`, `modal_import.html.yml`, `modal_settings.html.yml`, `modal_create.html.yml` (新規)
+- `mainmenu/dialogs/dlg_import.lua`, `dlg_settings.lua`, `dlg_world_create.lua`, `dlg_world_delete.lua`, `dlg_create.lua` (PMUI 経路追加)
+- `spec/modals_spec.lua` (新規、5 件)
+
+**コミット**:
+- e4fe9ce: 5 modal を PMUI + Synthwave に移行
+
+**次のTODO**:
+- modal の細部改善: TextList の内側色 (Synthwave 化が難しい)、icon-button ラベルの位置調整
+- commit 8: `PACKERMOD_LEGACY_GRID` / `PACKERMOD_LEGACY_DETAIL` / `PACKERMOD_LEGACY_MODALS` フラグと旧 path 撤去
+- (低優先) yaml.lua のインラインマップ対応、他テーマ実装
+
 ## 2026-06-30 22:30 (main)
 
 **変更概要**:
