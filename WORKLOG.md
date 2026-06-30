@@ -37,7 +37,8 @@
 - `spec/library_spec.lua` (旧 path テスト削除)
 - `spec/ui_loader_spec.lua` (resolve_value 単体テストに置換)
 
-**コミット**: (push 後に追記)
+**コミット**:
+- a6b3be0: commit 8 - 旧 path とフラグを完全撤去
 
 **次のTODO**:
 - PMUI 自体の改善 (yaml.lua インラインマップ対応、他テーマ Neon/CRT/Matrix の実装、textlist 内側色の Synthwave 化)
