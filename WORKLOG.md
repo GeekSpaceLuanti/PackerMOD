@@ -11,6 +11,31 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-30 13:45 (main)
+
+**変更概要**:
+画面1 細部の見栄え改善 3 件。
+
+- A. subtitle "Pack Library" を dim purple → accent yellow (#FFD400) に、`.title-bar` に `justify: space-between` を適用してタイトル左 / subtitle 右の配置に。pmui/layout.lua に space-between 実装 (子要素間に Spacer{flex=1} を挿入)
+- B. pack 数 % cols の空きスロットを薄いプレースホルダカード (`.pack-card-placeholder`、半透明 bg/border) で埋めて grid を均等に
+- C. `.pack-card` に `align: center` を追加して thumb / Pack 名 / meta を水平中央配置 (HTML mockup と同じ `align-items: center` 相当)
+
+**主な変更ファイル**:
+- `mainmenu/lib/pmui/layout.lua` (justify: space-between 実装)
+- `mainmenu/library.lua` (placeholder 計算)
+- `mainmenu/ui/library.html.yml` (placeholders for ループ)
+- `mainmenu/ui/themes/synthwave.css.yml` (subtitle 色 / placeholder スタイル / align: center)
+- `spec/pmui_layout_spec.lua` (space-between テスト)
+
+**コミット**:
+- 8f163b5: subtitle 色 + space-between + placeholder + 中央寄せ
+
+**次のTODO**:
+- 画面2 / modal の PMUI 移行
+- commit 8: `PACKERMOD_LEGACY_GRID` フラグと旧 `build_grid_formspec` を撤去
+- (低優先) yaml.lua のインラインマップ対応
+- (低優先) 他テーマ (Neon/CRT/Matrix) を `<name>.{bgimg,thumb,css}.yml` で実装
+
 ## 2026-06-30 13:30 (main)
 
 **変更概要**:
