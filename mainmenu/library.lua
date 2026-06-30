@@ -88,197 +88,54 @@ local function resolve_thumbnail(pack)
     return default_thumbnail_texture()
 end
 
--- ----- grid 画面 -----
+-- ----- grid 画面 (画面1 を library.html.yml + synthwave.css.yml で描画) -----
 
 local function build_grid_formspec(tabdata)
-    local L = packermod.layout
-    local theme = packermod.theme
+    local pmui = packermod.pmui
     local packs = get_packs()
     tabdata.packs = packs
 
-    -- レイアウト定数(13×8.5 の page、padding 0.4 → 内側 12.2 × 7.7)
-    local cols = 3
-    local card_w = 3.8
-    local card_h = 4.2
-    local thumb_size = 3.2
-    local card_pad = 0.2
-
-    local rows = {}
-    local i = 1
-    while i <= #packs or (#packs == 0 and i == 1) do
-        local row = L.HBox{ spacing = 0.3 }
-        for _ = 1, cols do
-            local pack = packs[i]
-            if pack then
-                local card = L.VBox{
-                    spacing = 0.1, padding = card_pad,
-                    bgcolor = theme.colors.bg_panel,
-                    w = card_w, h = card_h,
-                    L.IconButton{
-                        name = pack_button_name(pack.id),
-                        texture = resolve_thumbnail(pack),
-                        label = "",
-                        w = thumb_size, h = thumb_size,
-                    },
-                    L.Label{
-                        text = pack.manifest.name or pack.id,
-                        style = "section",
-                    },
-                    L.Label{
-                        text = (pack.manifest.base_game.id or "?") .. " " ..
-                               (pack.manifest.base_game.version or "?"),
-                        style = "dim",
-                    },
-                }
-                row[#row + 1] = card
-            else
-                row[#row + 1] = L.Spacer{ w = card_w, h = card_h }
-            end
-            i = i + 1
-        end
-        rows[#rows + 1] = row
-        if #packs == 0 then break end
-    end
-
-    local actions = L.HBox{ spacing = 0.3,
-        L.Spacer{ flex = 1 },
-        L.LabeledIconButton{
-            name = "btn_import",
-            texture = packermod.icons.path("download", "md"),
-            label = "Import", w = 1.8, h = 1.4,
-        },
-        L.LabeledIconButton{
-            name = "btn_create",
-            texture = packermod.icons.path("plus", "md"),
-            label = "Create", w = 1.8, h = 1.4,
-        },
-        L.LabeledIconButton{
-            name = "btn_settings",
-            texture = packermod.icons.path("sliders", "md"),
-            label = "Settings", w = 1.8, h = 1.4,
-        },
-    }
-
-    local root = L.VBox{
-        bgcolor = theme.colors.bg,
-        padding = 0.4, spacing = 0.4,
-        w = 13.0, h = 8.5,
-    }
-    -- ヘッダー
-    root[#root + 1] = L.Label{ text = "PackerMOD — Pack Library", style = "section" }
-    if #packs == 0 then
-        root[#root + 1] = L.Label{
-            text = "No packs yet. Use Import or Create below to add one.",
-            style = "dim",
+    local pack_ctx = {}
+    for i, p in ipairs(packs) do
+        pack_ctx[i] = {
+            name_attr  = pack_button_name(p.id),
+            name       = p.manifest.name or p.id,
+            base_label = (p.manifest.base_game.id or "?") .. " " ..
+                         (p.manifest.base_game.version or "?"),
+            thumbnail  = resolve_thumbnail(p),
         }
     end
-    for _, r in ipairs(rows) do root[#root + 1] = r end
-    root[#root + 1] = L.Spacer{ flex = 1 }
-    root[#root + 1] = actions
 
-    return L.build_formspec(root, { version = 6, theme = theme })
-end
-
--- ----- detail 画面 -----
-
-local function build_detail_formspec(tabdata)
-    local packs = tabdata.packs or get_packs()
-    local pack
-    for _, p in ipairs(packs) do
-        if p.id == tabdata.selected_pack_id then pack = p; break end
-    end
-    if not pack then
-        -- 選択中 Pack が無効 → grid に戻す
-        tabdata.view = "grid"
-        return build_grid_formspec(tabdata)
-    end
-
-    local subdir_worlds = packermod.launcher.list_worlds(pack)
-    local legacy_worlds = packermod.launcher.list_legacy_worlds(pack)
-    local worlds = {}
-    for _, w in ipairs(subdir_worlds) do worlds[#worlds + 1] = w end
-    for _, w in ipairs(legacy_worlds) do worlds[#worlds + 1] = w end
-    tabdata.worlds = worlds
-
-    local servers = packermod.launcher.list_servers(pack)
-    tabdata.servers = servers
-
-    tabdata.selected_world  = clamp_selection(tabdata.selected_world, #worlds)
-    tabdata.selected_server = clamp_selection(tabdata.selected_server, #servers)
-
-    local subtab = tabdata.subtab or "worlds"
-    tabdata.subtab = subtab
-
-    local form = tabdata.form_server or {}
-    local mods_state = tabdata.mods_state or {}
-    local info_state = tabdata.info_state or {}
-
-    local pack_mods = pack.manifest.mods or {}
-    tabdata.selected_mod = clamp_selection(tabdata.selected_mod, #pack_mods)
-
-    local search_results = mods_state.results or {}
-    tabdata.selected_search = clamp_selection(tabdata.selected_search, #search_results)
+    -- pack 数 % cols の空きスロット (= プレースホルダ数) を埋めて grid を均等に。
+    -- 列数は synthwave.css.yml の .pack-grid の grid-columns と一致させる必要がある。
+    -- 同期の崩れは見た目に出るので 1 ファイル変更時に注意 (TODO: 動的に CSS から拾う)。
+    local grid_cols = 3
+    local placeholder_count = (grid_cols - (#pack_ctx % grid_cols)) % grid_cols
+    local placeholders = {}
+    for i = 1, placeholder_count do placeholders[i] = {} end
 
     local ctx = {
-        pack_name = pack.manifest.name or "",
-        pack_version = pack.manifest.version or "",
-        pack_base = (pack.manifest.base_game.id or "?") .. "/" ..
-                    (pack.manifest.base_game.version or "?"),
-        pack_mods_count = #pack_mods,
-        pack_description = pack.manifest.description or "",
-
-        variant_worlds = subtab_variant(subtab, "worlds"),
-        variant_multi  = subtab_variant(subtab, "multi"),
-        variant_mods   = subtab_variant(subtab, "mods"),
-        variant_info   = subtab_variant(subtab, "info"),
-
-        show_worlds = (subtab == "worlds"),
-        show_multi  = (subtab == "multi"),
-        show_mods   = (subtab == "mods"),
-        show_info   = (subtab == "info"),
-
-        worlds = worlds,
-        has_world = #worlds > 0,
-        no_world = #worlds == 0,
-        selected_world = tabdata.selected_world,
-
-        servers = servers,
-        has_server = #servers > 0,
-        no_server = #servers == 0,
-        selected_server = tabdata.selected_server,
-        form_server_name = form.name or "",
-        form_server_address = form.address or "",
-        form_server_port = form.port or "",
-
-        pack_mods = pack_mods,
-        has_mod = #pack_mods > 0 and (tabdata.selected_mod or 0) > 0,
-        selected_mod = tabdata.selected_mod,
-        search_query = mods_state.query or "",
-        search_release = mods_state.release or "",
-        search_results = search_results,
-        selected_search = tabdata.selected_search,
-        has_search_result = #search_results > 0 and (tabdata.selected_search or 0) > 0,
-        mod_status = mods_state.status or "",
-
-        info_status = info_state.status or "",
-
-        format_world_label = format_world_label,
-        format_server_label = format_server_label,
-        format_mod_entry = format_mod_entry,
-        format_search_result = format_search_result,
-        icon_path = function(n) return packermod.icons.path(n, "md") end,
+        packs        = pack_ctx,
+        placeholders = placeholders,
+        no_packs     = (#packs == 0),
+        icon_path    = function(n) return packermod.icons.path(n, "md") end,
     }
 
-    return packermod.ui_loader.build_tab_formspec(
-        packermod.ui_loader.ui_yaml_path("library"),
-        ctx,
-        { version = 6, theme = packermod.theme }
-    )
+    local DD = DIR_DELIM or "/"
+    local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
+    return pmui.build_formspec {
+        html_path = mm .. "ui" .. DD .. "library.html.yml",
+        css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
+        ctx       = ctx,
+        -- Luanti のメインメニュー window (1608x853, 1 unit ≈ 52 px) を埋めるサイズ。
+        page_w = 30.0, page_h = 16.0,
+        texture_dir = packermod.textures_dir,
+    }
 end
 
--- ----- PMUI 版 detail 画面(画面2 を pack_detail.html.yml + synthwave.css.yml で描画) -----
+-- ----- detail 画面 (画面2 を pack_detail.html.yml + synthwave.css.yml で描画) -----
 
-local function build_detail_formspec_pmui(tabdata)
+local function build_detail_formspec(tabdata)
     local pmui = packermod.pmui
     local packs = tabdata.packs or get_packs()
     local pack
@@ -287,7 +144,7 @@ local function build_detail_formspec_pmui(tabdata)
     end
     if not pack then
         tabdata.view = "grid"
-        return build_detail_formspec(tabdata)  -- 旧 path にフォールバック (再入で grid に戻る)
+        return build_grid_formspec(tabdata)
     end
 
     local subdir_worlds = packermod.launcher.list_worlds(pack)
@@ -381,69 +238,14 @@ local function build_detail_formspec_pmui(tabdata)
     }
 end
 
--- ----- PMUI 版 grid 画面(画面1 を library.html.yml + synthwave.css.yml で描画) -----
-
-local function build_grid_formspec_pmui(tabdata)
-    local pmui = packermod.pmui
-    local packs = get_packs()
-    tabdata.packs = packs
-
-    local pack_ctx = {}
-    for i, p in ipairs(packs) do
-        pack_ctx[i] = {
-            name_attr  = pack_button_name(p.id),
-            name       = p.manifest.name or p.id,
-            base_label = (p.manifest.base_game.id or "?") .. " " ..
-                         (p.manifest.base_game.version or "?"),
-            thumbnail  = resolve_thumbnail(p),
-        }
-    end
-
-    -- pack 数 % cols の空きスロット (= プレースホルダ数) を埋めて grid を均等に。
-    -- 列数は synthwave.css.yml の .pack-grid の grid-columns と一致させる必要がある。
-    -- 同期の崩れは見た目に出るので 1 ファイル変更時に注意 (TODO: 動的に CSS から拾う)。
-    local grid_cols = 3
-    local placeholder_count = (grid_cols - (#pack_ctx % grid_cols)) % grid_cols
-    local placeholders = {}
-    for i = 1, placeholder_count do placeholders[i] = {} end
-
-    local ctx = {
-        packs        = pack_ctx,
-        placeholders = placeholders,
-        no_packs     = (#packs == 0),
-        icon_path    = function(n) return packermod.icons.path(n, "md") end,
-    }
-
-    local DD = DIR_DELIM or "/"
-    local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
-    return pmui.build_formspec {
-        html_path = mm .. "ui" .. DD .. "library.html.yml",
-        css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
-        ctx       = ctx,
-        -- Luanti のメインメニュー window (1608x853, 1 unit ≈ 52 px) を埋めるサイズ。
-        -- 旧 13.0/8.5 だと画面の 43%×57% にしか映らなかった。
-        page_w = 30.0, page_h = 16.0,
-        texture_dir = packermod.textures_dir,
-    }
-end
-
 -- ----- formspec ディスパッチ -----
 
 local function get_formspec(tabdata)
     tabdata.view = tabdata.view or "grid"
     if tabdata.view == "detail" then
-        -- 画面2 も PMUI 経由が default。PACKERMOD_LEGACY_DETAIL=1 で旧 path に戻せる。
-        if os.getenv("PACKERMOD_LEGACY_DETAIL") then
-            return build_detail_formspec(tabdata)
-        end
-        return build_detail_formspec_pmui(tabdata)
+        return build_detail_formspec(tabdata)
     end
-    -- PMUI 経由の Synthwave がデフォルト。PACKERMOD_LEGACY_GRID=1 で旧 path に
-    -- 戻せる安全弁。数日運用してバグが出なければ commit 8 でフラグと旧 path を撤去する。
-    if os.getenv("PACKERMOD_LEGACY_GRID") then
-        return build_grid_formspec(tabdata)
-    end
-    return build_grid_formspec_pmui(tabdata)
+    return build_grid_formspec(tabdata)
 end
 
 -- ----- launch ヘルパ(symlink trick 経由) -----
@@ -769,9 +571,7 @@ M._internal = {
     SUBTABS = SUBTABS,
     -- 単体テスト用に内部関数も export
     build_grid_formspec = build_grid_formspec,
-    build_grid_formspec_pmui = build_grid_formspec_pmui,
     build_detail_formspec = build_detail_formspec,
-    build_detail_formspec_pmui = build_detail_formspec_pmui,
 }
 
 return M

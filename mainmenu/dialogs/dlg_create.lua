@@ -46,13 +46,6 @@ local function get_formspec(data)
         format_mod_entry     = format_mod_entry,
         icon_path = function(n) return packermod.icons.path(n, "md") end,
     }
-    if os.getenv("PACKERMOD_LEGACY_MODALS") then
-        return packermod.ui_loader.build_tab_formspec(
-            packermod.ui_loader.ui_yaml_path("modal_create"),
-            ctx,
-            { version = 6, theme = packermod.theme }
-        )
-    end
     local DD = DIR_DELIM or "/"
     local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
     return packermod.pmui.build_formspec {

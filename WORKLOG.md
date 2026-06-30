@@ -11,6 +11,38 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-30 23:10 (main)
+
+**変更概要**:
+**commit 8** で旧 path とフラグを完全撤去。PMUI + Synthwave 一本に集約。
+
+**撤去対象**:
+- 旧 DSL ファイル 6 つ: `mainmenu/ui/library.yml` + `modal_create.yml` + `modal_import.yml` + `modal_settings.yml` + `modal_world_create.yml` + `modal_world_delete.yml`
+- 旧 `build_grid_formspec` / `build_detail_formspec` (PMLayout 直接構築) は削除し、PMUI 経由の `_pmui` 接尾辞付き関数をリネームしてその名前を引き継ぎ
+- `PACKERMOD_LEGACY_GRID` / `PACKERMOD_LEGACY_DETAIL` / `PACKERMOD_LEGACY_MODALS` の os.getenv 分岐を全削除
+- `ui_loader.lua` の `expand` / `load` / `build_tab_formspec` / `ui_yaml_path` / 19 個の handler 関数を削除。残るのは `resolve_value` / `resolve_path` のみ(PMUI の parser_html が依存)
+- 旧 spec: `library_spec.lua` の `library.yml (detail view) expansion via ui_loader` と `formspec layout regression (#14, detail view)` describe ブロック削除。`ui_loader_spec.lua` も resolve_value 単体テストに置換
+
+**結果**:
+- 全 242 件緑 (前回 270 + 1 pending → -28 件 -1 pending)
+- `#15` pending (layout shrink-to-fit) は旧 detail view 関連だったので一緒に解消
+- ui_loader.lua: 200 行 → 50 行に簡素化
+- 実機 screenshot で画面1/画面2/modal_import が問題なく動くことを確認
+
+**主な変更ファイル**:
+- `mainmenu/library.lua` (旧 build_*_formspec 削除 + リネーム + ディスパッチ簡素化)
+- `mainmenu/dialogs/dlg_*.lua` x5 (LEGACY_MODALS 分岐削除)
+- `mainmenu/lib/ui_loader.lua` (簡素化)
+- `mainmenu/ui/library.yml`, `mainmenu/ui/modal_*.yml` x6 (削除)
+- `spec/library_spec.lua` (旧 path テスト削除)
+- `spec/ui_loader_spec.lua` (resolve_value 単体テストに置換)
+
+**コミット**: (push 後に追記)
+
+**次のTODO**:
+- PMUI 自体の改善 (yaml.lua インラインマップ対応、他テーマ Neon/CRT/Matrix の実装、textlist 内側色の Synthwave 化)
+- 細部 UX (画面2 で text サイズ調整、modal の textlist の見栄え)
+
 ## 2026-06-30 22:55 (main)
 
 **変更概要**:
