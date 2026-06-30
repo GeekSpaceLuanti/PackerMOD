@@ -83,6 +83,17 @@ local function build_container(L, el, ctx)
         w = box.w, h = box.h, flex = box.flex,
         bgcolor = bgcolor_for_widget,
     }
+    if box.justify == "space-between" then
+        -- 子要素の間に Spacer{flex=1} を挟んで両端寄せ + 等間隔
+        for i, c in ipairs(children) do
+            node[#node + 1] = c
+            if i < #children then
+                node[#node + 1] = L.Spacer { flex = 1 }
+            end
+        end
+        el._widget = node
+        return node
+    end
     if box.justify == "end" then
         node[#node + 1] = L.Spacer { flex = 1 }
     elseif box.justify == "center" then

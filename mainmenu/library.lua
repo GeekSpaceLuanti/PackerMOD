@@ -294,10 +294,19 @@ local function build_grid_formspec_pmui(tabdata)
         }
     end
 
+    -- pack 数 % cols の空きスロット (= プレースホルダ数) を埋めて grid を均等に。
+    -- 列数は synthwave.css.yml の .pack-grid の grid-columns と一致させる必要がある。
+    -- 同期の崩れは見た目に出るので 1 ファイル変更時に注意 (TODO: 動的に CSS から拾う)。
+    local grid_cols = 3
+    local placeholder_count = (grid_cols - (#pack_ctx % grid_cols)) % grid_cols
+    local placeholders = {}
+    for i = 1, placeholder_count do placeholders[i] = {} end
+
     local ctx = {
-        packs     = pack_ctx,
-        no_packs  = (#packs == 0),
-        icon_path = function(n) return packermod.icons.path(n, "md") end,
+        packs        = pack_ctx,
+        placeholders = placeholders,
+        no_packs     = (#packs == 0),
+        icon_path    = function(n) return packermod.icons.path(n, "md") end,
     }
 
     local DD = DIR_DELIM or "/"

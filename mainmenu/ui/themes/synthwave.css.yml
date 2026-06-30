@@ -23,6 +23,7 @@ rules:
   - selector: ".title-bar"
     style:
       flex-direction: row
+      justify: space-between
       gap: 0.8
       h: 1.8
       align: center
@@ -34,7 +35,7 @@ rules:
 
   - selector: ".subtitle"
     style:
-      color: "#b09ad8"
+      color: "#FFD400"
       font-size: "*1.6"
 
   - selector: "#no-packs-msg"
@@ -56,7 +57,18 @@ rules:
       border-color: "#A06EFF"
       padding: 0.4
       flex-direction: column
+      align: center
       gap: 0.2
+      w: 8.5
+      h: 8.0
+
+  # 空きスロットを埋める薄いプレースホルダ。formspec は点線をサポートしないので
+  # 薄い実線枠と透明寄り bg で代用する。
+  - selector: ".pack-card-placeholder"
+    style:
+      bg: "#1a0a3a55"
+      border-width: 0.06
+      border-color: "#A06EFF55"
       w: 8.5
       h: 8.0
 

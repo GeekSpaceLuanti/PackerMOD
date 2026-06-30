@@ -156,6 +156,31 @@ rules: []
         assert.equal("icon_plus.png", found_ibtn.texture)
     end)
 
+    it("justify: space-between inserts Spacer{flex=1} between siblings", function()
+        local node = compile([[
+root:
+  tag: header
+  class: bar
+  children:
+    - tag: span
+      text: left
+    - tag: span
+      text: right
+]], [[
+rules:
+  - selector: ".bar"
+    style:
+      flex-direction: row
+      justify: space-between
+]])
+        assert.equal("HBox", node._kind)
+        assert.equal(3, #node)
+        assert.equal("Label",  node[1]._kind)
+        assert.equal("Spacer", node[2]._kind)
+        assert.equal(1,        node[2].flex)
+        assert.equal("Label",  node[3]._kind)
+    end)
+
     it("justify: end inserts leading Spacer{flex=1}", function()
         local node = compile([[
 root:

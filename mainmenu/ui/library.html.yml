@@ -43,6 +43,12 @@ root:
             - tag: span
               class: pack-meta
               text: "${pack.base_label}"
+        # 残り列を埋めるプレースホルダ。pack 数 % cols の空き分だけ並ぶ。
+        - tag: card
+          class: pack-card-placeholder
+          for:
+            each: _
+            in: placeholders
 
     - tag: footer
       class: action-bar
