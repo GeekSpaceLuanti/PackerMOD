@@ -11,6 +11,44 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-30 13:30 (main)
+
+**変更概要**:
+ユーザー指摘「UI が中央に狭いのがダサい原因」を解消。formspec を window 全体に拡張した。
+
+**真の原因**:
+- Luanti が `minetest.conf` の `screen_w=1608, screen_h=853` で動いていた (≈ 16:9 弱)
+- 旧 `size[13, 8.5]` は 4:3 ワイドアスペクト → Luanti が中央配置 + 周囲塗りで画面の 43%×57% しか formspec が映らなかった
+- formspec の 1 unit ≈ 52 px (screenshot から逆算)
+
+**修正**:
+- `size[30, 16]` で 1 unit のピクセルサイズを維持しつつ window 全体を埋める。bgimg PNG も 1920x1024 で再生成
+- 全 UI 要素を約 2x スケール: title font *1.8 → *3.5、pack-card w3.8/h4.0 → w8.5/h8.0、action-btn 1.9x1.4 → 4.0x2.7 など
+- padding[-1,-1] / アスペクト調整など試行錯誤の末、結局 size を大きくして 1 unit の Luanti 物理サイズを維持するのが正攻法だった
+
+**試行錯誤の経緯**:
+1. `background[];auto_clip=true` → 効果なし (formspec 内側のみ)
+2. `padding[-0.05,-0.05]` `padding[-1,-1]` → 効果なし (Luanti mainmenu では効かない)
+3. size を window アスペクト (4:3 = 12.8x9.6) に → アスペクト合うが Luanti が依然中央配置
+4. screen_w/screen_h を確認して **1608x853 = 16:9 弱**と判明
+5. 1 unit ≈ 52 px と分かったので `size[30, 16]` で物理サイズが画面と一致 → 解決
+
+**主な変更ファイル**:
+- `mainmenu/library.lua` (page_w/h)
+- `mainmenu/ui/themes/synthwave.bgimg.yml` (1920x1024)
+- `mainmenu/ui/themes/synthwave.css.yml` (全 UI 値を 2x)
+- `mainmenu/lib/pmui/paint.lua` (試行 prelude を削除)
+- `textures/packermod_*_synthwave.png` (再生成)
+- `spec/library_spec.lua` (size 期待値)
+
+**コミット**:
+- c3bb95b: formspec を window 全体に拡張 + UI 2x スケール
+
+**次のTODO**:
+- 画面2 / modal の PMUI 移行 (今は dark テーマのまま)
+- commit 8: 数日運用後に `PACKERMOD_LEGACY_GRID` フラグと旧 `build_grid_formspec` を撤去
+- Pack 数が grid-columns 未満のとき 3 列目の余白が目立つ → 空の placeholder カード or grid 中央配置で改善可能
+
 ## 2026-06-30 00:25 (main)
 
 **変更概要**:
