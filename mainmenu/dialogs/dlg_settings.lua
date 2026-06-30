@@ -11,11 +11,22 @@ local function get_formspec(data)
         status         = data.status or "",
         icon_path      = function(n) return packermod.icons.path(n, "md") end,
     }
-    return packermod.ui_loader.build_tab_formspec(
-        packermod.ui_loader.ui_yaml_path("modal_settings"),
-        ctx,
-        { version = 6, theme = packermod.theme }
-    )
+    if os.getenv("PACKERMOD_LEGACY_MODALS") then
+        return packermod.ui_loader.build_tab_formspec(
+            packermod.ui_loader.ui_yaml_path("modal_settings"),
+            ctx,
+            { version = 6, theme = packermod.theme }
+        )
+    end
+    local DD = DIR_DELIM or "/"
+    local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
+    return packermod.pmui.build_formspec {
+        html_path = mm .. "ui" .. DD .. "modal_settings.html.yml",
+        css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
+        ctx       = ctx,
+        page_w = 30.0, page_h = 16.0,
+        texture_dir = packermod.textures_dir,
+    }
 end
 
 local function handler(self, fields)

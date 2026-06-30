@@ -1,0 +1,54 @@
+# Pack Import modal (HTML 風 DSL)。
+
+root:
+  tag: page
+  class: modal-page
+  children:
+    - tag: spacer
+      class: modal-vspacer
+    - tag: div
+      class: modal-center-row
+      children:
+        - tag: spacer
+          class: modal-hspacer
+        - tag: card
+          class: modal-card
+          children:
+            - tag: h2
+              class: modal-title
+              text: "Import a Pack"
+            - tag: span
+              class: modal-dim
+              text: "Paste an http(s) URL or a local path to a .zip / manifest.yaml"
+            - tag: div
+              class: modal-row
+              children:
+                - tag: field
+                  class: modal-field-grow
+                  attrs:
+                    name: source
+                    label: "Source"
+                    default: "${source}"
+                - tag: icon-button
+                  class: "modal-icon-btn modal-btn-primary"
+                  attrs:
+                    name: import
+                    icon: download
+                    label: Import
+            - tag: status
+              class: modal-status
+              text: "${status}"
+            - tag: spacer
+              class: modal-vspacer
+            - tag: footer
+              class: modal-actions
+              children:
+                - tag: button
+                  class: "modal-btn"
+                  attrs:
+                    name: dlg_close
+                    label: Close
+        - tag: spacer
+          class: modal-hspacer
+    - tag: spacer
+      class: modal-vspacer

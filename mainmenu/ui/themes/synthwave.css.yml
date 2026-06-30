@@ -236,6 +236,173 @@ rules:
       font-size: "*1.1"
       align: center
 
+# ===== Modal 共通スタイル =====
+# 各 modal は size[30, 16] で page を取り、外側を bgcolor(both) で塗りつぶした上で
+# 画面中央に modal-card を配置する。これで雲・Luanti デフォ背景が完全に隠れる。
+
+  - selector: ".modal-page"
+    style:
+      bg: "#1a0a3a"
+      bg-image: "url(packermod_bg_synthwave.png)"
+      padding: 0.8
+      flex-direction: column
+
+  - selector: ".modal-vspacer"
+    style:
+      flex: 1
+
+  - selector: ".modal-center-row"
+    style:
+      flex-direction: row
+
+  - selector: ".modal-hspacer"
+    style:
+      flex: 1
+
+  - selector: ".modal-card"
+    style:
+      bg: "#28114f"
+      border-width: 0.08
+      border-color: "#A06EFF"
+      padding: 0.6
+      flex-direction: column
+      gap: 0.3
+      w: 16.0
+      h: 9.0
+
+  - selector: ".modal-card-narrow"
+    style:
+      w: 13.0
+      h: 8.0
+
+  - selector: ".modal-card-mid"
+    style:
+      w: 18.0
+      h: 9.0
+
+  - selector: ".modal-title"
+    style:
+      color: "#FF52A4"
+      font-size: "*2.2"
+      h: 1.2
+
+  - selector: ".modal-dim"
+    style:
+      color: "#b09ad8"
+      font-size: "*1.1"
+
+  - selector: ".modal-info"
+    style:
+      color: "#f0e6ff"
+      font-size: "*1.2"
+
+  - selector: ".modal-status"
+    style:
+      color: "#FFD400"
+      font-size: "*1.1"
+      h: 0.8
+
+  - selector: ".modal-field"
+    style:
+      h: 1.2
+      bg: "#28114f"
+      color: "#f0e6ff"
+
+  - selector: ".modal-actions"
+    style:
+      flex-direction: row
+      justify: end
+      gap: 0.5
+      h: 1.8
+
+  - selector: ".modal-btn"
+    style:
+      w: 3.0
+      h: 1.6
+      bg: "#28114f"
+      color: "#f0e6ff"
+
+  - selector: ".modal-btn-primary"
+    style:
+      w: 4.0
+      h: 1.6
+      bg: "#A06EFF"
+      color: "#1a0a3a"
+
+  - selector: ".modal-btn-danger"
+    style:
+      w: 3.5
+      h: 1.6
+      bg: "#FF52A4"
+      color: "#1a0a3a"
+
+  - selector: ".modal-icon-btn"
+    style:
+      w: 4.0
+      h: 1.6
+
+  # modal_create / modal_import で使う追加スタイル
+  - selector: ".modal-row"
+    style:
+      flex-direction: row
+      gap: 0.4
+      h: 1.8
+
+  - selector: ".modal-field-grow"
+    style:
+      flex: 1
+      h: 1.2
+      bg: "#28114f"
+      color: "#f0e6ff"
+
+  - selector: ".modal-field-create"
+    style:
+      w: 3.2
+      h: 1.2
+      bg: "#28114f"
+      color: "#f0e6ff"
+
+  - selector: ".modal-field-create-grow"
+    style:
+      flex: 1
+      h: 1.2
+      bg: "#28114f"
+      color: "#f0e6ff"
+
+  - selector: ".modal-icon-btn-small"
+    style:
+      w: 2.4
+      h: 1.5
+
+  - selector: ".modal-list"
+    style:
+      flex: 1
+      bg: "#1a0a3a"
+      color: "#f0e6ff"
+
+  - selector: ".modal-create-body"
+    style:
+      flex: 1
+      flex-direction: row
+      gap: 0.6
+
+  - selector: ".modal-create-col"
+    style:
+      flex: 1
+      flex-direction: column
+      gap: 0.3
+
+  - selector: ".modal-section-label"
+    style:
+      color: "#FF52A4"
+      font-size: "*1.3"
+      h: 0.8
+
+  - selector: ".modal-card-wide"
+    style:
+      w: 26.0
+      h: 12.5
+
 media:
   - query: "max-width 20.0"
     rules:

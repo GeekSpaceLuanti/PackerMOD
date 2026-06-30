@@ -1,0 +1,51 @@
+# World 削除確認 modal (HTML 風 DSL)。
+
+root:
+  tag: page
+  class: modal-page
+  children:
+    - tag: spacer
+      class: modal-vspacer
+    - tag: div
+      class: modal-center-row
+      children:
+        - tag: spacer
+          class: modal-hspacer
+        - tag: card
+          class: modal-card
+          children:
+            - tag: h2
+              class: modal-title
+              text: "Delete World"
+            - tag: span
+              class: modal-dim
+              text: "Pack: ${pack_name}"
+            - tag: span
+              class: modal-info
+              text: "World: ${world_display}"
+            - tag: span
+              class: modal-dim
+              text: "This cannot be undone."
+            - tag: status
+              class: modal-status
+              text: "${status}"
+            - tag: spacer
+              class: modal-vspacer
+            - tag: footer
+              class: modal-actions
+              children:
+                - tag: button
+                  class: "modal-btn"
+                  attrs:
+                    name: dlg_close
+                    label: Cancel
+                - tag: icon-button
+                  class: "modal-icon-btn modal-btn-danger"
+                  attrs:
+                    name: confirm_delete
+                    icon: trash
+                    label: Delete
+        - tag: spacer
+          class: modal-hspacer
+    - tag: spacer
+      class: modal-vspacer

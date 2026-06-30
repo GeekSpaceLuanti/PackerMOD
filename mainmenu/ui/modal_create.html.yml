@@ -1,0 +1,157 @@
+# Pack Create modal (HTML 風 DSL)。最も大きい modal で、識別子フォーム + ContentDB
+# 検索 + 現 mods リストが横に並ぶ。
+
+root:
+  tag: page
+  class: modal-page
+  children:
+    - tag: spacer
+      class: modal-vspacer
+    - tag: div
+      class: modal-center-row
+      children:
+        - tag: spacer
+          class: modal-hspacer
+        - tag: card
+          class: "modal-card modal-card-wide"
+          children:
+            - tag: h2
+              class: modal-title
+              text: "Create Pack"
+
+            # Pack identity (4 fields + 3 fields の 2 行)
+            - tag: span
+              class: modal-section-label
+              text: "Pack identity"
+            - tag: div
+              class: modal-row
+              children:
+                - tag: field
+                  class: modal-field-create
+                  attrs:
+                    name: pack_id
+                    label: "Pack id"
+                    default: "${pack_id}"
+                - tag: field
+                  class: modal-field-create
+                  attrs:
+                    name: pack_name
+                    label: "Name"
+                    default: "${pack_name}"
+                - tag: field
+                  class: modal-field-create
+                  attrs:
+                    name: pack_version
+                    label: "Version"
+                    default: "${pack_version}"
+                - tag: field
+                  class: modal-field-create
+                  attrs:
+                    name: pack_author
+                    label: "Author"
+                    default: "${pack_author}"
+            - tag: div
+              class: modal-row
+              children:
+                - tag: field
+                  class: modal-field-create
+                  attrs:
+                    name: base_id
+                    label: "Base id"
+                    default: "${base_id}"
+                - tag: field
+                  class: modal-field-create
+                  attrs:
+                    name: base_version
+                    label: "Base ver"
+                    default: "${base_version}"
+                - tag: field
+                  class: modal-field-create-grow
+                  attrs:
+                    name: pack_description
+                    label: "Description"
+                    default: "${pack_description}"
+
+            # 2 列: 検索結果 + 現 mods リスト
+            - tag: div
+              class: modal-create-body
+              children:
+                - tag: div
+                  class: modal-create-col
+                  children:
+                    - tag: span
+                      class: modal-section-label
+                      text: "ContentDB search"
+                    - tag: div
+                      class: modal-row
+                      children:
+                        - tag: field
+                          class: modal-field-create-grow
+                          attrs:
+                            name: search_query
+                            label: "Query"
+                            default: "${search_query}"
+                        - tag: field
+                          class: modal-field-create
+                          attrs:
+                            name: search_release
+                            label: "Release"
+                            default: "${search_release}"
+                        - tag: icon-button
+                          class: modal-icon-btn-small
+                          attrs:
+                            name: search
+                            icon: search
+                            label: Search
+                        - tag: icon-button
+                          class: modal-icon-btn-small
+                          attrs:
+                            name: add_search
+                            icon: plus
+                            label: Add
+                    - tag: list
+                      class: modal-list
+                      attrs:
+                        name: search_results
+                        items: "${search_results | format_search_result}"
+                        selected: "${search_selected}"
+                    - tag: status
+                      class: modal-status
+                      text: "${status}"
+
+                - tag: div
+                  class: modal-create-col
+                  children:
+                    - tag: span
+                      class: modal-section-label
+                      text: "Current mods"
+                    - tag: list
+                      class: modal-list
+                      attrs:
+                        name: mod_list
+                        items: "${mods | format_mod_entry}"
+                        selected: "${mod_selected}"
+                    - tag: footer
+                      class: modal-actions
+                      children:
+                        - tag: icon-button
+                          class: "modal-icon-btn modal-btn-danger"
+                          attrs:
+                            name: remove_mod
+                            icon: trash
+                            label: Remove
+                        - tag: icon-button
+                          class: "modal-icon-btn modal-btn-primary"
+                          attrs:
+                            name: export
+                            icon: save
+                            label: Export
+                        - tag: button
+                          class: "modal-btn"
+                          attrs:
+                            name: dlg_close
+                            label: Close
+        - tag: spacer
+          class: modal-hspacer
+    - tag: spacer
+      class: modal-vspacer
