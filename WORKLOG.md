@@ -11,6 +11,42 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-06-30 22:30 (main)
+
+**変更概要**:
+画面2 (Pack Detail) を PMUI + Synthwave テーマで描画する移行を完了。前段で 6 ステップに分けて作業:
+
+1. PMUI に `list` / `textarea` / `status` タグを追加 (TextList / TextArea / dim Label の wrapper)
+2. `mainmenu/ui/pack_detail.html.yml` を新規作成 — ヘッダ + subtab buttons + 4 subtab pane (Worlds/Multi/Mods/Info) を when: で出し分け
+3. `mainmenu/ui/themes/synthwave.css.yml` に画面2 用スタイルを追加 (subtab-btn の active/inactive、detail-list、form-row、mods-grid、subtab-actions など)
+4. `mainmenu/library.lua` に `build_detail_formspec_pmui` を追加。`get_formspec` でディスパッチ (PACKERMOD_LEGACY_DETAIL=1 で旧 path にフォールバック)
+5. `spec/library_spec.lua` に PMUI 経由 detail view smoke test を追加 (4 subtab すべて overlap=0 + fits_in_size 通過)
+6. screenshot で 4 subtab を実機確認、`subtab-actions` の高さと `form-textarea` h 固定で OOB を解消
+
+**ハマったポイント**:
+- `ui_loader.lua` の `resolve_value` が module export されておらず、PMUI の parser_html がフォールバック実装を使っていた。フォールバックは pipe form (`${list | fmt}`) 非対応で、worlds リストなどが文字列のまま widget に渡されて `bad argument #1 to 'ipairs'` エラー → `M.resolve_value = resolve_value` を export して解決
+- subtab active 状態は class 値の動的展開 (`class: "subtab-btn ${subtab_class_worlds}"`) で実現。parser_html が class 値も resolve するよう 1 行修正
+- 画面1 用 `.action-btn` (4.0x2.7) が画面2 にも当たって `.subtab-actions` (h: 2.0) を超えて OOB → 子孫 selector `.subtab-actions .action-btn` で 3.5x1.6 に上書き
+- TextArea は default h=2.0 + label_h 0.4 = 真の高さ 2.4 で flex:1 でも余りなしと判定されて固定。`.form-textarea` に明示的 h を指定して解決
+
+**主な変更ファイル**:
+- `mainmenu/lib/pmui/layout.lua` (list/textarea/status 追加)
+- `mainmenu/lib/pmui/parser_html.lua` (class 値 resolve)
+- `mainmenu/lib/ui_loader.lua` (resolve_value export)
+- `mainmenu/library.lua` (build_detail_formspec_pmui 追加)
+- `mainmenu/ui/pack_detail.html.yml` (新規)
+- `mainmenu/ui/themes/synthwave.css.yml` (画面2 セクション追加)
+- `spec/library_spec.lua`, `spec/pmui_layout_spec.lua` (テスト追加)
+
+**コミット**:
+- d1a0908: 画面2 (Pack Detail) を PMUI + Synthwave に移行
+
+**次のTODO**:
+- 画面2 の細部改善: textlist 内部の色 (現状 default の黒/緑) を Synthwave に合わせる方法を検討 — formspec の textlist style 制限あり
+- 5 modal (Import/Create/Settings/WorldCreate/WorldDelete) の PMUI 移行
+- commit 8: `PACKERMOD_LEGACY_GRID` / `PACKERMOD_LEGACY_DETAIL` フラグと旧 path 撤去
+- (低優先) yaml.lua のインラインマップ対応、他テーマ実装
+
 ## 2026-06-30 13:45 (main)
 
 **変更概要**:
