@@ -1,0 +1,283 @@
+# PackerMOD 画面2 (Pack Detail) の HTML 風 DSL。
+# 対応する style は mainmenu/ui/themes/<theme>.css.yml。
+# library.lua の build_detail_formspec_pmui がこのファイルを読み込む。
+#
+# 4 subtab (Worlds / Multiplayer / Mods / Info) を when: で出し分ける。
+
+root:
+  tag: page
+  id: pack-detail
+  children:
+
+    # ヘッダ: Back / Pack タイトル / メタ情報
+    - tag: header
+      class: detail-header
+      children:
+        - tag: icon-button
+          id: btn-back
+          class: back-btn
+          attrs:
+            name: btn_back
+            icon: folder
+            label: Back
+        - tag: h1
+          id: detail-title
+          class: detail-title
+          text: "${pack_name}"
+        - tag: spacer
+          class: detail-spacer
+        - tag: span
+          id: detail-meta
+          class: detail-meta
+          text: "v${pack_version}   base=${pack_base}   mods=${pack_mods_count}"
+
+    # subtab buttons (active 状態は ${subtab_class_*} で動的にクラスを付与)
+    - tag: nav
+      class: subtab-bar
+      children:
+        - tag: button
+          id: subtab-worlds
+          class: "subtab-btn ${subtab_class_worlds}"
+          attrs:
+            name: subtab_worlds
+            label: Worlds
+        - tag: button
+          id: subtab-multi
+          class: "subtab-btn ${subtab_class_multi}"
+          attrs:
+            name: subtab_multi
+            label: Multiplayer
+        - tag: button
+          id: subtab-mods
+          class: "subtab-btn ${subtab_class_mods}"
+          attrs:
+            name: subtab_mods
+            label: Mods
+        - tag: button
+          id: subtab-info
+          class: "subtab-btn ${subtab_class_info}"
+          attrs:
+            name: subtab_info
+            label: Info
+
+    # ===== Worlds subtab =====
+    - tag: section
+      class: subtab-pane
+      when: "${show_worlds}"
+      children:
+        - tag: list
+          class: detail-list
+          attrs:
+            name: worldlist
+            items: "${worlds | format_world_label}"
+            selected: "${selected_world}"
+        - tag: status
+          class: empty-status
+          when: "${no_world}"
+          text: "No worlds yet. Press New World to create one."
+        - tag: footer
+          class: subtab-actions
+          children:
+            - tag: icon-button
+              id: btn-new-world
+              class: action-btn
+              attrs:
+                name: new_world
+                icon: plus
+                label: "New World"
+            - tag: icon-button
+              id: btn-delete-world
+              class: action-btn
+              when: "${has_world}"
+              attrs:
+                name: delete_world
+                icon: trash
+                label: Delete
+            - tag: icon-button
+              id: btn-play-world
+              class: action-btn
+              when: "${has_world}"
+              attrs:
+                name: play_world
+                icon: play
+                label: Play
+
+    # ===== Multiplayer subtab =====
+    - tag: section
+      class: subtab-pane
+      when: "${show_multi}"
+      children:
+        - tag: list
+          class: detail-list
+          attrs:
+            name: serverlist
+            items: "${servers | format_server_label}"
+            selected: "${selected_server}"
+        - tag: status
+          class: empty-status
+          when: "${no_server}"
+          text: "No servers yet. Fill the form below and press Add."
+        - tag: div
+          class: form-row
+          children:
+            - tag: field
+              class: form-field
+              attrs:
+                name: server_name
+                label: Name
+                default: "${form_server_name}"
+            - tag: field
+              class: form-field
+              attrs:
+                name: server_address
+                label: Address
+                default: "${form_server_address}"
+            - tag: field
+              class: form-field-narrow
+              attrs:
+                name: server_port
+                label: Port
+                default: "${form_server_port}"
+        - tag: footer
+          class: subtab-actions
+          children:
+            - tag: icon-button
+              id: btn-server-add
+              class: action-btn
+              attrs:
+                name: server_add
+                icon: plus
+                label: Add
+            - tag: icon-button
+              id: btn-server-remove
+              class: action-btn
+              when: "${has_server}"
+              attrs:
+                name: server_remove
+                icon: trash
+                label: Remove
+            - tag: icon-button
+              id: btn-server-connect
+              class: action-btn
+              when: "${has_server}"
+              attrs:
+                name: server_connect
+                icon: play
+                label: Connect
+
+    # ===== Mods subtab =====
+    - tag: section
+      class: subtab-pane
+      when: "${show_mods}"
+      children:
+        - tag: div
+          class: form-row
+          children:
+            - tag: field
+              class: form-field
+              attrs:
+                name: search_query
+                label: "Search ContentDB"
+                default: "${search_query}"
+            - tag: field
+              class: form-field-narrow
+              attrs:
+                name: search_release
+                label: Release
+                default: "${search_release}"
+            - tag: icon-button
+              id: btn-search
+              class: action-btn
+              attrs:
+                name: do_search
+                icon: search
+                label: Search
+        - tag: status
+          class: empty-status
+          text: "${mod_status}"
+        - tag: div
+          class: mods-grid
+          children:
+            - tag: div
+              class: mods-col
+              children:
+                - tag: h2
+                  class: mods-col-title
+                  text: "Current"
+                - tag: list
+                  class: detail-list
+                  attrs:
+                    name: mod_list
+                    items: "${pack_mods | format_mod_entry}"
+                    selected: "${selected_mod}"
+                - tag: icon-button
+                  id: btn-mod-remove
+                  class: action-btn
+                  when: "${has_mod}"
+                  attrs:
+                    name: mod_remove
+                    icon: trash
+                    label: Remove
+            - tag: div
+              class: mods-col
+              children:
+                - tag: h2
+                  class: mods-col-title
+                  text: "Search results"
+                - tag: list
+                  class: detail-list
+                  attrs:
+                    name: search_results
+                    items: "${search_results | format_search_result}"
+                    selected: "${selected_search}"
+                - tag: icon-button
+                  id: btn-mod-add
+                  class: action-btn
+                  when: "${has_search_result}"
+                  attrs:
+                    name: mod_add
+                    icon: plus
+                    label: Add
+
+    # ===== Info subtab =====
+    - tag: section
+      class: subtab-pane
+      when: "${show_info}"
+      children:
+        - tag: field
+          class: form-field
+          attrs:
+            name: info_name
+            label: Name
+            default: "${pack_name}"
+        - tag: div
+          class: form-row
+          children:
+            - tag: field
+              class: form-field
+              attrs:
+                name: info_version
+                label: Version
+                default: "${pack_version}"
+            - tag: span
+              class: info-base
+              text: "Base: ${pack_base}"
+        - tag: textarea
+          class: form-textarea
+          attrs:
+            name: info_description
+            label: Description
+            default: "${pack_description}"
+        - tag: status
+          class: empty-status
+          text: "${info_status}"
+        - tag: footer
+          class: subtab-actions
+          children:
+            - tag: icon-button
+              id: btn-info-save
+              class: action-btn
+              attrs:
+                name: info_save
+                icon: save
+                label: "Save Changes"

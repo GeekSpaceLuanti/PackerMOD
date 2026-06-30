@@ -117,10 +117,12 @@ expand = function(node, ctx, resolve)
         end
     end
 
+    -- class 値は ${var} を含めて文字列補間 → スペース区切りで複数クラスに展開
+    local resolved_class = node["class"] ~= nil and resolve(node["class"], ctx) or nil
     local el = dom.element {
         tag      = node.tag,
         id       = node.id,
-        classes  = classes_from(node["class"]),
+        classes  = classes_from(resolved_class),
         text     = node.text ~= nil and resolve(node.text, ctx) or nil,
         attrs    = resolved_attrs,
         children = expand_children(node.children, ctx, resolve),

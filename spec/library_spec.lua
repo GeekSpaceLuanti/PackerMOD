@@ -363,6 +363,72 @@ describe("library grid view (画面1)", function()
     end)
 end)
 
+-- ---- PMUI 経由の画面2 (Pack Detail) smoke test ----
+describe("library detail view PMUI (画面2)", function()
+    local lib, helpers
+    setup(function()
+        _G.packermod = _G.packermod or {}
+        packermod.layout = dofile("mainmenu/lib/layout.lua")
+        packermod.yaml   = dofile("mainmenu/yaml.lua")
+        packermod.theme  = dofile("mainmenu/lib/theme.lua")
+        packermod.icons  = dofile("mainmenu/lib/icons.lua")
+        packermod.ui_loader = dofile("mainmenu/lib/ui_loader.lua")
+        packermod.pmui  = dofile("mainmenu/lib/pmui/init.lua")
+        packermod.mainmenu_path = "mainmenu/"
+        packermod.user_path = "/u"
+        packermod.manifest = {}
+
+        local pack = {
+            id = "pack_a", path = "/u/pack_a",
+            manifest = {
+                name = "Pack A", version = "1.0",
+                base_game = { id = "packerbase", version = "0.91" },
+                mods = {},
+            },
+        }
+        packermod.pack_manager = {
+            list_packs = function() return { pack } end,
+        }
+        packermod.launcher = {
+            list_worlds = function() return {} end,
+            list_legacy_worlds = function() return {} end,
+            list_servers = function() return {} end,
+        }
+        helpers = dofile("spec/support/formspec_helpers.lua")
+        lib = dofile("mainmenu/library.lua")
+    end)
+
+    local function pmui_fs(subtab)
+        local tabdata = {
+            selected_pack_id = "pack_a",
+            subtab = subtab,
+        }
+        return lib._internal.build_detail_formspec_pmui(tabdata)
+    end
+
+    for _, subtab in ipairs({ "worlds", "multi", "mods", "info" }) do
+        it("pmui detail " .. subtab .. " renders without overlap/OOB", function()
+            local fs = pmui_fs(subtab)
+            assert.is_string(fs)
+            assert.is_truthy(fs:find("Pack A", 1, true))         -- title
+            assert.is_truthy(fs:find("btn_back", 1, true))        -- Back button
+            assert.is_truthy(fs:find("subtab_worlds", 1, true))   -- subtab buttons
+            assert.is_truthy(fs:find("packermod_bg_synthwave.png", 1, true))  -- bg
+
+            local size, els = helpers.parse_formspec(fs)
+            assert.equal(30.0, size.w)
+            assert.equal(16.0, size.h)
+            local overlaps = helpers.find_overlaps(els, { label_h = 0.45 })
+            if #overlaps > 0 then
+                error("overlap in " .. subtab .. ":\n" .. helpers.format_overlaps(overlaps))
+            end
+            local ok, bad = helpers.fits_in_size(els, size, { label_h = 0.45 })
+            assert.is_true(ok, "OOB in " .. subtab .. ": " ..
+                (bad and helpers.describe_el(bad) or ""))
+        end)
+    end
+end)
+
 -- ---- overlap / OOB regression: detail view (library.yml) の各 subtab を全部
 -- 一度ずつ描画して 0 overlap・OOB なしを assert。grid view は動的構築なので別途。
 describe("formspec layout regression (#14, detail view)", function()

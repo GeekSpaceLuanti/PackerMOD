@@ -165,6 +165,38 @@ build = function(el, ctx)
             w = box.w, h = box.h,
         }
     end
+    if el.tag == "textarea" then
+        return L.TextArea {
+            name = el.attrs.name or el.id,
+            label = el.attrs.label,
+            default = el.attrs.default or el.text,
+            w = box.w, h = box.h, flex = box.flex,
+        }
+    end
+    if el.tag == "list" then
+        -- attrs.items は { string... }、selected は 1-based index。
+        return L.TextList {
+            name = el.attrs.name or el.id,
+            items = el.attrs.items or {},
+            selected = el.attrs.selected,
+            transparent = el.attrs.transparent,
+            w = box.w, h = box.h, flex = box.flex,
+        }
+    end
+    if el.tag == "status" then
+        -- dim 表示の Label 1 行 (情報メッセージや空状態の文言用)。
+        local text = el.text or el.attrs.text or ""
+        if box.color then
+            text = ("\27(c@%s)"):format(tostring(box.color)) .. text
+        end
+        local node = L.Label {
+            name = el.id,
+            text = text,
+            w = box.w, h = box.h,
+        }
+        el._widget = node
+        return node
+    end
     -- 未対応タグは Spacer 0 (footprint なし) で安全に握りつぶす
     return L.Spacer { w = 0, h = 0 }
 end

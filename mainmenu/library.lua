@@ -276,6 +276,111 @@ local function build_detail_formspec(tabdata)
     )
 end
 
+-- ----- PMUI 版 detail 画面(画面2 を pack_detail.html.yml + synthwave.css.yml で描画) -----
+
+local function build_detail_formspec_pmui(tabdata)
+    local pmui = packermod.pmui
+    local packs = tabdata.packs or get_packs()
+    local pack
+    for _, p in ipairs(packs) do
+        if p.id == tabdata.selected_pack_id then pack = p; break end
+    end
+    if not pack then
+        tabdata.view = "grid"
+        return build_detail_formspec(tabdata)  -- 旧 path にフォールバック (再入で grid に戻る)
+    end
+
+    local subdir_worlds = packermod.launcher.list_worlds(pack)
+    local legacy_worlds = packermod.launcher.list_legacy_worlds(pack)
+    local worlds = {}
+    for _, w in ipairs(subdir_worlds) do worlds[#worlds + 1] = w end
+    for _, w in ipairs(legacy_worlds) do worlds[#worlds + 1] = w end
+    tabdata.worlds = worlds
+
+    local servers = packermod.launcher.list_servers(pack)
+    tabdata.servers = servers
+
+    tabdata.selected_world  = clamp_selection(tabdata.selected_world, #worlds)
+    tabdata.selected_server = clamp_selection(tabdata.selected_server, #servers)
+
+    local subtab = tabdata.subtab or "worlds"
+    tabdata.subtab = subtab
+
+    local form = tabdata.form_server or {}
+    local mods_state = tabdata.mods_state or {}
+    local info_state = tabdata.info_state or {}
+
+    local pack_mods = pack.manifest.mods or {}
+    tabdata.selected_mod = clamp_selection(tabdata.selected_mod, #pack_mods)
+
+    local search_results = mods_state.results or {}
+    tabdata.selected_search = clamp_selection(tabdata.selected_search, #search_results)
+
+    local function subtab_class(name)
+        return subtab == name and "subtab-btn-active" or "subtab-btn-inactive"
+    end
+
+    local ctx = {
+        pack_name = pack.manifest.name or "",
+        pack_version = pack.manifest.version or "",
+        pack_base = (pack.manifest.base_game.id or "?") .. "/" ..
+                    (pack.manifest.base_game.version or "?"),
+        pack_mods_count = #pack_mods,
+        pack_description = pack.manifest.description or "",
+
+        subtab_class_worlds = subtab_class("worlds"),
+        subtab_class_multi  = subtab_class("multi"),
+        subtab_class_mods   = subtab_class("mods"),
+        subtab_class_info   = subtab_class("info"),
+
+        show_worlds = (subtab == "worlds"),
+        show_multi  = (subtab == "multi"),
+        show_mods   = (subtab == "mods"),
+        show_info   = (subtab == "info"),
+
+        worlds = worlds,
+        has_world = #worlds > 0,
+        no_world = #worlds == 0,
+        selected_world = tabdata.selected_world,
+
+        servers = servers,
+        has_server = #servers > 0,
+        no_server = #servers == 0,
+        selected_server = tabdata.selected_server,
+        form_server_name = form.name or "",
+        form_server_address = form.address or "",
+        form_server_port = form.port or "",
+
+        pack_mods = pack_mods,
+        has_mod = #pack_mods > 0 and (tabdata.selected_mod or 0) > 0,
+        selected_mod = tabdata.selected_mod,
+        search_query = mods_state.query or "",
+        search_release = mods_state.release or "",
+        search_results = search_results,
+        selected_search = tabdata.selected_search,
+        has_search_result = #search_results > 0 and (tabdata.selected_search or 0) > 0,
+        mod_status = mods_state.status or "",
+
+        info_status = info_state.status or "",
+
+        format_world_label = format_world_label,
+        format_server_label = format_server_label,
+        format_mod_entry = format_mod_entry,
+        format_search_result = format_search_result,
+        icon_path = function(n) return packermod.icons.path(n, "md") end,
+    }
+
+    local DD = DIR_DELIM or "/"
+    local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
+    return pmui.build_formspec {
+        html_path = mm .. "ui" .. DD .. "pack_detail.html.yml",
+        css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
+        ctx       = ctx,
+        page_w = 30.0, page_h = 16.0,
+        texture_dir = packermod.textures_dir,
+    }
+end
+
 -- ----- PMUI 版 grid 画面(画面1 を library.html.yml + synthwave.css.yml で描画) -----
 
 local function build_grid_formspec_pmui(tabdata)
@@ -327,7 +432,11 @@ end
 local function get_formspec(tabdata)
     tabdata.view = tabdata.view or "grid"
     if tabdata.view == "detail" then
-        return build_detail_formspec(tabdata)
+        -- 画面2 も PMUI 経由が default。PACKERMOD_LEGACY_DETAIL=1 で旧 path に戻せる。
+        if os.getenv("PACKERMOD_LEGACY_DETAIL") then
+            return build_detail_formspec(tabdata)
+        end
+        return build_detail_formspec_pmui(tabdata)
     end
     -- PMUI 経由の Synthwave がデフォルト。PACKERMOD_LEGACY_GRID=1 で旧 path に
     -- 戻せる安全弁。数日運用してバグが出なければ commit 8 でフラグと旧 path を撤去する。
@@ -662,6 +771,7 @@ M._internal = {
     build_grid_formspec = build_grid_formspec,
     build_grid_formspec_pmui = build_grid_formspec_pmui,
     build_detail_formspec = build_detail_formspec,
+    build_detail_formspec_pmui = build_detail_formspec_pmui,
 }
 
 return M

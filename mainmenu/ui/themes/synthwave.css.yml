@@ -103,6 +103,139 @@ rules:
       w: 4.0
       h: 2.7
 
+# ===== 画面2 (Pack Detail) スタイル =====
+
+  - selector: ".detail-header"
+    style:
+      flex-direction: row
+      align: center
+      gap: 0.6
+      h: 1.5
+
+  - selector: ".back-btn"
+    style:
+      w: 3.0
+      h: 1.5
+
+  - selector: ".detail-title"
+    style:
+      color: "#FF52A4"
+      font-size: "*2.5"
+
+  - selector: ".detail-spacer"
+    style:
+      flex: 1
+
+  - selector: ".detail-meta"
+    style:
+      color: "#FFD400"
+      font-size: "*1.2"
+
+  - selector: ".subtab-bar"
+    style:
+      flex-direction: row
+      gap: 0.3
+      h: 1.3
+
+  - selector: ".subtab-btn"
+    style:
+      flex: 1
+      h: 1.3
+      bg: "#28114f"
+      color: "#f0e6ff"
+      font-size: "*1.3"
+
+  - selector: ".subtab-btn-active"
+    style:
+      bg: "#A06EFF"
+      color: "#1a0a3a"
+
+  - selector: ".subtab-pane"
+    style:
+      flex: 1
+      flex-direction: column
+      gap: 0.4
+      bg: "#1a0a3acc"
+      padding: 0.4
+      border-width: 0.05
+      border-color: "#A06EFF"
+
+  - selector: ".detail-list"
+    style:
+      flex: 1
+      bg: "#28114f"
+      color: "#f0e6ff"
+
+  - selector: ".empty-status"
+    style:
+      color: "#FFD400"
+      font-size: "*1.2"
+      h: 1.0
+
+  - selector: ".subtab-actions"
+    style:
+      flex-direction: row
+      justify: end
+      gap: 0.6
+      h: 1.6
+
+  # 画面2 の action-btn は画面1 用 (4.0x2.7) のまま入れると subtab-actions を超えて
+  # OOB するので子孫 selector で小さく上書き。
+  - selector: ".subtab-actions .action-btn"
+    style:
+      w: 3.5
+      h: 1.6
+
+  - selector: ".form-row"
+    style:
+      flex-direction: row
+      gap: 0.4
+      h: 1.8
+
+  - selector: ".form-field"
+    style:
+      flex: 1
+      h: 1.2
+      bg: "#28114f"
+      color: "#f0e6ff"
+
+  - selector: ".form-field-narrow"
+    style:
+      w: 4.5
+      h: 1.2
+      bg: "#28114f"
+      color: "#f0e6ff"
+
+  - selector: ".form-textarea"
+    style:
+      h: 1.6
+      bg: "#28114f"
+      color: "#f0e6ff"
+
+  - selector: ".mods-grid"
+    style:
+      flex: 1
+      flex-direction: row
+      gap: 0.6
+
+  - selector: ".mods-col"
+    style:
+      flex: 1
+      flex-direction: column
+      gap: 0.3
+
+  - selector: ".mods-col-title"
+    style:
+      color: "#FF52A4"
+      font-size: "*1.4"
+      h: 0.8
+
+  - selector: ".info-base"
+    style:
+      color: "#FFD400"
+      font-size: "*1.1"
+      align: center
+
 media:
   - query: "max-width 20.0"
     rules:

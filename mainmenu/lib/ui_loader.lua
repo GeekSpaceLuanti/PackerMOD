@@ -322,6 +322,10 @@ function M.load(opts)
     return expand(tree, opts.ctx or {}, opts.theme)
 end
 
+-- PMUI (mainmenu/lib/pmui/parser_html.lua) が pipe form (${list | fmt}) の解決で再利用する。
+M.resolve_value = resolve_value
+M.resolve_path  = resolve_path
+
 function M.build_tab_formspec(yaml_path, ctx, build_opts)
     local L = get_layout()
     local root = M.load({ yaml_path = yaml_path, ctx = ctx, theme = build_opts and build_opts.theme })

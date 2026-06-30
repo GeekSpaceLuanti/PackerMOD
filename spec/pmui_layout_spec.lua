@@ -86,6 +86,60 @@ describe("pmui.layout (DOM → PMLayout)", function()
         return layout.flow(root, ctx or {})
     end
 
+    it("list tag → TextList widget with items/selected", function()
+        local node = compile([[
+root:
+  tag: page
+  children:
+    - tag: list
+      id: lst
+      attrs:
+        name: lst
+        items: "${items}"
+        selected: 2
+]], [[
+rules: []
+]], { items = { "a", "b", "c" } })
+        local child = node[1]
+        assert.equal("TextList", child._kind)
+        assert.equal("lst", child.name)
+        assert.same({ "a", "b", "c" }, child.items)
+        assert.equal(2, child.selected)
+    end)
+
+    it("textarea tag → TextArea widget", function()
+        local node = compile([[
+root:
+  tag: page
+  children:
+    - tag: textarea
+      attrs:
+        name: ta
+        label: Notes
+        default: "hi"
+]], [[
+rules: []
+]])
+        assert.equal("TextArea", node[1]._kind)
+        assert.equal("ta", node[1].name)
+        assert.equal("Notes", node[1].label)
+        assert.equal("hi", node[1].default)
+    end)
+
+    it("status tag → dim Label", function()
+        local node = compile([[
+root:
+  tag: page
+  children:
+    - tag: status
+      text: "No items"
+]], [[
+rules: []
+]])
+        assert.equal("Label", node[1]._kind)
+        assert.equal("No items", node[1].text)
+    end)
+
     it("page → VBox by default", function()
         local node = compile([[
 root:
