@@ -11,11 +11,11 @@ root:
       children:
         - tag: h1
           id: title
-          text: PackerMOD
+          text: "> PACKERMOD"
         - tag: span
           id: subtitle
           class: subtitle
-          text: "Pack Library"
+          text: "// PACK_LIBRARY"
 
     - tag: span
       id: no-packs-msg

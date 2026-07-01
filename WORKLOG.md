@@ -11,6 +11,41 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-01 11:45 (main)
+
+**変更概要**:
+Luanti 実機で画面1 (Pack Library) の見た目が `docs/mockup/neon.html` と乖離しており、
+派手な紫→ピンクの sunset パレット + Luanti タイトルバーに被る `PackerMOD 0.1.0` の
+topleft テキスト + イエロー subtitle 等で統一感を欠いていた。モックアップの neon 2色
+(cyan `#00ffe5` / magenta `#ff1b8d`) 準拠に寄せて視認性と統一感を上げる。
+
+**主な変更**:
+- `mainmenu/init.lua`: `core.set_topleft_text("PackerMOD ...")` を削除 (debug build 時に
+  Luanti タイトルバーへ重なっていた。位置は Luanti が固定で調整不可)
+- `mainmenu/ui/themes/synthwave.css.yml`: hex 60 箇所を neon パレットへ置換
+  (旧 `#A06EFF/#FF52A4/#FFD400/#28114f/#1a0a3a/#f0e6ff/#b09ad8/#0a061f`
+  → 新 `#00ffe5/#ff1b8d/#14143a/#0a0a18/#e0e0ff/#7a7aa8`)。
+  title 系 (`#title` / `.detail-title` / `.modal-title`) だけ cyan、他タイトル系や
+  danger/meta は magenta という 2 色ロールで分離。
+  `bg-image: packermod_bg_synthwave.png` (page / .modal-page) を廃止して純色 bg のみに。
+- `mainmenu/ui/library.html.yml`: タイトルを `PackerMOD` / `Pack Library` から
+  `> PACKERMOD` / `// PACK_LIBRARY` に変更 (モックアップ準拠の terminal 風装飾)
+- `textures/packermod_default_pack_thumbnail_synthwave.png`: 従来のピンク T字を
+  Python stdlib で 256x256 黒地 + cyan T字 に再生成 (モックアップ準拠)
+
+**諦めたこと** (Luanti formspec 非対応):
+- glow / text-shadow, scanline overlay, blink カーソル `_`, hover 効果
+
+**主な変更ファイル**:
+- mainmenu/init.lua
+- mainmenu/ui/themes/synthwave.css.yml
+- mainmenu/ui/library.html.yml
+- textures/packermod_default_pack_thumbnail_synthwave.png
+
+**次のTODO**:
+- 実機で目視確認 (背景純黒 / タイトル cyan / subtitle magenta / T字 cyan / タイトルバー被りなし)
+- 旧 `textures/packermod_bg_synthwave.png` はまだ残置 (将来 neon 版 PNG を作る場合の再利用余地)
+
 ## 2026-06-30 23:10 (main)
 
 **変更概要**:

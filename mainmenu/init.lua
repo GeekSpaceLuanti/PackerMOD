@@ -117,10 +117,6 @@ packermod.dialogs = {
 }
 
 local function init()
-    if core.is_debug_build then
-        core.set_topleft_text("PackerMOD " .. PACKERMOD_VERSION)
-    end
-
     pack_manager.ensure_dirs(packermod.user_path)
 
     -- 前回プレイで作った起動用 symlink (worlds/_pm_*) を掃除する。

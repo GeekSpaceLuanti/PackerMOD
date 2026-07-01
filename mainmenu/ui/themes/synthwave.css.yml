@@ -1,21 +1,21 @@
 # Synthwave テーマ. library.html.yml に対するスタイル。
-# 紺→紫→ピンク→イエローの sunset グラデ + outrun 床グリッド + accent ピンク。
+# neon.html 準拠: 濃紺 bg + cyan (#00ffe5) / magenta (#ff1b8d) の 2 色アクセント。
+# glow / scanline / hover は Luanti formspec 非対応につき素の色のみ。
 #
 # 寸法は formspec size[30, 16] (= window 1608x853, 1 unit ≈ 52 px) 前提。
 
 variables:
-  --fg: "#f0e6ff"
-  --fg-dim: "#b09ad8"
-  --accent-purple: "#A06EFF"
-  --accent-pink: "#FF52A4"
-  --accent-yellow: "#FFD400"
-  --card-bg: "#28114f"
+  --fg: "#e0e0ff"
+  --fg-dim: "#7a7aa8"
+  --accent-purple: "#00ffe5"
+  --accent-pink: "#ff1b8d"
+  --accent-yellow: "#ff1b8d"
+  --card-bg: "#14143a"
 
 rules:
   - selector: "page"
     style:
-      bg: "#1a0a3a"
-      bg-image: "url(packermod_bg_synthwave.png)"
+      bg: "#0a0a18"
       padding: 0.8
       flex-direction: column
       gap: 0.8
@@ -30,17 +30,17 @@ rules:
 
   - selector: "#title"
     style:
-      color: "#FF52A4"
+      color: "#00ffe5"
       font-size: "*3.5"
 
   - selector: ".subtitle"
     style:
-      color: "#FFD400"
+      color: "#ff1b8d"
       font-size: "*1.6"
 
   - selector: "#no-packs-msg"
     style:
-      color: "#f0e6ff"
+      color: "#e0e0ff"
       font-size: "*1.4"
 
   - selector: ".pack-grid"
@@ -52,9 +52,9 @@ rules:
 
   - selector: ".pack-card"
     style:
-      bg: "#28114f"
+      bg: "#14143a"
       border-width: 0.08
-      border-color: "#A06EFF"
+      border-color: "#00ffe5"
       padding: 0.4
       flex-direction: column
       align: center
@@ -66,9 +66,9 @@ rules:
   # 薄い実線枠と透明寄り bg で代用する。
   - selector: ".pack-card-placeholder"
     style:
-      bg: "#1a0a3a55"
+      bg: "#0a0a1855"
       border-width: 0.06
-      border-color: "#A06EFF55"
+      border-color: "#00ffe555"
       w: 8.5
       h: 8.0
 
@@ -79,19 +79,19 @@ rules:
 
   - selector: ".pack-name"
     style:
-      color: "#f0e6ff"
+      color: "#e0e0ff"
       font-size: "*1.5"
 
   - selector: ".pack-meta"
     style:
-      color: "#FF52A4"
+      color: "#ff1b8d"
       font-size: "*1.2"
 
   - selector: ".action-bar"
     style:
-      bg: "#0a061faa"
+      bg: "#0a0a18cc"
       border-width: 0.08
-      border-color: "#A06EFF"
+      border-color: "#00ffe5"
       flex-direction: row
       justify: end
       gap: 1.0
@@ -119,7 +119,7 @@ rules:
 
   - selector: ".detail-title"
     style:
-      color: "#FF52A4"
+      color: "#00ffe5"
       font-size: "*2.5"
 
   - selector: ".detail-spacer"
@@ -128,7 +128,7 @@ rules:
 
   - selector: ".detail-meta"
     style:
-      color: "#FFD400"
+      color: "#ff1b8d"
       font-size: "*1.2"
 
   - selector: ".subtab-bar"
@@ -141,34 +141,34 @@ rules:
     style:
       flex: 1
       h: 1.3
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
       font-size: "*1.3"
 
   - selector: ".subtab-btn-active"
     style:
-      bg: "#A06EFF"
-      color: "#1a0a3a"
+      bg: "#00ffe5"
+      color: "#0a0a18"
 
   - selector: ".subtab-pane"
     style:
       flex: 1
       flex-direction: column
       gap: 0.4
-      bg: "#1a0a3acc"
+      bg: "#0a0a18cc"
       padding: 0.4
       border-width: 0.05
-      border-color: "#A06EFF"
+      border-color: "#00ffe5"
 
   - selector: ".detail-list"
     style:
       flex: 1
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
 
   - selector: ".empty-status"
     style:
-      color: "#FFD400"
+      color: "#ff1b8d"
       font-size: "*1.2"
       h: 1.0
 
@@ -196,21 +196,21 @@ rules:
     style:
       flex: 1
       h: 1.2
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
 
   - selector: ".form-field-narrow"
     style:
       w: 4.5
       h: 1.2
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
 
   - selector: ".form-textarea"
     style:
       h: 1.6
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
 
   - selector: ".mods-grid"
     style:
@@ -226,13 +226,13 @@ rules:
 
   - selector: ".mods-col-title"
     style:
-      color: "#FF52A4"
+      color: "#ff1b8d"
       font-size: "*1.4"
       h: 0.8
 
   - selector: ".info-base"
     style:
-      color: "#FFD400"
+      color: "#ff1b8d"
       font-size: "*1.1"
       align: center
 
@@ -242,8 +242,7 @@ rules:
 
   - selector: ".modal-page"
     style:
-      bg: "#1a0a3a"
-      bg-image: "url(packermod_bg_synthwave.png)"
+      bg: "#0a0a18"
       padding: 0.8
       flex-direction: column
 
@@ -261,9 +260,9 @@ rules:
 
   - selector: ".modal-card"
     style:
-      bg: "#28114f"
+      bg: "#14143a"
       border-width: 0.08
-      border-color: "#A06EFF"
+      border-color: "#00ffe5"
       padding: 0.6
       flex-direction: column
       gap: 0.3
@@ -282,31 +281,31 @@ rules:
 
   - selector: ".modal-title"
     style:
-      color: "#FF52A4"
+      color: "#00ffe5"
       font-size: "*2.2"
       h: 1.2
 
   - selector: ".modal-dim"
     style:
-      color: "#b09ad8"
+      color: "#7a7aa8"
       font-size: "*1.1"
 
   - selector: ".modal-info"
     style:
-      color: "#f0e6ff"
+      color: "#e0e0ff"
       font-size: "*1.2"
 
   - selector: ".modal-status"
     style:
-      color: "#FFD400"
+      color: "#ff1b8d"
       font-size: "*1.1"
       h: 0.8
 
   - selector: ".modal-field"
     style:
       h: 1.2
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
 
   - selector: ".modal-actions"
     style:
@@ -319,22 +318,22 @@ rules:
     style:
       w: 3.0
       h: 1.6
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
 
   - selector: ".modal-btn-primary"
     style:
       w: 4.0
       h: 1.6
-      bg: "#A06EFF"
-      color: "#1a0a3a"
+      bg: "#00ffe5"
+      color: "#0a0a18"
 
   - selector: ".modal-btn-danger"
     style:
       w: 3.5
       h: 1.6
-      bg: "#FF52A4"
-      color: "#1a0a3a"
+      bg: "#ff1b8d"
+      color: "#0a0a18"
 
   - selector: ".modal-icon-btn"
     style:
@@ -352,22 +351,22 @@ rules:
     style:
       flex: 1
       h: 1.2
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
 
   - selector: ".modal-field-create"
     style:
       w: 3.2
       h: 1.2
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
 
   - selector: ".modal-field-create-grow"
     style:
       flex: 1
       h: 1.2
-      bg: "#28114f"
-      color: "#f0e6ff"
+      bg: "#14143a"
+      color: "#e0e0ff"
 
   - selector: ".modal-icon-btn-small"
     style:
@@ -377,8 +376,8 @@ rules:
   - selector: ".modal-list"
     style:
       flex: 1
-      bg: "#1a0a3a"
-      color: "#f0e6ff"
+      bg: "#0a0a18"
+      color: "#e0e0ff"
 
   - selector: ".modal-create-body"
     style:
@@ -394,7 +393,7 @@ rules:
 
   - selector: ".modal-section-label"
     style:
-      color: "#FF52A4"
+      color: "#ff1b8d"
       font-size: "*1.3"
       h: 0.8
 
