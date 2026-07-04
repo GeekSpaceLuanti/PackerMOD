@@ -26,6 +26,12 @@ function M.compute(el)
         margin         = tonumber(nz(c.margin,  0)) or 0,
         gap            = tonumber(nz(c.gap,     0)) or 0,
         border_width   = tonumber(nz(c["border-width"], 0)) or 0,
+        -- side-only border は 4 辺 border とは独立。両方指定するとき
+        -- 4 辺が先に box[] で描かれ、side-only が上書きする形になる。
+        border_top_width    = tonumber(nz(c["border-top-width"],    0)) or 0,
+        border_bottom_width = tonumber(nz(c["border-bottom-width"], 0)) or 0,
+        border_left_width   = tonumber(nz(c["border-left-width"],   0)) or 0,
+        border_right_width  = tonumber(nz(c["border-right-width"],  0)) or 0,
         flex           = tonumber(c.flex),
         w              = tonumber(c.w),
         h              = tonumber(c.h),
@@ -41,6 +47,10 @@ function M.compute(el)
         bg_image_middle = tonumber(c["bg-image-middle"]),
         color          = c.color,
         border_color   = c["border-color"],
+        border_top_color    = c["border-top-color"]    or c["border-color"],
+        border_bottom_color = c["border-bottom-color"] or c["border-color"],
+        border_left_color   = c["border-left-color"]   or c["border-color"],
+        border_right_color  = c["border-right-color"]  or c["border-color"],
         font_size      = c["font-size"],
         text_align     = c["text-align"],
     }

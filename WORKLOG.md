@@ -11,6 +11,32 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-05 00:00 (main)
+
+**変更概要**:
+mockup 準拠改修 Step 5a: PMUI の描画基盤を拡張する。footer 上 border のみのような
+「特定の辺だけ罫線」を出せるように border-top/bottom/left/right プロパティを追加し、
+container の背景を `background9[]` で 9-slice に塗れるようにする。
+
+**主な変更**:
+- `mainmenu/lib/pmui/box_model.lua`: border-top-width/color 等 4 辺個別の
+  border プロパティを box に反映 (未指定なら 4 辺 border-color を継承)。
+- `mainmenu/lib/pmui/paint.lua`: 個別 border 発行を追加、container の bg-image を
+  `background9[X,Y;W,H;path;false;middle]` として発行。emit_borders /
+  emit_container_bg9 を 1 つの `emit_container_decor` に統合。
+  → iter_elements を 2 回呼ぶと flex 分配が不安定化し modal_create の field h が
+     1.6 → 2.0 に膨らんで overlap 検出される回帰があったため、1 回に統一。
+
+**検証**:
+- `busted spec/`: 241 全緑 (回帰なし)
+
+**主な変更ファイル**:
+- mainmenu/lib/pmui/box_model.lua
+- mainmenu/lib/pmui/paint.lua
+
+**次のTODO**: Step 5b (synthwave.css.yml を mockup 準拠に、footer 上 border のみ /
+card 9-slice / .action-btn 縮小 / タイトル 2 色化)
+
 ## 2026-07-04 23:55 (main)
 
 **変更概要**:

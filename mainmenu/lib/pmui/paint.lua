@@ -130,20 +130,64 @@ local function border_boxes(x, y, w, h, bw, color)
     }
 end
 
-local function emit_borders(root, L, page_w, page_h, widget_tree)
-    -- iter_elements が内部で compute を呼ぶ副作用で widget._x, _y が確定する。
-    L.iter_elements(widget_tree, { w = page_w, h = page_h })
+local function side_border_boxes(x, y, w, h, box)
     local out = {}
+    if box.border_top_width > 0 and box.border_top_color then
+        out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
+            fnum(x), fnum(y), fnum(w), fnum(box.border_top_width), box.border_top_color)
+    end
+    if box.border_bottom_width > 0 and box.border_bottom_color then
+        out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
+            fnum(x), fnum(y + h - box.border_bottom_width), fnum(w),
+            fnum(box.border_bottom_width), box.border_bottom_color)
+    end
+    if box.border_left_width > 0 and box.border_left_color then
+        out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
+            fnum(x), fnum(y), fnum(box.border_left_width), fnum(h), box.border_left_color)
+    end
+    if box.border_right_width > 0 and box.border_right_color then
+        out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
+            fnum(x + w - box.border_right_width), fnum(y),
+            fnum(box.border_right_width), fnum(h), box.border_right_color)
+    end
+    return out
+end
+
+-- container の bg-image と 4 辺/個別 border を一気に発行する。iter_elements は
+-- 1 回だけ呼ぶ (2 回以上呼ぶと flex 再分配が不安定になり field/list の h が
+-- 変わってしまう回帰があったため)。
+local function emit_container_decor(root, L, page_w, page_h, widget_tree, texture_dir)
+    L.iter_elements(widget_tree, { w = page_w, h = page_h })
+    local bg9, borders = {}, {}
     dom.walk(root, function(el)
         local box = el.box
-        if not box or not box.border_width or box.border_width <= 0 then return end
-        if not box.border_color or not el._widget then return end
+        if not box or not el._widget then return end
         local w = el._widget
         if w._x == nil then return end
-        for _, line in ipairs(border_boxes(w._x, w._y, w.w, w.h, box.border_width, box.border_color)) do
-            out[#out + 1] = line
+
+        -- container の 9-slice 背景 (root は emit_background で全画面塗るので除外)。
+        if el ~= root and box.bg_image and is_container_tag(el.tag) then
+            local img = resolve_texture(box.bg_image, texture_dir)
+            bg9[#bg9 + 1] = ("background9[%s,%s;%s,%s;%s;false;%s]"):format(
+                fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h),
+                img, tostring(box.bg_image_middle or 8))
+        end
+
+        -- 4 辺 border (border-width + border-color)。
+        if box.border_width and box.border_width > 0 and box.border_color then
+            for _, line in ipairs(border_boxes(w._x, w._y, w.w, w.h, box.border_width, box.border_color)) do
+                borders[#borders + 1] = line
+            end
+        end
+        -- 個別 border (border-top-width 等)。
+        for _, line in ipairs(side_border_boxes(w._x, w._y, w.w, w.h, box)) do
+            borders[#borders + 1] = line
         end
     end)
+    -- bg9 が先、borders が後 (枠が bg の上に重なる)。
+    local out = {}
+    for _, l in ipairs(bg9)     do out[#out + 1] = l end
+    for _, l in ipairs(borders) do out[#out + 1] = l end
     return out
 end
 
@@ -171,8 +215,8 @@ function M.render(root, opts)
         table.insert(prepend, 1, "bgcolor[" .. c .. ";both;" .. c .. "]")
     end
 
-    -- border は widget の _x, _y が確定してから出すので append で末尾に
-    local append = emit_borders(root, L, page_w, page_h, widget_tree)
+    -- background9 と border は widget の _x, _y が確定してから出すので append で末尾に。
+    local append = emit_container_decor(root, L, page_w, page_h, widget_tree, opts.texture_dir)
 
     return L.build_formspec(widget_tree, {
         w = page_w, h = page_h,
