@@ -56,10 +56,13 @@ local function visible_text(s)
     return s
 end
 
+-- formspec v6 の label は「y = テキスト第 1 行の垂直中心」(lua_api.md)。
+-- 実機の描画位置に合わせて上端 y を h/2 分だけ上に補正した AABB を返す。
 local function label_visual(el, opts)
-    local h = opts.label_h or 0.5
+    -- default は LabeledIconButton の label band h (layout.lua) と一致させる。
+    local h = opts.label_h or 0.45
     local w = math.max((#visible_text(el.text)) * (opts.label_char_w or 0.18), 0.5)
-    return el.x, el.y, w, h
+    return el.x, el.y - h / 2, w, h
 end
 
 local function rect_of(el, opts)

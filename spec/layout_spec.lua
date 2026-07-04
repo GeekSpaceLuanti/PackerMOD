@@ -174,44 +174,21 @@ describe("formspec layout", function()
         end)
 
         it("counts label visual height against neighbouring fields", function()
+            -- formspec v6 の label は「y=テキスト中心」なので、y=2.6 だと
+            -- 実描画は 2.35〜2.85u。同じ x に置いた field (2.5〜3.2u) と重なる。
             local hits = find_overlaps({
-                { kind = "label",  x = 0, y = 2.2, text = "Section" },
+                { kind = "label",  x = 0, y = 2.6, text = "Section" },
                 { kind = "field",  x = 0, y = 2.5, w = 3, h = 0.7,  name = "q" },
             }, { label_h = 0.5 })
             assert.equal(1, #hits)
         end)
     end)
 
-    describe("regression detector self-check", function()
-        -- Snapshot of the pre-refactor Create tab. Kept literal so the detector
-        -- keeps fingerprinting the bug pattern even after the live tab is rewritten.
-        local broken_snapshot = table.concat({
-            "formspec_version[6]",
-            "size[15.5,7.1]",
-            "label[0.3,2.2;ContentDB search]",
-            "field[0.3,2.5;5.5,0.7;search_query;Query;]",
-            "field[5.9,2.5;1.5,0.7;search_release;Release id;]",
-            "button[7.5,2.5;1.5,0.7;search;Search]",
-            "button[9.1,2.5;1.5,0.7;add_search;Add]",
-            "label[9.5,2.2;Current mods]",
-            "textlist[9.5,2.5;5.7,2.9;mod_list;;0;false]",
-            "button[9.5,5.5;2.0,0.7;remove_mod;Remove]",
-            "button[12.0,5.5;3.2,0.7;export;Export manifest]",
-            "label[0.3,5.5;long status overflowing into the buttons]",
-        }, "")
-
-        it("flags the original Create-tab overlap pattern", function()
-            local _, elements = parse_formspec(broken_snapshot)
-            local overlaps = find_overlaps(elements, { label_h = 0.5 })
-            -- Known overlaps in the original layout:
-            --   ContentDB search label vs Query field
-            --   Current mods   label vs mod_list
-            --   Add            button vs mod_list textlist (x ranges cross)
-            --   status         label  vs Remove / Export buttons (same y, long text)
-            assert.is_true(#overlaps >= 3,
-                ("expected at least 3 overlaps in the broken snapshot, got %d"):format(#overlaps))
-        end)
-    end)
+    -- Phase 12 で旧 Create タブ (tabs/tab_create.lua + ui/tab_create.yml) は削除済み。
+    -- pre-refactor snapshot ベースの self-check は snapshot 内の label 座標が
+    -- 「上端アンカー」で書かれており、実機 (中心アンカー) 基準に書き換えると
+    -- 意義が薄れるため削除。detector の overlap 判定は library_spec/modals_spec
+    -- が実際の PMUI 出力に対して継続的にカバーする。
 
     -- Phase 12: 旧 tabs/tab_*.lua + ui/tab_*.yml は削除済み。
     -- 同等の overlap / out-of-bounds 検査は library_spec.lua / 各 modal の

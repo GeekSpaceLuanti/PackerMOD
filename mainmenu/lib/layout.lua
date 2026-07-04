@@ -274,7 +274,12 @@ local function render(w, out, theme)
         for _, child in ipairs(w) do render(child, out, theme) end
     elseif k == "Label" then
         maybe_emit_style(w, out, theme)
-        out[#out + 1] = ("label[%s,%s;%s]"):format(fnum(w._x), fnum(w._y), fs_escape(w.text))
+        -- formspec v6 の label は「y = テキスト第 1 行の垂直中心」(lua_api.md L3334)。
+        -- widget の預約 band 中央に文字を落とすため _y + h/2 を渡す。上端 _y のまま
+        -- 渡すと label が半文字分上に描画され、隣接 image_button/field に食い込む
+        -- (issue #21 派生)。
+        local label_y = w._y + (w.h or 0.5) / 2
+        out[#out + 1] = ("label[%s,%s;%s]"):format(fnum(w._x), fnum(label_y), fs_escape(w.text))
     elseif k == "Field" then
         maybe_emit_style(w, out, theme)
         -- The reserved label band sits at the top; the actual box lives below.
@@ -308,12 +313,14 @@ local function render(w, out, theme)
             w.name, table.concat(items, ","),
             tostring(w.selected or 0), tostring(w.transparent or false))
     elseif k == "Image" or k == "Icon" then
+        -- mainmenu では絶対パスを渡す (menu_lua_api.md) ので path 中の
+        -- `[` `]` `;` `,` `\` を fs_escape する必要がある (特に Windows の DIR_DELIM=\ 対策)。
         out[#out + 1] = ("image[%s,%s;%s,%s;%s]"):format(
-            fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.texture)
+            fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), fs_escape(w.texture))
     elseif k == "IconButton" then
         out[#out + 1] = ("image_button[%s,%s;%s,%s;%s;%s;%s]"):format(
             fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h),
-            w.texture, w.name, fs_escape(w.label or ""))
+            fs_escape(w.texture), w.name, fs_escape(w.label or ""))
     elseif k == "Box" then
         out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
             fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.color)

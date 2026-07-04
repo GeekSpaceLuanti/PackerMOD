@@ -11,6 +11,42 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-04 23:40 (main)
+
+**変更概要**:
+Bug A (Import/Create/Settings のアイコンとラベル/アクションバー枠との被り) を修正。
+formspec v6 の label は「y = テキスト第 1 行の垂直中心」(lua_api.md L3334) だが、
+`mainmenu/lib/layout.lua:277` は widget 上端 `_y` を label コマンドの y に渡していた。
+結果、全 label が半文字分上に描画されて、LabeledIconButton (issue #21 対応) の
+label band 内に文字が中心せず、上の image_button に食い込んでいた。
+
+**手順** (再現テスト先行):
+
+1. `spec/support/formspec_helpers.lua`: label rect を実機仕様 (中心アンカー) に
+   合わせて `(x, y − h/2, w, h)` へ変更、default `label_h` を LabeledIconButton の
+   band h と一致する 0.45 へ。
+2. `busted spec/` → library grid の overlap テストが btn_import/create/settings と
+   その下 label の重なりを検出して 3 件失敗することを確認 (再現)。
+3. `mainmenu/lib/layout.lua:281` の Label render を `label[x, _y + h/2; text]` に
+   修正。あわせて Image / IconButton の texture パスに `fs_escape` を追加
+   (Windows DIR_DELIM=`\` 対策、menu_lua_api.md 推奨)。
+4. `spec/layout_spec.lua`: detector self-check の 2 件が中心アンカー化に追従。
+   - "counts label visual height against neighbouring fields" は label y を 2.6 に。
+   - "flags the original Create-tab overlap pattern" (broken_snapshot) は Phase 12 で
+     該当タブ削除済み + 座標が上端アンカー前提で意義が薄れているため撤去。
+5. `busted spec/` 241 全緑。
+
+**検証**:
+- `make screenshot SUBTAB=library`: Import/Create/Settings ラベルがアイコンと重ならず
+  アクションバー内に収まることを目視確認 (before/after 比較)
+
+**主な変更ファイル**:
+- mainmenu/lib/layout.lua
+- spec/support/formspec_helpers.lua
+- spec/layout_spec.lua
+
+**次のTODO**: Step 3 (modal_create の flex リスト潰れ修正)
+
 ## 2026-07-04 23:30 (main)
 
 **変更概要**:
