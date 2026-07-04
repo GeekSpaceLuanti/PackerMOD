@@ -114,10 +114,17 @@ local function build_grid_formspec(tabdata)
     local placeholders = {}
     for i = 1, placeholder_count do placeholders[i] = {} end
 
+    -- neon.html 準拠の title 2 色化: "> " magenta, "PACKERMOD" cyan。
+    -- YAML パーサは "\x1b" 系のエスケープを実バイトに変換しないので、Lua 側で
+    -- ESC (0x1B) を含む文字列を組み立てて ctx 経由で流し込む。
+    local ESC = string.char(27)
+    local title_text = ESC .. "(c@#ff1b8d)> " .. ESC .. "(c@#00ffe5)PACKERMOD"
+
     local ctx = {
         packs        = pack_ctx,
         placeholders = placeholders,
         no_packs     = (#packs == 0),
+        title_text   = title_text,
         icon_path    = function(n) return packermod.icons.path(n, "md") end,
     }
 

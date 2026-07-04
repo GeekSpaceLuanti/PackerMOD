@@ -11,6 +11,42 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-05 00:10 (main)
+
+**変更概要**:
+mockup 準拠改修 Step 5b: synthwave.css.yml と library.html.yml を neon.html 相当に
+仕上げる。footer は上端罫線のみ + ボタンを 2.2x2.4 に縮小、pack-card は 9-slice
+PNG 化、title-bar は下端罫線 + 2 色タイトル ("> " magenta + "PACKERMOD" cyan) + font
+サイズを *3.5 → *2.0 に。
+
+**主な変更**:
+- `mainmenu/ui/themes/synthwave.css.yml`:
+  - `.action-bar`: 4 辺 border + 半透明 bg 廃止、`border-top-width: 0.04` /
+    `border-top-color: "#00ffe5"` の 1 本罫線のみ。gap 1.0 → 0.45、h 3.0 → 2.8。
+  - `.action-btn`: w 4.0 → 2.2, h 2.7 → 2.4。
+  - `.pack-card`: 4 辺 border を撤去して `bg-image: url(packermod_panel_neon.png)`
+    + `bg-image-middle: 8` の 9-slice PNG に置換 (Step 5a で追加した container 9-slice
+    発行を活用)。
+  - `.title-bar`: `border-bottom-width: 0.04` + cyan の罫線を追加、h 1.8 → 1.4。
+  - `#title`: color 撤去 (text 側で ESC 2 色化)、font-size *3.5 → *2.0。
+  - `.subtitle`: font-size *1.6 → *1.2。
+- `mainmenu/library.lua`: `ctx.title_text` に ESC (0x1B) 込みの
+  "\27(c@#ff1b8d)> \27(c@#00ffe5)PACKERMOD" を組み立てて注入。
+  YAML パーサは "\x1b" 系エスケープを実バイトに変換しないため、実 ESC バイトが
+  必要なテキストは Lua 側で作る必要がある。
+- `mainmenu/ui/library.html.yml`: `#title` の text を `${title_text}` に。
+
+**検証**:
+- `busted spec/`: 241 全緑 (回帰なし)
+- `make screenshot-all`: library/worlds/multi/mods/info/modal_* 全 8 画面を目視。
+  library は neon.html にほぼ準拠 (2 色タイトル、9-slice card、cyan 上罫線 footer、
+  ボタン正方形 9-slice)。他画面も regression なし。
+
+**主な変更ファイル**:
+- mainmenu/ui/themes/synthwave.css.yml
+- mainmenu/library.lua
+- mainmenu/ui/library.html.yml
+
 ## 2026-07-05 00:00 (main)
 
 **変更概要**:

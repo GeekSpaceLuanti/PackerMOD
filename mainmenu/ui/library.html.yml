@@ -9,9 +9,14 @@ root:
     - tag: header
       class: title-bar
       children:
+        # neon.html 準拠の 2 色化。text は library.lua が組み立てた ESC 込みの
+        # ${title_text} を差し込む (yaml は "\x1b" 系エスケープを解釈しないため)。
+        # CSS の #title で color を指定するとレイアウト側で ESC prefix が上書きされて
+        # 結果的に単色化するので、テーマ側は #title 用の color を出さず、text 側の
+        # ESC で色を持たせる。
         - tag: h1
           id: title
-          text: "> PACKERMOD"
+          text: "${title_text}"
         - tag: span
           id: subtitle
           class: subtitle
