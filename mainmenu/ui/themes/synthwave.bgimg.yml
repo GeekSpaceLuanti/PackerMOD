@@ -1,33 +1,28 @@
 output:
   # Luanti のメインメニュー window (screen_w/screen_h ≈ 1608x853 ≈ 16:9 弱) に
-  # 合わせる。formspec page_w=30 / page_h=16 で 1 unit ≈ 52 px (Luanti の表示
-  # スケール) のとき window 全体を埋める。
+  # 合わせる。formspec page_w=30 / page_h=16 で 1 unit ≈ 52 px。1920x1024 で焼く。
   bg:
     name: packermod_bg_synthwave
     w: 1920
     h: 1024
-  grid:
-    name: packermod_grid_synthwave
-    w: 1920
-    h: 512
 
-gradient:
-  type: vertical
-  stops:
-    - pos: 0.00
-      color: "#1a0a3a"
-    - pos: 0.45
-      color: "#3a0e5a"
-    - pos: 0.80
-      color: "#FF52A4"
-    - pos: 1.00
-      color: "#FFD400"
-
-grid:
-  line_color: "#FF52A4"
-  alt_color: "#A06EFF"
-  cols: 24
-  rows: 12
-  vanishing_point:
-    x: 0.5
-    y: 0.0
+# docs/mockup/neon.html 準拠。
+# base 濃紺 + 下中央 magenta radial + 左上 cyan radial + 3px 周期スキャンライン。
+# 座標は viewBox 短辺基準 (0..1)。
+neon:
+  base: "#0a0a18"
+  radials:
+    - cx: 0.5
+      cy: 1.0
+      r: 0.7
+      color: "#ff1b8d"
+      opacity: 0.20
+    - cx: 0.0
+      cy: 0.0
+      r: 0.5
+      color: "#00ffe5"
+      opacity: 0.15
+  scanlines:
+    period: 3
+    color: "#ffffff"
+    opacity: 0.04

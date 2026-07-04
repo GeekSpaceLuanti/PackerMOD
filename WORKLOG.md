@@ -11,6 +11,43 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-04 23:30 (main)
+
+**変更概要**:
+mockup (`docs/mockup/neon.html`) と実機の乖離を段階的に埋める作業の Step 1。
+cce5fe5 で `bg-image` を撤去した結果 spec が 5 件失敗 (library_spec.lua:148,216) しており、
+`background[]` が formspec に出ずメニューが純色 `#0a0a18` のみになっていた。
+neon.html の背景 (base 濃紺 + 下中央 magenta radial + 左上 cyan radial + 3px 周期スキャンライン)
+を SVG→PNG で焼き直して `bg-image` を復活させる。
+
+**主な変更**:
+- `scripts/bgimg_emit.lua`: gradient 単一 stops のほかに `neon` セクション (base + radials
+  + scanlines) を SVG で出せるようにした。radialGradient を objectBoundingBox 相対で並べ、
+  scanline は 1x{period}px の pattern で敷く。
+- `mainmenu/ui/themes/synthwave.bgimg.yml`: sunset gradient + grid の 2 出力から、
+  neon 1 出力 (base `#0a0a18` / magenta radial 20% / cyan radial 15% / scanline 4%) に置換。
+  未使用だった `packermod_grid_synthwave.png` は生成もやめ、`textures/` から削除。
+- `mainmenu/ui/themes/synthwave.css.yml`: `page` と `.modal-page` に
+  `bg-image: url(packermod_bg_synthwave.png)` を復活。
+- `spec/library_spec.lua:149`: 実機の title 表記 (`> PACKERMOD`) に合わせて期待文字列を
+  `PackerMOD` → `PACKERMOD` に是正 (cce5fe5 の追従漏れ)。
+- `textures/packermod_bg_synthwave.png`: 1920x1024 で再生成。
+
+**検証**:
+- `busted spec/`: 242 全緑
+- `make screenshot SUBTAB=library`: neon 背景 (magenta 下グラデ + cyan 左上 + scanline)
+  が実機に反映されていることを目視確認
+
+**主な変更ファイル**:
+- scripts/bgimg_emit.lua
+- mainmenu/ui/themes/synthwave.bgimg.yml
+- mainmenu/ui/themes/synthwave.css.yml
+- spec/library_spec.lua
+- textures/packermod_bg_synthwave.png (regen)
+- textures/packermod_grid_synthwave.png (delete)
+
+**次のTODO**: Step 2 (label 垂直中心アンカー修正で Import/Create/Settings のラベル重なり解消)
+
 ## 2026-07-01 11:45 (main)
 
 **変更概要**:

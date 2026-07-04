@@ -16,6 +16,7 @@ rules:
   - selector: "page"
     style:
       bg: "#0a0a18"
+      bg-image: "url(packermod_bg_synthwave.png)"
       padding: 0.8
       flex-direction: column
       gap: 0.8
@@ -243,6 +244,7 @@ rules:
   - selector: ".modal-page"
     style:
       bg: "#0a0a18"
+      bg-image: "url(packermod_bg_synthwave.png)"
       padding: 0.8
       flex-direction: column
 

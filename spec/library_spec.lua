@@ -146,7 +146,7 @@ describe("library grid view (画面1)", function()
         assert.is_truthy(fs:find("btn_settings", 1, true))
         -- Synthwave テーマの背景画像と PackerMOD タイトルが出ていること
         assert.is_truthy(fs:find("packermod_bg_synthwave.png", 1, true))
-        assert.is_truthy(fs:find("PackerMOD", 1, true))
+        assert.is_truthy(fs:find("PACKERMOD", 1, true))
     end)
 
     it("has no overlap and fits in page size", function()

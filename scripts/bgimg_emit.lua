@@ -42,6 +42,41 @@ local function emit_gradient_svg(w, h, stops)
     return table.concat(parts)
 end
 
+-- neon.html 準拠: base 単色 + 複数の radial glow + 横スキャンラインを 1 枚に焼き込む。
+-- cfg = { base = "#hex", radials = { {cx, cy, r, color, opacity}, ... },
+--         scanlines = { period, color, opacity } }
+-- cx/cy/r は viewBox の短辺基準 (0..1) の相対値 (SVG objectBoundingBox 相当)。
+local function emit_neon_svg(w, h, cfg)
+    local parts = { svg_open(w, h) }
+    parts[#parts + 1] = '<defs>\n'
+    for i, r in ipairs(cfg.radials or {}) do
+        parts[#parts + 1] = ('<radialGradient id="r%d" cx="%g" cy="%g" r="%g">\n'):format(
+            i - 1, r.cx or 0.5, r.cy or 0.5, r.r or 0.5)
+        parts[#parts + 1] = ('<stop offset="0" stop-color="%s" stop-opacity="%g"/>\n'):format(
+            r.color or "#ffffff", r.opacity or 0.2)
+        parts[#parts + 1] = ('<stop offset="1" stop-color="%s" stop-opacity="0"/>\n'):format(
+            r.color or "#ffffff")
+        parts[#parts + 1] = '</radialGradient>\n'
+    end
+    if cfg.scanlines then
+        local period = cfg.scanlines.period or 3
+        parts[#parts + 1] = ('<pattern id="scan" width="1" height="%d" patternUnits="userSpaceOnUse">\n'):format(period)
+        parts[#parts + 1] = ('<rect x="0" y="0" width="1" height="1" fill="%s" fill-opacity="%g"/>\n'):format(
+            cfg.scanlines.color or "#ffffff", cfg.scanlines.opacity or 0.04)
+        parts[#parts + 1] = '</pattern>\n'
+    end
+    parts[#parts + 1] = '</defs>\n'
+    parts[#parts + 1] = ('<rect width="%d" height="%d" fill="%s"/>\n'):format(w, h, cfg.base or "#000000")
+    for i = 1, #(cfg.radials or {}) do
+        parts[#parts + 1] = ('<rect width="%d" height="%d" fill="url(#r%d)"/>\n'):format(w, h, i - 1)
+    end
+    if cfg.scanlines then
+        parts[#parts + 1] = ('<rect width="%d" height="%d" fill="url(#scan)"/>\n'):format(w, h)
+    end
+    parts[#parts + 1] = '</svg>\n'
+    return table.concat(parts)
+end
+
 local function emit_grid_svg(w, h, cfg)
     local vx = (cfg.vanishing_point and cfg.vanishing_point.x or 0.5) * w
     local vy = (cfg.vanishing_point and cfg.vanishing_point.y or 0.0) * h
@@ -87,8 +122,13 @@ for kind, conf in pairs(data.output) do
     local name = assert(conf.name, "output." .. kind .. ".name missing")
     local svg
     if kind == "bg" then
-        if not data.gradient then error("bgimg_emit: gradient section missing for kind=bg") end
-        svg = emit_gradient_svg(w, h, data.gradient.stops)
+        if data.neon then
+            svg = emit_neon_svg(w, h, data.neon)
+        elseif data.gradient then
+            svg = emit_gradient_svg(w, h, data.gradient.stops)
+        else
+            error("bgimg_emit: neon or gradient section required for kind=bg")
+        end
     elseif kind == "grid" then
         if not data.grid then error("bgimg_emit: grid section missing for kind=grid") end
         svg = emit_grid_svg(w, h, data.grid)
