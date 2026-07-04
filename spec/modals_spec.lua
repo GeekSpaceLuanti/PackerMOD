@@ -93,5 +93,20 @@ describe("modals PMUI smoke", function()
         })
         assert.is_truthy(fs:find("Create Pack", 1, true))
         assert_overlap_oob("modal_create", fs)
+
+        -- Bug B: 固定高コンテンツが多すぎて flex な textlist が高さ 0.2u 相当まで
+        -- 潰れる (overlap/OOB では検知できない)。両 list とも実用サイズ (h >= 2.0u)
+        -- を確保する。
+        local by_name = {}
+        for x, y, w, h, name in fs:gmatch("textlist%[([%d.]+),([%d.]+);([%d.]+),([%d.]+);([%w_]+)") do
+            by_name[name] = { x = tonumber(x), y = tonumber(y),
+                              w = tonumber(w), h = tonumber(h) }
+        end
+        assert.is_truthy(by_name.search_results, "search_results textlist missing")
+        assert.is_truthy(by_name.mod_list,       "mod_list textlist missing")
+        assert.is_true(by_name.search_results.h >= 2.0,
+            ("search_results h too small: %.2fu (want >= 2.0)"):format(by_name.search_results.h))
+        assert.is_true(by_name.mod_list.h >= 2.0,
+            ("mod_list h too small: %.2fu (want >= 2.0)"):format(by_name.mod_list.h))
     end)
 end)

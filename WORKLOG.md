@@ -11,6 +11,36 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-04 23:45 (main)
+
+**変更概要**:
+Bug B (modal_create の flex リスト潰れ) を修正。
+`.modal-card-wide` (w26.0 h12.5) に固定高コンテンツ (title/section-label 3 個/
+2 modal-row/actions row/status label) を詰めすぎており、算術上 flex な
+`search_results` textlist が h≈0.2u まで潰れていた (mod_list も h≈1.3u)。
+overlap/OOB 判定は「潰れ」を検知しないため spec を素通りしていた。
+
+**手順** (再現テスト先行):
+
+1. `spec/modals_spec.lua`: modal_create テストに「search_results / mod_list の
+   textlist h >= 2.0u」の assertion を追加。→ busted で失敗を確認 (`h=0.20`)。
+2. `mainmenu/ui/themes/synthwave.css.yml` の modal サイズを是正:
+   - `.modal-card-wide` w:26.0 → 28.4, h:12.5 → 14.4 (page 内寸フルに広げる)
+   - `.modal-row` h:1.8 → 1.7
+   - `.modal-section-label` h:0.8 → 0.6
+   試算: 左 col の list h ≈ 2.8u / 右 col の mod_list h ≈ 3.8u。
+3. `busted spec/` 241 全緑。
+
+**検証**:
+- `make screenshot SUBTAB=modal_create`: ContentDB search 結果リストと Current mods
+  リストが実用サイズに広がり、Remove/Export/Close が下端に収まることを目視確認。
+
+**主な変更ファイル**:
+- spec/modals_spec.lua
+- mainmenu/ui/themes/synthwave.css.yml
+
+**次のTODO**: Step 4 (9-slice panel/btnframe + cyan アイコン生成)
+
 ## 2026-07-04 23:40 (main)
 
 **変更概要**:

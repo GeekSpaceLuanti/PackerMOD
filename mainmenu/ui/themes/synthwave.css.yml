@@ -347,7 +347,7 @@ rules:
     style:
       flex-direction: row
       gap: 0.4
-      h: 1.8
+      h: 1.7
 
   - selector: ".modal-field-grow"
     style:
@@ -397,12 +397,12 @@ rules:
     style:
       color: "#ff1b8d"
       font-size: "*1.3"
-      h: 0.8
+      h: 0.6
 
   - selector: ".modal-card-wide"
     style:
-      w: 26.0
-      h: 12.5
+      w: 28.4
+      h: 14.4
 
 media:
   - query: "max-width 20.0"
