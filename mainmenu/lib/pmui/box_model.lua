@@ -37,6 +37,8 @@ function M.compute(el)
         -- paint
         bg             = c.bg or c["background-color"],
         bg_image       = url_value(c["bg-image"]),
+        bg_image_hover = url_value(c["bg-image-hover"]),
+        bg_image_middle = tonumber(c["bg-image-middle"]),
         color          = c.color,
         border_color   = c["border-color"],
         font_size      = c["font-size"],

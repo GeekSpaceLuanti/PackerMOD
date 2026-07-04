@@ -103,6 +103,9 @@ rules:
     style:
       w: 4.0
       h: 2.7
+      bg-image: "url(packermod_btn_neon.png)"
+      bg-image-hover: "url(packermod_btn_neon_hover.png)"
+      bg-image-middle: 8
 
 # ===== 画面2 (Pack Detail) スタイル =====
 

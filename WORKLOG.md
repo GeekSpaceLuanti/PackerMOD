@@ -11,6 +11,52 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-04 23:55 (main)
+
+**変更概要**:
+mockup 準拠の見た目改修 Step 4。ボタン枠を単色 border から neon.html 相当の
+9-slice PNG 枠 (通常 cyan / hover magenta) に置き換える基盤を用意する。
+
+background9[] / style bgimg を絶対パスで実機動作させられるか未検証だったが、
+PoC として `.action-btn` に `bg-image` + `bg-image-hover` + `bg-image-middle: 8`
+を適用したところ、Import/Create/Settings のボタンに cyan の 9-slice 枠が
+きれいに描画されることを確認 (make screenshot SUBTAB=library)。
+
+**主な変更**:
+- `scripts/bgimg_emit.lua`: `panel` kind (塗り + 外周単色枠 48x48 SVG) を追加。
+  output マップは `conf.kind or key` で dispatch し既存 bg/grid とも共存。
+- `mainmenu/ui/themes/synthwave.bgimg.yml`: `panel_neon` (パネル背景用) /
+  `btn_neon` (ボタン通常) / `btn_neon_hover` (ボタン hover, magenta 枠) の
+  3 枚の 48x48 9-slice PNG を追加。
+- `mainmenu/lib/pmui/box_model.lua`: `bg-image-hover` / `bg-image-middle`
+  プロパティを box に反映。
+- `mainmenu/lib/pmui/paint.lua`: leaf button (button / icon-button) 要素に
+  `style[name;bgimg=<絶対パス>;bgimg_middle=<n>;border=false]` を発行。
+  `bg-image-hover` があれば `style[name:hovered;...]` も併発行。
+  texture 絶対パス解決は既存 `emit_background` と同じロジックを共有。
+- `mainmenu/ui/themes/synthwave.css.yml`: `.action-btn` に bg-image を適用
+  (Import/Create/Settings のボタン枠が cyan に、hover で magenta に切り替わる)。
+- `textures/packermod_btn_neon.png` / `packermod_btn_neon_hover.png` /
+  `packermod_panel_neon.png` (新規生成、48x48)。
+
+**検証**:
+- `busted spec/`: 241 全緑
+- `make screenshot SUBTAB=library`: cyan 9-slice 枠が 3 ボタンに適用されている
+  ことを目視確認。style bgimg の実機動作 = 成功。
+
+**主な変更ファイル**:
+- scripts/bgimg_emit.lua
+- mainmenu/ui/themes/synthwave.bgimg.yml
+- mainmenu/lib/pmui/box_model.lua
+- mainmenu/lib/pmui/paint.lua
+- mainmenu/ui/themes/synthwave.css.yml
+- textures/packermod_btn_neon.png (new)
+- textures/packermod_btn_neon_hover.png (new)
+- textures/packermod_panel_neon.png (new)
+
+**次のTODO**: Step 5 (container の 9-slice 化, footer 上 border のみ, フォント比,
+title 2 色化 で mockup 準拠へ最終化)
+
 ## 2026-07-04 23:45 (main)
 
 **変更概要**:

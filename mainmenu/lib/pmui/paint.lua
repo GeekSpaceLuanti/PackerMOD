@@ -29,15 +29,29 @@ local CONTAINER_TAGS = {
 local LABEL_TAGS = {
     h1 = true, h2 = true, h3 = true, span = true, p = true, label = true,
 }
+local BUTTON_TAGS = {
+    button = true, ["icon-button"] = true,
+}
 local function is_container_tag(tag) return CONTAINER_TAGS[tag] == true end
 local function is_label_tag(tag)     return LABEL_TAGS[tag] == true end
+local function is_button_tag(tag)    return BUTTON_TAGS[tag] == true end
+
+-- mainmenu の formspec は絶対パス texture を要求する (menu_lua_api.md)。
+-- root の bg-image と同じルールで texture_dir を prepend する。
+local function resolve_texture(img, texture_dir)
+    if not img then return nil end
+    if texture_dir and not (img:find("/", 1, true) or img:find("\\", 1, true)) then
+        return texture_dir .. img
+    end
+    return img
+end
 
 -- el.box の paint プロパティを style[<name>;k=v;...] にエンコード。
 -- icon-button は formspec の image_button だが、name selector の style[] は
 -- image_button にも button にも効くため selector を分けなくて済む。
 -- Label tag (h1/h2/span/p/label) は text 側に <style color> を埋めるので
 -- ここでは textcolor を出さない (二重指定回避)。
-local function build_style_props(el)
+local function build_style_props(el, texture_dir)
     local box = el.box or {}
     local props = {}
     if box.color and not is_label_tag(el.tag) then
@@ -49,17 +63,43 @@ local function build_style_props(el)
     if box.bg and not is_container_tag(el.tag) then
         props[#props + 1] = "bgcolor=" .. tostring(box.bg)
     end
+    -- bg-image は button 系 leaf の 9-slice 枠として使う (formspec の
+    -- style bgimg + bgimg_middle + border=false)。middle 未指定なら 8 を default。
+    if box.bg_image and is_button_tag(el.tag) then
+        local img = resolve_texture(box.bg_image, texture_dir)
+        props[#props + 1] = "bgimg=" .. img
+        props[#props + 1] = "bgimg_middle=" .. tostring(box.bg_image_middle or 8)
+        props[#props + 1] = "border=false"
+    end
     return props
 end
 
-local function emit_per_element_styles(root)
+-- hover 版の style を別出しする (style[name:hovered;...])。
+local function build_hover_props(el, texture_dir)
+    local box = el.box or {}
+    local props = {}
+    if box.bg_image_hover and is_button_tag(el.tag) then
+        local img = resolve_texture(box.bg_image_hover, texture_dir)
+        props[#props + 1] = "bgimg=" .. img
+        props[#props + 1] = "bgimg_middle=" .. tostring(box.bg_image_middle or 8)
+        props[#props + 1] = "border=false"
+    end
+    return props
+end
+
+local function emit_per_element_styles(root, texture_dir)
     local out = {}
     dom.walk(root, function(el)
         local nm = name_of(el)
         if not nm then return end
-        local props = build_style_props(el)
-        if #props == 0 then return end
-        out[#out + 1] = "style[" .. nm .. ";" .. table.concat(props, ";") .. "]"
+        local props = build_style_props(el, texture_dir)
+        if #props > 0 then
+            out[#out + 1] = "style[" .. nm .. ";" .. table.concat(props, ";") .. "]"
+        end
+        local hprops = build_hover_props(el, texture_dir)
+        if #hprops > 0 then
+            out[#out + 1] = "style[" .. nm .. ":hovered;" .. table.concat(hprops, ";") .. "]"
+        end
     end)
     return out
 end
@@ -118,7 +158,7 @@ function M.render(root, opts)
     local prepend = {}
     local bg = emit_background(root, page_w, page_h, opts.texture_dir)
     if bg then prepend[#prepend + 1] = bg end
-    for _, line in ipairs(emit_per_element_styles(root)) do
+    for _, line in ipairs(emit_per_element_styles(root, opts.texture_dir)) do
         prepend[#prepend + 1] = line
     end
 

@@ -42,6 +42,22 @@ local function emit_gradient_svg(w, h, stops)
     return table.concat(parts)
 end
 
+-- 9-slice panel/btnframe: 塗り + 外周単色枠の SVG。
+-- middle=N を想定した stretched 9-slice で使う (背景9[]/style bgimg_middle=N)。
+local function emit_panel_svg(w, h, cfg)
+    local bg = cfg.bg or "#14143a"
+    local bc = cfg.border_color or "#00ffe5"
+    local bw = cfg.border_width or 2
+    local parts = { svg_open(w, h) }
+    parts[#parts + 1] = ('<rect x="0" y="0" width="%d" height="%d" fill="%s"/>\n'):format(w, h, bg)
+    parts[#parts + 1] = ('<rect x="0" y="0" width="%d" height="%d" fill="%s"/>\n'):format(w, bw, bc)
+    parts[#parts + 1] = ('<rect x="0" y="%d" width="%d" height="%d" fill="%s"/>\n'):format(h - bw, w, bw, bc)
+    parts[#parts + 1] = ('<rect x="0" y="0" width="%d" height="%d" fill="%s"/>\n'):format(bw, h, bc)
+    parts[#parts + 1] = ('<rect x="%d" y="0" width="%d" height="%d" fill="%s"/>\n'):format(w - bw, bw, h, bc)
+    parts[#parts + 1] = '</svg>\n'
+    return table.concat(parts)
+end
+
 -- neon.html 準拠: base 単色 + 複数の radial glow + 横スキャンラインを 1 枚に焼き込む。
 -- cfg = { base = "#hex", radials = { {cx, cy, r, color, opacity}, ... },
 --         scanlines = { period, color, opacity } }
@@ -115,11 +131,15 @@ if not data or not data.output then
     error("bgimg_emit: yaml missing 'output' section")
 end
 
+-- output キーは name suffix 相当。実際の生成方式は conf.kind (未指定なら
+-- キーそのまま) で決まる。bg / grid は既存挙動、panel は 9-slice 用の枠付き
+-- 塗り PNG を生成する。
 local count = 0
-for kind, conf in pairs(data.output) do
-    local w = assert(conf.w, "output." .. kind .. ".w missing")
-    local h = assert(conf.h, "output." .. kind .. ".h missing")
-    local name = assert(conf.name, "output." .. kind .. ".name missing")
+for key, conf in pairs(data.output) do
+    local kind = conf.kind or key
+    local w = assert(conf.w, "output." .. key .. ".w missing")
+    local h = assert(conf.h, "output." .. key .. ".h missing")
+    local name = assert(conf.name, "output." .. key .. ".name missing")
     local svg
     if kind == "bg" then
         if data.neon then
@@ -132,6 +152,8 @@ for kind, conf in pairs(data.output) do
     elseif kind == "grid" then
         if not data.grid then error("bgimg_emit: grid section missing for kind=grid") end
         svg = emit_grid_svg(w, h, data.grid)
+    elseif kind == "panel" then
+        svg = emit_panel_svg(w, h, conf)
     else
         error("bgimg_emit: unknown output kind: " .. tostring(kind))
     end

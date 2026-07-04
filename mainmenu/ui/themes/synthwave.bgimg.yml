@@ -6,6 +6,34 @@ output:
     w: 1920
     h: 1024
 
+  # 9-slice 用 48x48 パネル/ボタン枠 PNG。middle=8 を想定して 4 隅 8x8 を保つ。
+  # style bgimg + bgimg_middle=8 で leaf (button/image_button) の枠として使う。
+  # background9[] で container 背景としても使える。
+  panel_neon:
+    kind: panel
+    name: packermod_panel_neon
+    w: 48
+    h: 48
+    bg: "#14143a"
+    border_color: "#00ffe5"
+    border_width: 2
+  btn_neon:
+    kind: panel
+    name: packermod_btn_neon
+    w: 48
+    h: 48
+    bg: "#14143a"
+    border_color: "#00ffe5"
+    border_width: 2
+  btn_neon_hover:
+    kind: panel
+    name: packermod_btn_neon_hover
+    w: 48
+    h: 48
+    bg: "#1a0a3a"
+    border_color: "#ff1b8d"
+    border_width: 2
+
 # docs/mockup/neon.html 準拠。
 # base 濃紺 + 下中央 magenta radial + 左上 cyan radial + 3px 周期スキャンライン。
 # 座標は viewBox 短辺基準 (0..1)。
