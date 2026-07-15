@@ -8,7 +8,7 @@
 --   M.match(el, selector) -> bool   (テスト用)
 --   M.resolve_value(val_ast, vars) -> resolved_value
 
-local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*/)") or "./")
+local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local stylesheet = dofile(SELF_DIR .. "stylesheet.lua")
 local dom        = dofile(SELF_DIR .. "dom.lua")
 

@@ -6,11 +6,17 @@ param(
 $ErrorActionPreference = "Stop"
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$userData = Join-Path $env:APPDATA "Luanti"
 
-if (-not (Test-Path $userData)) {
-    Write-Error "Luanti user data directory not found: $userData. Run Luanti once to create it."
+$luantiDir   = Join-Path $env:APPDATA "Luanti"
+$minetestDir = Join-Path $env:APPDATA "Minetest"
+if (Test-Path $luantiDir) {
+    $userData = $luantiDir
+} elseif (Test-Path $minetestDir) {
+    $userData = $minetestDir
+} else {
+    Write-Error "Luanti user data directory not found (checked $luantiDir and $minetestDir). Run Luanti once to create it."
 }
+Write-Host "Using Luanti user data: $userData"
 
 $targetRoot     = Join-Path $userData "PackerMOD"
 $targetMainmenu = Join-Path $targetRoot "mainmenu"

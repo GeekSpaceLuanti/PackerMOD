@@ -2,7 +2,7 @@
 -- 役割は「数値・色などを layout/paint が使いやすい形に整理する」だけで、
 -- 配置計算自体は layout.lua に任せる。
 
-local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*/)") or "./")
+local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local dom = dofile(SELF_DIR .. "dom.lua")
 
 local M = {}

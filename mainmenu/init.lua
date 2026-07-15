@@ -19,7 +19,11 @@ local basepath = core.get_builtin_path()
 -- formspec へは絶対パスで渡すことで上記制限を回避する。
 -- install/install.sh が <repo>/textures を <user>/PackerMOD/textures に
 -- 配置している前提。
-local textures_dir = self_path .. ".." .. DIR_DELIM .. "textures" .. DIR_DELIM
+-- self_path = ".../PackerMOD/mainmenu/" から親を直接構築する。
+-- ".." を挟むと Windows の Irrlicht が正規化せず open 失敗するため。
+local parent_dir = self_path:match("^(.*[/\\])[^/\\]+[/\\]$")
+                       or (self_path .. ".." .. DIR_DELIM)
+local textures_dir = parent_dir .. "textures" .. DIR_DELIM
 
 defaulttexturedir = core.get_texturepath_share() .. DIR_DELIM .. "base" ..
                     DIR_DELIM .. "pack" .. DIR_DELIM

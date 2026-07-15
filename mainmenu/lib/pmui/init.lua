@@ -19,7 +19,7 @@
 --   pmui.parse_css(text)        -> Stylesheet
 --   pmui.compute(root, sheet, opts)  -- cascade + box_model
 
-local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*/)") or "./")
+local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 
 local M = {}
 

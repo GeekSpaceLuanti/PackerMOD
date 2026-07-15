@@ -2,7 +2,7 @@
 -- 内部で layout.flow を呼んで PMLayout の widget tree を作り、PMLayout の
 -- build_formspec に背景画像と style[] 等の prelude を載せて出力する。
 
-local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*/)") or "./")
+local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local dom    = dofile(SELF_DIR .. "dom.lua")
 local layout = dofile(SELF_DIR .. "layout.lua")
 

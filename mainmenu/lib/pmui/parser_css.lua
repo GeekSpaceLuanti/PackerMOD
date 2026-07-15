@@ -19,7 +19,7 @@
 --         - selector: ".card-grid"
 --           style: { grid-columns: 3 }
 
-local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*/)") or "./")
+local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local stylesheet = dofile(SELF_DIR .. "stylesheet.lua")
 
 local M = {}

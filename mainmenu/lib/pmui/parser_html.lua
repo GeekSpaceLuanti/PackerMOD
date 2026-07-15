@@ -5,7 +5,7 @@
 --   - when: <truthy expr>                     falsy なら element を返さない
 --   - 値内の "${path.to.var}" は ctx から解決(ui_loader.resolve_value を再利用)
 
-local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*/)") or "./")
+local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local dom = dofile(SELF_DIR .. "dom.lua")
 
 local M = {}

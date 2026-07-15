@@ -2,7 +2,7 @@
 -- 既存 PMLayout の VBox/HBox/Label/Button/Image/Spacer をそのまま使い、measure と
 -- formspec 出力は PMLayout に任せる。grid だけは PMUI 側で N 個ごとの行に分割してから VBox に詰める。
 
-local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*/)") or "./")
+local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local dom = dofile(SELF_DIR .. "dom.lua")
 
 local M = {}

@@ -1,6 +1,16 @@
 $ErrorActionPreference = "Stop"
 
-$userData         = Join-Path $env:APPDATA "Luanti"
+$luantiDir   = Join-Path $env:APPDATA "Luanti"
+$minetestDir = Join-Path $env:APPDATA "Minetest"
+if (Test-Path $luantiDir) {
+    $userData = $luantiDir
+} elseif (Test-Path $minetestDir) {
+    $userData = $minetestDir
+} else {
+    Write-Host "No Luanti/Minetest user data found. Nothing to uninstall."
+    exit 0
+}
+Write-Host "Using Luanti user data: $userData"
 $conf             = Join-Path $userData "minetest.conf"
 $targetMainmenu   = Join-Path $userData "PackerMOD\mainmenu"
 $targetPmTextures = Join-Path $userData "PackerMOD\textures"

@@ -11,6 +11,52 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-15 22:20 (main)
+
+**変更概要**:
+Windows 実機 (Luanti 5.16.1) で PackerMOD を初回適用したところ 3 段の Windows 固有
+バグに当たり、それぞれ修正して Pack Library 画面の起動まで確認した (#23 関連)。
+
+1. **`install.ps1` / `uninstall.ps1` の `$userData` が `%APPDATA%\Luanti` を hardcode**。
+   Luanti 5.16.1 は Windows で旧名の `%APPDATA%\Minetest` を user data として使い続けて
+   いるため、そのままだと `Luanti user data directory not found` で即 error 終了する。
+   → `%APPDATA%\Luanti` が存在すればそれ、なければ `%APPDATA%\Minetest` に fallback。
+2. **pmui/*.lua (7 ファイル) の `SELF_DIR` 正規表現 `(.*/)` が Unix 区切りしか拾わない**。
+   `debug.getinfo(1,"S").source` が Windows でバックスラッシュを返すため match 失敗
+   → fallback の `./` になり `dofile("./dom.lua")` で
+   `No such file or directory` を出して mainmenu 起動が丸ごと落ちる。
+   → パターンを `(.*[/\\])` に拡張して `/` と `\` の両方を拾えるように。
+3. **`mainmenu/init.lua:22` の `textures_dir` が `self_path .. ".." .. DIR_DELIM .. "textures"`**。
+   Windows の Irrlicht image loader が `mainmenu\..\textures\` の `..` を正規化せず
+   open 失敗し、synthwave 背景と neon ボタンの PNG が全て抜ける。
+   → `self_path` から `mainmenu/` を落として `parent_dir .. "textures"` を直接構築。
+
+**主な変更ファイル**:
+- install/install.ps1, install/uninstall.ps1 — `$userData` の fallback ロジック
+- mainmenu/lib/pmui/{init,box_model,cascade,layout,paint,parser_css,parser_html}.lua
+  — `SELF_DIR` の regex を Windows 対応に (7 ファイル)
+- mainmenu/init.lua — `textures_dir` を親ディレクトリ直接構築に
+
+**検証**:
+- `.\install\install.ps1 -Mode copy` が `%APPDATA%\Minetest\PackerMOD\` に mainmenu /
+  textures / packs / cache を配置し、`minetest.conf` に `main_menu_script = ...` を
+  追記することを確認 (`Using Luanti user data: ...\Minetest` が出るようになった)。
+- Luanti 5.16.1 起動 → PackerMOD の Pack Library 画面 (`> PACKERMOD` タイトル +
+  `No packs yet. Use Import or Create below` プレースホルダ) が表示されることを
+  PowerShell 経由のウィンドウキャプチャで目視確認。
+- `%APPDATA%\Minetest\worlds` / `games` は install 前後で LastWriteTime 変化なし
+  (既存データ無傷)。
+
+**残課題**:
+- 背景 texture (`packermod_bg_synthwave.png`) と neon ボタン PNG は
+  `%APPDATA%\Minetest\PackerMOD\textures\` に実在するのに Windows の
+  Irrlicht image loader が Could not open で読めない。`..` を含まない
+  絶対パスを渡してもダメなので Luanti 5.16.1 の Windows 実装側の別バグの
+  可能性。メニューは背景抜けでも Pack Library として機能する。
+  別 issue として追跡。
+- #22 (実機 New World → Play 通し検証)、#23 (Windows Junction) は未着手のまま。
+  今回は「メニューが起動する」までのスコープ。
+
 ## 2026-07-05 00:10 (main)
 
 **変更概要**:
