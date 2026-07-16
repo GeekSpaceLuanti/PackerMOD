@@ -11,6 +11,41 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-16 13:20 (main)
+
+**変更概要**:
+#24 Phase 1: デザイン問題を数値で落とす再現テスト基盤を整備し、崩壊級 (#1/#2/#3)
++ divider (#6) を red 化した。再現テスト先行 (プロジェクトルール) の red 側。
+
+1. **measure_ui.py に `--assert` モード追加**: 期待値 spec (JSON) の各 check を
+   測定値と突き合わせ、1 つでも fail すれば exit 1。閾値は px (品質バー) か 'Nu'
+   (unit_px 倍、解像度非依存) で書け、`only` で issue を絞れる。構造 (ラベル枠内/外)
+   が変わっても「性質」の表明は不変にする設計。
+2. **divider 検出を追加**: dim な cyan 罫線 (#6: 1px #059189, 輝度 57%) も拾えるよう
+   広めの hue mask で検出し、thickness と brightness(g) を分けて測る。
+3. **spec/design/library.json**: #24 の #1 (ラベル中心 ±2px)・#2 (gap ≥4px)・
+   #3 (背景外周 ≤4px)・#6 (divider ≥2px & g≥210) を表明。現状 5/5 FAIL (red 確認)。
+4. **screenshot_mainmenu.sh**: SCREEN_W/H・GUI_SCALING を conf 注入 (autosave 無効化
+   込み。Phase 0 で判明したドリフト対策) し、解像度マトリクスを振れるように。
+   FIXTURE=<name> で決定論的な pack 集合を差せる (Mod security 回避のため
+   書き込み可能な ~/.minetest 下へステージング)。
+5. **fixture 追加**: `empty` (0 packs, empty state 用) と `three` (3 packs, grid 用)。
+6. **init.lua に fixture_root hook**: `packermod_fixture_root` で user_path を差し替え。
+7. **make check-design SUBTAB=library**: 指定解像度で撮って spec を評価するターゲット。
+
+検証: `make check-design SUBTAB=library` で 5/5 FAIL (exit 1)、three/empty fixture
+とも撮影成功、既存 busted 241 tests は全 green を維持。
+
+**主な変更ファイル**:
+- scripts/measure_ui.py (--assert モード + divider 検出)
+- scripts/screenshot_mainmenu.sh (解像度/gui_scaling/fixture 注入)
+- spec/design/library.json (新規、アサーション spec)
+- spec/design/fixtures/{empty,three}/ (新規、pack fixture)
+- mainmenu/init.lua (packermod_fixture_root hook)
+- Makefile (check-design ターゲット)
+
+**次のTODO**: Phase 2 (host adapter + units + props + responsive size + auto-fit grid)
+
 ## 2026-07-16 13:00 (main)
 
 **変更概要**:

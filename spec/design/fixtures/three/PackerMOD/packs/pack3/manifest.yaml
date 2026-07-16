@@ -1,0 +1,8 @@
+schema_version: 1
+id: pack3
+name: Redstone Lab
+version: "1.0.3"
+description: Fixture pack 3 for design testing
+base_game:
+  id: mineclone2
+  version: "0.87"

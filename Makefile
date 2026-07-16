@@ -1,4 +1,4 @@
-.PHONY: test e2e all screenshot screenshot-all measure icons vendor-icons bgimg thumb
+.PHONY: test e2e all screenshot screenshot-all measure check-design icons vendor-icons bgimg thumb
 
 ICON_NAMES := play reload download search plus trash save settings-2 folder cloud package box
 THEMES ?= synthwave
@@ -25,6 +25,17 @@ screenshot-all:
 # Usage: make measure SUBTAB=library
 measure: screenshot
 	python3 scripts/measure_ui.py /tmp/mainmenu_$(SUBTAB).png
+
+# デザイン回帰テスト。指定解像度で撮り、spec/design/<SUBTAB>.json の幾何アサーション
+# を評価する (#24 の red→green ゲート)。ISSUES で issue を絞れる (例: ISSUES='["#6"]')。
+# Usage: make check-design SUBTAB=library [SCREEN_W=1600 SCREEN_H=900] [FIXTURE=three]
+SCREEN_W ?= 1024
+SCREEN_H ?= 600
+check-design:
+	SCREEN_W=$(SCREEN_W) SCREEN_H=$(SCREEN_H) FIXTURE=$(FIXTURE) \
+	    bash scripts/screenshot_mainmenu.sh $(SUBTAB) /tmp/mainmenu_$(SUBTAB).png
+	python3 scripts/measure_ui.py /tmp/mainmenu_$(SUBTAB).png \
+	    --assert spec/design/$(SUBTAB).json
 
 vendor-icons:
 	bash scripts/vendor_pixelarticons.sh $(ICON_NAMES)

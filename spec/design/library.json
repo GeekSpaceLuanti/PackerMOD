@@ -1,0 +1,45 @@
+{
+  "_comment": "#24 library 画面デザイン問題の再現→修正アサーション。measure_ui.py --assert で使う。閾値は px (品質バー) か 'Nu' (unit_px 倍、解像度非依存の性質)。--unit-px を渡すと 'Nu' が解決される。'only' に issue 番号を並べると Phase ごとに green ゲート対象を絞れる。",
+  "checks": [
+    {
+      "id": "button_labels_centered",
+      "issue": "#1",
+      "measure": "label_offset_abs_max",
+      "op": "<=",
+      "value": 2,
+      "_desc": "アイコンボタンのラベル中心が枠中心から ±2px 以内。現状 +8〜9.5px (自然幅推定が過小)"
+    },
+    {
+      "id": "button_label_gap",
+      "issue": "#2",
+      "measure": "label_gap_min",
+      "op": ">=",
+      "value": 4,
+      "_desc": "ラベルと枠底辺の gap ≥ 4px。現状 0px (帯上端に文字が張り付き)"
+    },
+    {
+      "id": "background_covers_window",
+      "issue": "#3",
+      "measure": "bg_margin_max",
+      "op": "<=",
+      "value": 4,
+      "_desc": "背景テクスチャが window 全面を覆う (外周余白 ≤ 4px)。現状 60〜62px フラット帯"
+    },
+    {
+      "id": "divider_thickness",
+      "issue": "#6",
+      "measure": "divider_thickness_min",
+      "op": ">=",
+      "value": 2,
+      "_desc": "divider ≥ 2px。現状 1px サブピクセルで色が背景と混ざる"
+    },
+    {
+      "id": "divider_brightness",
+      "issue": "#6",
+      "measure": "divider_brightness_min",
+      "op": ">=",
+      "value": 210,
+      "_desc": "divider は明るい cyan (#00ffe5, g=255)。現状 g≈150 (輝度 57%)"
+    }
+  ]
+}

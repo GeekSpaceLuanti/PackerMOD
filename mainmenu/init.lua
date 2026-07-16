@@ -51,7 +51,14 @@ local layout = dofile(self_path .. "lib" .. DIR_DELIM .. "layout.lua")
 local theme = dofile(self_path .. "lib" .. DIR_DELIM .. "theme.lua")
 local icons = dofile(self_path .. "lib" .. DIR_DELIM .. "icons.lua")
 
+-- Dev/test hook: packermod_fixture_root = <dir> で user_path を差し替え、
+-- 決定論的な pack 集合 (0 個の empty state / N 個の grid) でデザイン検証する。
+-- fixture は <dir>/PackerMOD/packs/<id>/manifest.yaml を持つ。通常起動では未設定。
 local user_path = core.get_user_path()
+local fixture_root = core.settings and core.settings:get("packermod_fixture_root")
+if fixture_root and fixture_root ~= "" then
+    user_path = fixture_root
+end
 local fs = world_builder._default_fs()
 local client = contentdb_mod.new()
 local installer = mod_installer.new({
