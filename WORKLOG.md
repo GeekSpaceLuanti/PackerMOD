@@ -11,6 +11,49 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-16 13:00 (main)
+
+**変更概要**:
+#24 (library 画面デザイン問題 9 件) を機構的に根治するための Phase 0 エンジン実測。
+個別数値ハードコードでなく HTML/CSS 的な自動調整で直す方針が承認され (plan:
+`.claude/plans/24-htlm-css-abstract-map.md`)、将来 pmui を汎用レスポンシブ UI
+ライブラリ + in-game MOD へ昇華する構想も込みで、まず Luanti 5.16.1 の実挙動を
+使い捨てハーネス (scratchpad/phase0/) で実測した。結果を以下に記録する
+(以降の Phase 2〜5 の設計はこの数値に依存する)。
+
+**実測結果 (Xvfb, gui_scaling=1, density=1)**:
+
+1. **unit_px 実式が確定**: 1024x600 で `max_formspec_size = 19.2019 × 11.2511`、
+   unit_px = 1024/19.2019 = **53.328px**。固定 size[10,5] でも responsive size でも
+   1u 箱 = 53px で一定 → 短辺 floor (`0.5555×96 = 53.33`) が効く (600/15=40 < 53.33)。
+   → REF_UNIT_PX = 53.33 の設計仮定は実測一致。
+2. **responsive full-window カバー確認**: `size = max_formspec_size` + `padding[0,0]` で
+   四隅の 1u 箱が window の (0,0)/(右上)/(右下) にピタリ (1024x600 全面)。
+   → #3 (背景全面化) は size 可変化だけで大部分 green になる裏付け。
+3. **hypertext の癖**:
+   - `size=` は **px 単位** (12→cap 12px, 24→22px, 48→43px、ほぼ線形)。
+   - デフォルト左マージン **3px**、`margin=0` で 0px に消える (label と同 x)。
+   - `halign=center` はブロック中心一致 (±1.5px)、`halign=right` は右端 -5px、
+     `valign=middle` は帯中央 (±3.5px)。→ エンジン整列が効くので幅推定を精度から外せる。
+   - **幅不足時は折り返し + 高さ超過で縦スクロールバー出現** → 幅戦略必須の裏付け。
+4. **クリック透過** (image_button 上に overlay を重ねてクリック到達を計測):
+   - `image[]` / `label[]` / `box[]` overlay → **透過する** (下のボタンに届く)。
+   - `hypertext[]` overlay → **透過しない** (クリックを食う)。
+   - → composite button は「image_button(9-slice bgimg) を枠全域に敷き、icon=image[]・
+     divider=box[] を重ね、**ラベルは image_button 自身の label** (content_offset で下帯へ)」
+     で全域クリック可能。ラベルに hypertext は使えない。
+5. **content_offset は px 単位** (0,48 でラベルが下帯へ、0,0.9 はほぼ不動)。
+6. **resize 追従**: window リサイズで `WindowInfoChange` イベントが発火し、
+   eventhandler で `ui.update()` すると get_formspec が新 window 情報で再実行される
+   (2 回リサイズで n=2→3 と再構築を確認)。→ **responsive はライブ追従可能**。
+   注意: Luanti は `autosave_screensize` により screen_w/h を conf に保存する。
+   Phase 1 の解像度マトリクスでは conf に screen_w/h を明示注入 + autosave 無効化が要る。
+
+**主な変更ファイル**:
+- mainmenu/init.lua (`packermod_dev_screen` dev hook 追加。実験用画面を差し込む)
+
+**次のTODO**: Phase 1 (再現テスト整備、#24 の 9 症状 + field 被りを red 化)
+
 ## 2026-07-16 10:35 (main)
 
 **変更概要**:

@@ -127,7 +127,14 @@ local function init()
     -- ln -s / mklink /J で作っているのでリンク先(本物の world)は無事。
     pack_launcher.cleanup_symlinks(packermod.user_path)
 
-    library.show()
+    -- Dev hook: packermod_dev_screen = <lua ファイルの絶対パス> で実験用画面を
+    -- 起動する (エンジン挙動の実測・検証用)。packermod_initial_subtab と同系統。
+    local dev_screen = core.settings and core.settings:get("packermod_dev_screen")
+    if dev_screen and dev_screen ~= "" then
+        dofile(dev_screen).show()
+    else
+        library.show()
+    end
     ui.update()
 
     core.sound_play("main_menu", true)
