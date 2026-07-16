@@ -106,13 +106,10 @@ local function build_grid_formspec(tabdata)
         }
     end
 
-    -- pack 数 % cols の空きスロット (= プレースホルダ数) を埋めて grid を均等に。
-    -- 列数は synthwave.css.yml の .pack-grid の grid-columns と一致させる必要がある。
-    -- 同期の崩れは見た目に出るので 1 ファイル変更時に注意 (TODO: 動的に CSS から拾う)。
-    local grid_cols = 3
-    local placeholder_count = (grid_cols - (#pack_ctx % grid_cols)) % grid_cols
-    local placeholders = {}
-    for i = 1, placeholder_count do placeholders[i] = {} end
+    -- placeholder (空きスロット) は pmui の grid が最終行を自動で埋める
+    -- (library.html.yml の pack-card-placeholder テンプレを列数に応じてクローン)。
+    -- 列数は CSS の grid-columns: auto から実行時に導出するので、ここで cols を
+    -- 二重管理しない。
 
     -- neon.html 準拠の title 2 色化: "> " magenta, "PACKERMOD" cyan。
     -- YAML パーサは "\x1b" 系のエスケープを実バイトに変換しないので、Lua 側で
@@ -122,11 +119,14 @@ local function build_grid_formspec(tabdata)
 
     local ctx = {
         packs        = pack_ctx,
-        placeholders = placeholders,
         no_packs     = (#packs == 0),
         title_text   = title_text,
         icon_path    = function(n) return packermod.icons.path(n, "md") end,
     }
+
+    -- responsive: window から page サイズと unit_px を算出。max_formspec_size を
+    -- 使い切り padding[0,0] で全窓を覆う (min clamp で小窓でも崩れない)。
+    local rp = pmui.responsive_page {}
 
     local DD = DIR_DELIM or "/"
     local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
@@ -134,8 +134,8 @@ local function build_grid_formspec(tabdata)
         html_path = mm .. "ui" .. DD .. "library.html.yml",
         css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
         ctx       = ctx,
-        -- Luanti のメインメニュー window (1608x853, 1 unit ≈ 52 px) を埋めるサイズ。
-        page_w = 30.0, page_h = 16.0,
+        page_w = rp.page_w, page_h = rp.page_h, unit_px = rp.unit_px,
+        fullscreen = rp.fullscreen,
         texture_dir = packermod.textures_dir,
     }
 end

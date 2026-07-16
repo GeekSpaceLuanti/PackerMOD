@@ -44,9 +44,46 @@ local function build_children(el, ctx)
     return out
 end
 
+local function has_class(el, cls)
+    for _, c in ipairs(el.classes or {}) do
+        if c == cls then return true end
+    end
+    return false
+end
+
+-- grid の利用可能 content 幅 (formspec unit) を静的に導出する。
+-- page 幅から自身+祖先の padding/border を差し引く。grid が page 直下にある前提
+-- (flex 幅で決まる入れ子コンテナ内の grid は非対応: props.lua の制約参照)。
+local function grid_content_width(el, ctx)
+    local w = ctx and ctx.page_w
+    if not w then return nil end
+    local cur = el
+    while cur do
+        local bx = cur.box or {}
+        w = w - 2 * (bx.padding or 0) - 2 * (bx.border_width or 0)
+        cur = cur._parent
+    end
+    return w
+end
+
+-- grid の列数を決める。grid-columns が数値ならそれを、"auto" なら
+-- 利用可能幅 ÷ (カード幅 + gap) で auto-fit する。card_w が取れないときは 1 列。
+local function resolve_grid_cols(el, ctx, item_els)
+    local gc = el.box.grid_columns
+    if type(gc) == "number" and gc > 0 then return math.floor(gc) end
+    local n = tonumber(gc)
+    if n and n > 0 then return math.floor(n) end
+    -- auto-fit
+    local avail = grid_content_width(el, ctx)
+    local card_w = item_els[1] and item_els[1].box and item_els[1].box.w
+    local gap = el.box.gap or 0
+    if not avail or not card_w or card_w <= 0 then return 1 end
+    local cols = math.floor((avail + gap) / (card_w + gap) + 1e-6)
+    return math.max(1, cols)
+end
+
 local function build_container(L, el, ctx)
     local box = el.box
-    local children = build_children(el, ctx)
 
     -- page は背景の責務を paint.lua の bgcolor[]/background[] に渡しているので、
     -- VBox の bgcolor として box[] を出すと background[] の上を塗り潰して PNG が
@@ -54,14 +91,38 @@ local function build_container(L, el, ctx)
     local bgcolor_for_widget = box.bg
     if el.tag == "page" then bgcolor_for_widget = nil end
 
-    -- display: grid を N 個ごとの行に分割
-    if box.display == "grid" and box.grid_columns and box.grid_columns > 0 then
-        local cols = box.grid_columns
+    -- display: grid → auto-fit で列数を決め、N 個ごとの行に分割。
+    -- placeholder は「fill-remainder マーク付き / pack-card-placeholder クラスの
+    -- テンプレ card」1 個を DOM に置き、最終行の空きセルへ grid 側でクローン生成する
+    -- (列数と placeholder 数を同じ場所で決めないと必ず狂うため、ctx.placeholders は使わない)。
+    if box.display == "grid" then
+        local item_els, fill_el = {}, nil
+        for _, c in ipairs(el.children) do
+            if has_class(c, "pack-card-placeholder")
+                or (c.attrs and c.attrs["fill-remainder"]) then
+                fill_el = c
+            else
+                item_els[#item_els + 1] = c
+            end
+        end
+        local cols = resolve_grid_cols(el, ctx, item_els)
+        local items = {}
+        for _, ce in ipairs(item_els) do
+            local w = build(ce, ctx)
+            if w then items[#items + 1] = w end
+        end
+        if fill_el and #items > 0 then
+            local rem = (cols - (#items % cols)) % cols
+            for _ = 1, rem do
+                local w = build(fill_el, ctx)
+                if w then items[#items + 1] = w end
+            end
+        end
         local rows = {}
-        for i = 1, #children, cols do
+        for i = 1, #items, cols do
             local row = L.HBox { spacing = box.gap, align = "stretch" }
-            for j = i, math.min(i + cols - 1, #children) do
-                row[#row + 1] = children[j]
+            for j = i, math.min(i + cols - 1, #items) do
+                row[#row + 1] = items[j]
             end
             rows[#rows + 1] = row
         end
@@ -72,9 +133,11 @@ local function build_container(L, el, ctx)
             bgcolor = bgcolor_for_widget,
         }
         for _, r in ipairs(rows) do g[#g + 1] = r end
+        el._widget = g
         return g
     end
 
+    local children = build_children(el, ctx)
     local is_row = box.flex_direction == "row"
     local W = is_row and L.HBox or L.VBox
     local node = W {

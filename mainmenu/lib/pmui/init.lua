@@ -31,6 +31,8 @@ M.cascade     = dofile(SELF_DIR .. "cascade.lua")
 M.box_model   = dofile(SELF_DIR .. "box_model.lua")
 M.layout      = dofile(SELF_DIR .. "layout.lua")
 M.paint       = dofile(SELF_DIR .. "paint.lua")
+M.units       = dofile(SELF_DIR .. "units.lua")
+M.host        = dofile(SELF_DIR .. "host_mainmenu.lua")
 
 local function read_file(path)
     local f, err = io.open(path, "r")
@@ -48,6 +50,10 @@ function M.build_formspec(opts)
 
     local page_w = opts.page_w or 13.0
     local page_h = opts.page_h or 8.5
+    -- unit_px: px→font 換算と device-pixel snapping に使う実 unit_px。
+    -- responsive 画面は library 側が window から算出して渡す。未指定 (レガシー固定
+    -- size 画面や headless) は REF_UNIT_PX にフォールバック。
+    local unit_px = opts.unit_px or M.units.REF_UNIT_PX
 
     local root  = M.parser_html.parse(html_text, opts.ctx or {})
     local sheet = M.parser_css.parse(css_text)
@@ -55,11 +61,30 @@ function M.build_formspec(opts)
         page_w = page_w, page_h = page_h,
         hover_ids = opts.hover_ids, active_ids = opts.active_ids,
     })
-    M.box_model.compute_all(root)
+    M.box_model.compute_all(root, { unit_px = unit_px })
     return M.paint.render(root, {
         page_w = page_w, page_h = page_h, ctx = opts.ctx,
-        texture_dir = opts.texture_dir,
+        texture_dir = opts.texture_dir, unit_px = unit_px,
+        fullscreen = opts.fullscreen, view = opts.view,
     })
+end
+
+-- window 情報から responsive な page サイズと unit_px を算出するヘルパ。
+-- library.lua 等が build_formspec に渡す値をここで一元計算する。
+--   min_w/min_h: 小窓で崩れないための最小 formspec サイズ (clamp)。
+-- 返り値: { page_w, page_h, unit_px }
+function M.responsive_page(opts)
+    opts = opts or {}
+    local wi = M.host.get_window_info(opts.view)
+    local min_w = opts.min_w or 15.5
+    local min_h = opts.min_h or 10.0
+    local page_w = math.max(wi.max_formspec_size.x, min_w)
+    local page_h = math.max(wi.max_formspec_size.y, min_h)
+    local unit_px = M.units.effective_unit_px(
+        wi.size, { w = page_w, h = page_h }, wi.real_gui_scaling, 0)
+    -- fullscreen=true で build_formspec が padding[0,0] を emit する。
+    -- max_formspec_size は padding[0,0] 前提の値なので、これで API 値と実描画が一致。
+    return { page_w = page_w, page_h = page_h, unit_px = unit_px, fullscreen = true }
 end
 
 return M

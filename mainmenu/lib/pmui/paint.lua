@@ -119,36 +119,56 @@ local function emit_background(root, page_w, page_h, texture_dir)
         fnum(0), fnum(0), fnum(page_w), fnum(page_h), img)
 end
 
+-- 座標 / 長さを整数 device px グリッドへスナップする。box[] ベースの罫線は
+-- fractional px 位置だと 2px 指定でも複数行に跨って薄く描かれる (#6)。
+-- 端を device px グリッドに合わせ、太さも整数 px (最小 1px) にすることで crisp 化。
+local function snap_edge(v, unit_px)
+    if not unit_px or unit_px <= 0 then return v end
+    return math.floor(v * unit_px + 0.5) / unit_px
+end
+local function snap_thick(v, unit_px)
+    if not unit_px or unit_px <= 0 then return v end
+    return math.max(1, math.floor(v * unit_px + 0.5)) / unit_px
+end
+
 -- border_width / border_color が指定された container を 4 辺の box[] で囲む。
--- widget の _x, _y, w, h は PMLayout の compute 後に確定する。
-local function border_boxes(x, y, w, h, bw, color)
+-- widget の _x, _y, w, h は PMLayout の compute 後に確定する。unit_px 指定時は
+-- 各辺を device px グリッドへスナップして crisp な線にする。
+local function border_boxes(x, y, w, h, bw, color, unit_px)
+    local sw = snap_thick(bw, unit_px)
+    local x0, y0 = snap_edge(x, unit_px), snap_edge(y, unit_px)
+    local x1, y1 = snap_edge(x + w, unit_px), snap_edge(y + h, unit_px)
     return {
-        ("box[%s,%s;%s,%s;%s]"):format(fnum(x),      fnum(y),        fnum(w),  fnum(bw), color),
-        ("box[%s,%s;%s,%s;%s]"):format(fnum(x),      fnum(y + h - bw), fnum(w),  fnum(bw), color),
-        ("box[%s,%s;%s,%s;%s]"):format(fnum(x),      fnum(y),        fnum(bw), fnum(h),  color),
-        ("box[%s,%s;%s,%s;%s]"):format(fnum(x + w - bw), fnum(y),    fnum(bw), fnum(h),  color),
+        ("box[%s,%s;%s,%s;%s]"):format(fnum(x0), fnum(y0),      fnum(x1 - x0), fnum(sw), color),
+        ("box[%s,%s;%s,%s;%s]"):format(fnum(x0), fnum(y1 - sw), fnum(x1 - x0), fnum(sw), color),
+        ("box[%s,%s;%s,%s;%s]"):format(fnum(x0), fnum(y0),      fnum(sw), fnum(y1 - y0), color),
+        ("box[%s,%s;%s,%s;%s]"):format(fnum(x1 - sw), fnum(y0), fnum(sw), fnum(y1 - y0), color),
     }
 end
 
-local function side_border_boxes(x, y, w, h, box)
+local function side_border_boxes(x, y, w, h, box, unit_px)
     local out = {}
+    local x0, y0 = snap_edge(x, unit_px), snap_edge(y, unit_px)
+    local x1, y1 = snap_edge(x + w, unit_px), snap_edge(y + h, unit_px)
     if box.border_top_width > 0 and box.border_top_color then
+        local sw = snap_thick(box.border_top_width, unit_px)
         out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
-            fnum(x), fnum(y), fnum(w), fnum(box.border_top_width), box.border_top_color)
+            fnum(x0), fnum(y0), fnum(x1 - x0), fnum(sw), box.border_top_color)
     end
     if box.border_bottom_width > 0 and box.border_bottom_color then
+        local sw = snap_thick(box.border_bottom_width, unit_px)
         out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
-            fnum(x), fnum(y + h - box.border_bottom_width), fnum(w),
-            fnum(box.border_bottom_width), box.border_bottom_color)
+            fnum(x0), fnum(y1 - sw), fnum(x1 - x0), fnum(sw), box.border_bottom_color)
     end
     if box.border_left_width > 0 and box.border_left_color then
+        local sw = snap_thick(box.border_left_width, unit_px)
         out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
-            fnum(x), fnum(y), fnum(box.border_left_width), fnum(h), box.border_left_color)
+            fnum(x0), fnum(y0), fnum(sw), fnum(y1 - y0), box.border_left_color)
     end
     if box.border_right_width > 0 and box.border_right_color then
+        local sw = snap_thick(box.border_right_width, unit_px)
         out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
-            fnum(x + w - box.border_right_width), fnum(y),
-            fnum(box.border_right_width), fnum(h), box.border_right_color)
+            fnum(x1 - sw), fnum(y0), fnum(sw), fnum(y1 - y0), box.border_right_color)
     end
     return out
 end
@@ -156,7 +176,7 @@ end
 -- container の bg-image と 4 辺/個別 border を一気に発行する。iter_elements は
 -- 1 回だけ呼ぶ (2 回以上呼ぶと flex 再分配が不安定になり field/list の h が
 -- 変わってしまう回帰があったため)。
-local function emit_container_decor(root, L, page_w, page_h, widget_tree, texture_dir)
+local function emit_container_decor(root, L, page_w, page_h, widget_tree, texture_dir, unit_px)
     L.iter_elements(widget_tree, { w = page_w, h = page_h })
     local bg9, borders = {}, {}
     dom.walk(root, function(el)
@@ -175,12 +195,12 @@ local function emit_container_decor(root, L, page_w, page_h, widget_tree, textur
 
         -- 4 辺 border (border-width + border-color)。
         if box.border_width and box.border_width > 0 and box.border_color then
-            for _, line in ipairs(border_boxes(w._x, w._y, w.w, w.h, box.border_width, box.border_color)) do
+            for _, line in ipairs(border_boxes(w._x, w._y, w.w, w.h, box.border_width, box.border_color, unit_px)) do
                 borders[#borders + 1] = line
             end
         end
         -- 個別 border (border-top-width 等)。
-        for _, line in ipairs(side_border_boxes(w._x, w._y, w.w, w.h, box)) do
+        for _, line in ipairs(side_border_boxes(w._x, w._y, w.w, w.h, box, unit_px)) do
             borders[#borders + 1] = line
         end
     end)
@@ -196,7 +216,15 @@ function M.render(root, opts)
     local page_w = opts.page_w or root.box and root.box.w or 13.0
     local page_h = opts.page_h or root.box and root.box.h or 8.5
 
-    local widget_tree = layout.flow(root, opts.ctx)
+    -- grid auto-fit が page 幅を要るので flow に渡す ctx へ足す (ctx は ${var} 解決済み
+    -- なので page_w 追加は安全)。元の ctx を汚さないよう浅いコピー。
+    local flow_ctx = {}
+    for k, v in pairs(opts.ctx or {}) do flow_ctx[k] = v end
+    flow_ctx.page_w = page_w
+    flow_ctx.page_h = page_h
+    flow_ctx.unit_px = opts.unit_px
+
+    local widget_tree = layout.flow(root, flow_ctx)
     local L = get_pmlayout()
 
     local prepend = {}
@@ -215,8 +243,16 @@ function M.render(root, opts)
         table.insert(prepend, 1, "bgcolor[" .. c .. ";both;" .. c .. "]")
     end
 
+    -- responsive 全画面: padding[0,0] を emit。max_formspec_size は padding[0,0]
+    -- 前提の値なので、これを出さないと 5% パディングで縮み API 値とズレる。
+    -- lua_api.md: padding[] は size の直後 (position/anchor も無いのでここ)。
+    -- bgcolor より前に置く必要がある (実測: bgcolor が間に挟まると効かない)。
+    if opts.fullscreen then
+        table.insert(prepend, 1, "padding[0,0]")
+    end
+
     -- background9 と border は widget の _x, _y が確定してから出すので append で末尾に。
-    local append = emit_container_decor(root, L, page_w, page_h, widget_tree, opts.texture_dir)
+    local append = emit_container_decor(root, L, page_w, page_h, widget_tree, opts.texture_dir, opts.unit_px)
 
     return L.build_formspec(widget_tree, {
         w = page_w, h = page_h,

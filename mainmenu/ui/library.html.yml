@@ -48,12 +48,10 @@ root:
             - tag: span
               class: pack-meta
               text: "${pack.base_label}"
-        # 残り列を埋めるプレースホルダ。pack 数 % cols の空き分だけ並ぶ。
+        # 残り列を埋めるプレースホルダのテンプレ (1 個)。pmui の grid が最終行の
+        # 空きセル数だけこれをクローンして並べる (列数は grid-columns: auto から導出)。
         - tag: card
           class: pack-card-placeholder
-          for:
-            each: _
-            in: placeholders
 
     - tag: footer
       class: action-bar

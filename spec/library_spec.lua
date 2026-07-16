@@ -152,8 +152,13 @@ describe("library grid view (画面1)", function()
     it("has no overlap and fits in page size", function()
         local fs = lib._internal.build_grid_formspec({})
         local size, els = helpers.parse_formspec(fs)
-        assert.equal(30.0, size.w)
-        assert.equal(16.0, size.h)
+        -- responsive: page は window (headless fallback 1024x600) の
+        -- max_formspec_size を使う。固定 30x16 ではなくなった。
+        local rp = packermod.pmui.responsive_page {}
+        assert.equal(rp.page_w, size.w)
+        assert.equal(rp.page_h, size.h)
+        -- padding[0,0] が emit されていること (全窓カバーの前提)
+        assert.is_truthy(fs:find("padding[0,0]", 1, true))
         local overlaps = helpers.find_overlaps(els)
         if #overlaps > 0 then
             error(helpers.format_overlaps(overlaps))

@@ -2,7 +2,13 @@
 # neon.html 準拠: 濃紺 bg + cyan (#00ffe5) / magenta (#ff1b8d) の 2 色アクセント。
 # glow / scanline / hover は Luanti formspec 非対応につき素の色のみ。
 #
-# 寸法は formspec size[30, 16] (= window 1608x853, 1 unit ≈ 52 px) 前提。
+# library セクションは px = design px (mockup 1024x600 基準)。実行時 unit = px / 53.328
+# (units.lua REF_UNIT_PX)。detail/modal セクションはまだ formspec unit のまま
+# (段階リベース中: Phase 6 で px 化)。
+#
+# エンジン制約メモ: box[] は色を ~57% 輝度でしか描けない (#00ffe5 → (7,147,137))。
+# 9-slice PNG のみ full bright。divider (box[] ベース) は AA で上下 1px ずつ失うため、
+# 見かけ 2px には 3px 指定が要る。
 
 variables:
   --fg: "#e0e0ff"
@@ -13,6 +19,9 @@ variables:
   --card-bg: "#14143a"
 
 rules:
+  # page は modal と共有 (root は全画面 tag: page)。library 固有の寸法は
+  # #pack-library で分離し、modal 側 (.modal-page) に波及させない。
+  # 寸法は px = design px (mockup 1024x600 基準)。実行時 unit = px / 53.328。
   - selector: "page"
     style:
       bg: "#0a0a18"
@@ -21,94 +30,107 @@ rules:
       flex-direction: column
       gap: 0.8
 
+  # library ルート: mockup .app (padding 32/48px) 相当。per-side padding 未対応の
+  # ため当面は対称 40px (右端一致 #8 の per-side 化は Phase 4)。
+  - selector: "#pack-library"
+    style:
+      padding: 40px
+      gap: 24px
+
   - selector: ".title-bar"
     style:
       flex-direction: row
       justify: space-between
-      gap: 0.8
-      h: 1.4
+      gap: 24px
+      h: 48px
       align: center
-      border-bottom-width: 0.04
+      # neon.html: border-bottom 2px cyan。box[] は AA で上下 1px 失うので 3px 指定で
+      # 見かけ 2px の crisp な線に (#6: 元は 1px サブピクセルで潰れていた)。
+      border-bottom-width: 3px
       border-bottom-color: "#00ffe5"
 
   - selector: "#title"
     style:
       # color は指定しない (テキスト側 ESC で 2 色化するため。指定すると
       # layout.lua が text 冒頭に ESC prefix を追加し、text 内 ESC を上書きする)。
-      font-size: "*2.0"
+      # font-size は Phase 3 (hypertext 化) で有効化。label[] では style 無効 (#4)。
+      font-size: 28px
 
   - selector: ".subtitle"
     style:
       color: "#ff1b8d"
-      font-size: "*1.2"
+      font-size: 13px
 
   - selector: "#no-packs-msg"
     style:
       color: "#e0e0ff"
-      font-size: "*1.4"
+      font-size: 14px
 
   - selector: ".pack-grid"
     style:
       display: grid
-      grid-columns: 3
-      gap: 0.6
+      grid-columns: auto  # auto-fit: 利用可能幅 ÷ (カード幅 + gap)
+      gap: 20px
       flex: 1
 
   # 9-slice PNG で cyan 枠付きパネルを描く。単純な border では 4 辺が
   # 直角に交わる形しか作れず、枠と塗りに縦グラ勾配のような差を付けられない。
   # background9 なら 9-slice 分割で 4 隅を 8px 保ったまま拡縮できる。
+  # w: 296px = mockup 1024px 幅で 3 列 (content 928px, gap 20px)。
   - selector: ".pack-card"
     style:
       bg-image: "url(packermod_panel_neon.png)"
       bg-image-middle: 8
-      padding: 0.4
+      padding: 12px
       flex-direction: column
       align: center
-      gap: 0.2
-      w: 8.5
-      h: 8.0
+      gap: 10px
+      w: 296px
+      h: 320px
 
   # 空きスロット placeholder は cyan 枠を薄く見せたい (下記の 4 辺 border で
   # 実現)。9-slice PNG でも作れるが hex 半透明を焼き込みが必要でコスト高。
   - selector: ".pack-card-placeholder"
     style:
       bg: "#0a0a1855"
-      border-width: 0.06
+      border-width: 1px
       border-color: "#00ffe555"
-      w: 8.5
-      h: 8.0
+      w: 296px
+      h: 320px
 
+  # thumb はカード高 (320px) から name+meta+padding を引いた残りに収める正方形。
+  # mockup は width:100% だが formspec は縦空間が限られるので正方形を優先。
   - selector: ".pack-thumb"
     style:
-      w: 5.5
-      h: 5.5
+      w: 210px
+      h: 210px
 
   - selector: ".pack-name"
     style:
       color: "#e0e0ff"
-      font-size: "*1.5"
+      font-size: 14px
 
   - selector: ".pack-meta"
     style:
       color: "#ff1b8d"
-      font-size: "*1.2"
+      font-size: 11px
 
   # neon.html 準拠: 4 辺 border ではなく上端の 1 本罫線のみで区切る。
   # 背景も透明にして下の bg-image を透かす。
   - selector: ".action-bar"
     style:
-      border-top-width: 0.04
+      border-top-width: 3px
       border-top-color: "#00ffe5"
       flex-direction: row
       justify: end
-      gap: 0.45
-      h: 2.8
-      padding: 0.3
+      gap: 24px
+      h: 96px
+      padding: 16px
 
   - selector: ".action-btn"
     style:
-      w: 2.2
-      h: 2.4
+      w: 88px
+      h: 72px
       bg-image: "url(packermod_btn_neon.png)"
       bg-image-hover: "url(packermod_btn_neon_hover.png)"
       bg-image-middle: 8
@@ -413,9 +435,4 @@ rules:
       w: 28.4
       h: 14.4
 
-media:
-  - query: "max-width 20.0"
-    rules:
-      - selector: ".pack-grid"
-        style:
-          grid-columns: 2
+# media query は不要 (grid-columns: auto が幅に応じて列数を決めるため)。

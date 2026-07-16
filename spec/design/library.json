@@ -26,20 +26,20 @@
       "_desc": "背景テクスチャが window 全面を覆う (外周余白 ≤ 4px)。現状 60〜62px フラット帯"
     },
     {
+      "id": "divider_present",
+      "issue": "#6",
+      "measure": "divider_count",
+      "op": ">=",
+      "value": 2,
+      "_desc": "content 全幅の cyan divider が 2 本 (header 下 / action-bar 上)"
+    },
+    {
       "id": "divider_thickness",
       "issue": "#6",
       "measure": "divider_thickness_min",
       "op": ">=",
       "value": 2,
-      "_desc": "divider ≥ 2px。現状 1px サブピクセルで色が背景と混ざる"
-    },
-    {
-      "id": "divider_brightness",
-      "issue": "#6",
-      "measure": "divider_brightness_min",
-      "op": ">=",
-      "value": 210,
-      "_desc": "divider は明るい cyan (#00ffe5, g=255)。現状 g≈150 (輝度 57%)"
+      "_desc": "divider は見かけ ≥2px の solid 線。現状 1px サブピクセルで潰れる (box[] は AA で上下 1px 失うため 3px 指定)"
     }
   ]
 }

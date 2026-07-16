@@ -66,17 +66,20 @@ def connected_boxes(mask):
     return boxes
 
 
-def detect_dividers(r, g, b, W, H, min_span_frac=0.4):
-    """水平方向に広く伸びる cyan 罫線 (header border-bottom / action-bar border-top)
-    を検出し、各 divider の {y, thickness, x_span, brightness} を返す。
+def detect_dividers(r, g, b, W, H, min_span_frac=0.55, max_thickness=6):
+    """UI の cyan 罫線 (header border-bottom / action-bar border-top) を検出し、
+    各 divider の {y, thickness, x_span, brightness} を返す。
 
-    dim な罫線 (#6: 1px #059189 で輝度 57%) も拾えるよう、mask は「cyan 寄り」
-    (g,b が r より十分高い) の広めの条件を使う。brightness は band 内の g チャンネル
-    最大値 (目標 #00ffe5 の g=255 に対する近さ)。thickness は縦連続 px。
-    これで「太さ ≥ 2px」と「十分に明るい cyan」を分けて表明できる。
+    エンジン制約: box[] は #00ffe5 を ~57% 輝度 (7,147,137) でしか描けないので、
+    mask は彩度 cyan (g,b が r より十分高い) の広めの条件を使う。次を除外する:
+      - サムネの cyan グリフ (T 字の横棒など、縦に厚い) → max_thickness
+      - カードの 9-slice 上辺 (bright だが列 gap で分断され連続幅が足りない)
+        → min_span_frac を content 全幅に近い 0.55 にして弾く
+    divider は content 全幅を連続で走る 2-3px の水平線。#6 の「1px サブピクセルで
+    潰れた」状態では厚み 1px で検出され thickness アサーションが red、3px 指定 (見かけ
+    2px) に直すと thickness>=2 で green になる。
     """
-    # dim cyan を含む広い mask (divider は彩度は低くても hue は cyan)
-    cyanish = (g > r + 20) & (b > r + 20) & (g > 60)
+    cyanish = (g > r + 40) & (b > r + 40) & (g > 100)
     min_span = int(W * min_span_frac)
     row_span = np.zeros(H, dtype=int)
     row_x0 = np.zeros(H, dtype=int)
@@ -110,14 +113,16 @@ def detect_dividers(r, g, b, W, H, min_span_frac=0.4):
                 y += 1
             y1 = y - 1
             band = range(y0, y1 + 1)
-            x0 = int(min(row_x0[k] for k in band))
-            x1 = int(max(row_x1[k] for k in band))
-            dividers.append({
-                "y": y0,
-                "thickness": y1 - y0 + 1,
-                "x_span": [x0, x1],
-                "brightness": int(g[y0:y1 + 1, x0:x1 + 1].max()),
-            })
+            thickness = y1 - y0 + 1
+            if thickness <= max_thickness:  # 厚い cyan 塊 (サムネのグリフ等) は divider でない
+                x0 = int(min(row_x0[k] for k in band))
+                x1 = int(max(row_x1[k] for k in band))
+                dividers.append({
+                    "y": y0,
+                    "thickness": thickness,
+                    "x_span": [x0, x1],
+                    "brightness": int(g[y0:y1 + 1, x0:x1 + 1].max()),
+                })
         else:
             y += 1
     return dividers

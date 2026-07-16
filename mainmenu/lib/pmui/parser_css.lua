@@ -21,6 +21,7 @@
 
 local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local stylesheet = dofile(SELF_DIR .. "stylesheet.lua")
+local units      = dofile(SELF_DIR .. "units.lua")
 
 local M = {}
 
@@ -32,8 +33,12 @@ local function get_yaml()
 end
 
 local function parse_media_query(text)
-    -- "min-width 13.0" / "max-width 10.0"
-    local kind, num = text:match("^(%S+)%s+([%d.]+)$")
+    -- "min-width 13.0" (formspec unit) / "max-width 800px" (design px)
+    local kind, num = text:match("^(%S+)%s+([%d.]+)px$")
+    if kind then
+        return { type = kind, value = units.px_to_units(tonumber(num)) }
+    end
+    kind, num = text:match("^(%S+)%s+([%d.]+)$")
     if not kind then return { type = "unknown", value = text } end
     return { type = kind, value = tonumber(num) }
 end

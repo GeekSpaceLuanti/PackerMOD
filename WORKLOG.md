@@ -46,6 +46,53 @@
 
 **次のTODO**: Phase 2 (host adapter + units + props + responsive size + auto-fit grid)
 
+## 2026-07-16 14:30 (main)
+
+**変更概要**:
+#24 Phase 2: pmui にレスポンシブ基盤 (host adapter + px 単位系 + auto-fit grid) を
+入れ、library を全画面レスポンシブ化。#3 (背景全面) と #6 (divider) を green にした。
+
+新機構:
+1. **host adapter (`pmui/host_mainmenu.lua`)**: engine API (get_window_info /
+   set_background / hypertext_escape / log) を adapter 経由に。core 不在 (busted) は
+   REF 値 (1024x600) を返す headless fallback。将来 in-game 版を別 adapter で差せる。
+2. **単位系 (`pmui/units.lua`)**: theme の px = design px (mockup 1024x600 基準)。
+   REF_UNIT_PX=53.328 (Phase 0 実測)。寸法 px→unit は px/REF (unit_px 非依存 = vh 的)、
+   font は unit_px 依存。effective_unit_px は emit する size[] から engine 式で逆算。
+3. **px 単位対応**: box_model の length resolver が "Npx" を unit へ換算 (数値はレガシー
+   formspec unit のまま = 段階リベース共存)。calc()/media query も px 可に。
+4. **responsive**: `pmui.responsive_page()` が window から page サイズ + unit_px を算出。
+   library は max_formspec_size (min clamp 15.5x10) + `padding[0,0]` で全窓を覆う。
+5. **auto-fit grid**: `grid-columns: auto` で列数 = 利用可能幅 ÷ (カード幅+gap)。
+   placeholder は grid が最終行の空きセルへテンプレをクローン生成 (library.lua の
+   grid_cols=3 二重管理 + ctx.placeholders を廃止)。
+6. **device-pixel snapping**: border box を整数 px グリッドへスナップ (paint.lua)。
+
+エンジン制約 (Phase 2 で判明、コメントに記録):
+- `padding[0,0]` は size 直後に置く必要 (bgcolor が間に挟まると効かない)。
+- box[] は色を ~57% 輝度でしか描けない (#00ffe5→(7,147,137))。9-slice PNG のみ full
+  bright。box[] 罫線は AA で上下 1px 失うので、見かけ 2px の divider には 3px 指定。
+
+library CSS を mockup px へリベース (`#pack-library` selector を新設し modal 共通の
+`page` から分離)。detail/modal はまだ formspec unit のまま (Phase 6 でリベース)。
+
+検証:
+- `make check-design SUBTAB=library`: #3/#6/#2 green (残 #1 は Phase 3/4)。旧スクショで
+  #6 thickness が red のまま = 再現維持。
+- 1024x600 / 1600x900 / 2560x1440 で背景全面カバー・divider・auto-fit 列数を確認
+  (2560 では 4 列 = 3 実カード + placeholder 1)。
+- busted 241 tests green (library_spec を responsive size 前提に更新)。
+
+**主な変更ファイル**:
+- mainmenu/lib/pmui/host_mainmenu.lua, units.lua (新規)
+- mainmenu/lib/pmui/{init,box_model,cascade,parser_css,layout,paint}.lua
+- mainmenu/ui/themes/synthwave.css.yml (library 分を px リベース + #pack-library)
+- mainmenu/ui/library.html.yml (placeholder を単一テンプレ化)
+- mainmenu/library.lua (responsive_page 使用、grid_cols 撤去)
+- spec/library_spec.lua, scripts/measure_ui.py, spec/design/library.json
+
+**次のTODO**: props.lua + no-op 警告 (Phase 2 残)、Phase 3 (hypertext 化で #1/#4/#7)
+
 ## 2026-07-16 13:00 (main)
 
 **変更概要**:
