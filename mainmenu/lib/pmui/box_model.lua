@@ -36,6 +36,31 @@ end
 
 local function len0(v, unit_px, snap) return len(v, unit_px, snap) or 0 end
 
+-- padding を per-side {t,r,b,l} に解決する。CSS ショートハンド:
+--   "40px"            → 全辺 40
+--   "32px 48px"       → t/b=32, l/r=48
+--   "16px 0 0 0"      → t r b l
+-- padding-top 等の個別指定があれば上書きする。全辺同値なら scalar を返し、
+-- layout 側の従来 (対称 padding) 経路をそのまま使わせる (後方互換)。
+local function parse_padding(c, unit_px)
+    local t, r, b, l
+    local sh = c.padding
+    if sh ~= nil then
+        local toks = {}
+        for tok in tostring(sh):gmatch("%S+") do toks[#toks + 1] = len0(tok, unit_px) end
+        if #toks == 1 then t, r, b, l = toks[1], toks[1], toks[1], toks[1]
+        elseif #toks == 2 then t, r, b, l = toks[1], toks[2], toks[1], toks[2]
+        elseif #toks == 3 then t, r, b, l = toks[1], toks[2], toks[3], toks[2]
+        elseif #toks >= 4 then t, r, b, l = toks[1], toks[2], toks[3], toks[4] end
+    end
+    t = c["padding-top"]    and len0(c["padding-top"], unit_px)    or t or 0
+    r = c["padding-right"]  and len0(c["padding-right"], unit_px)  or r or 0
+    b = c["padding-bottom"] and len0(c["padding-bottom"], unit_px) or b or 0
+    l = c["padding-left"]   and len0(c["padding-left"], unit_px)   or l or 0
+    if t == r and r == b and b == l then return t end
+    return { t = t, r = r, b = b, l = l }
+end
+
 -- font-size を「hypertext size= へ渡す絶対 px 値」に解決する。
 -- hypertext の size= は絶対 px のみ (label[] と違い *k 構文が無い) なので、
 -- 全形式を絶対 px 数値へ寄せる。
@@ -70,7 +95,7 @@ function M.compute(el, opts)
     local c = el.computed or {}
     el.box = {
         -- layout
-        padding        = len0(c.padding, unit_px),
+        padding        = parse_padding(c, unit_px),
         margin         = len0(c.margin,  unit_px),
         gap            = len0(c.gap,     unit_px),
         border_width   = len0(c["border-width"], unit_px, true),
@@ -102,6 +127,11 @@ function M.compute(el, opts)
         font_size      = font_size(c["font-size"], unit_px),
         text_align     = c["text-align"],
         text_transform = c["text-transform"],
+        -- composite icon-button (Phase 4) のラベル帯意匠。エンジン層 (layout.lua) は
+        -- 構造だけ持ち、色/罫線は theme (.action-btn) から供給する。
+        label_color          = c["label-color"],
+        label_divider_color  = c["label-divider-color"],
+        label_divider_width  = len0(c["label-divider-width"], unit_px, true),
     }
 end
 

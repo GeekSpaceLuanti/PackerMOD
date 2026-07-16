@@ -131,17 +131,26 @@ rules:
       text-align: center
 
   # neon.html 準拠: 4 辺 border ではなく上端の 1 本罫線のみで区切る。
-  # 背景も透明にして下の bg-image を透かす。
+  # 背景も透明にして下の bg-image を透かす。align: center で mockup .actions の
+  # align-items:center に合わせ、固定高 (72px) のボタンをバー内で縦中央に置く。
   - selector: ".action-bar"
     style:
       border-top-width: 3px
       border-top-color: "#00ffe5"
       flex-direction: row
       justify: end
+      align: center
       gap: 24px
       h: 96px
-      padding: 16px
+      # 上だけ (divider との間隔)。左右 0 でボタン右端を content 右端 (divider/
+      # subtitle と同じ) に揃える (#8)。左右 padding があるとボタンが内寄せして
+      # divider 右端とズレる。縦位置は align: center が担う。
+      padding: "16px 0 0 0"
 
+  # composite icon-button (Phase 4)。枠 (bg-image 9-slice) がアイコン+ラベル全体を包む。
+  # ラベル帯の意匠は下記 label-* で供給し、layout.lua は構造だけを持つ。
+  # mockup neon.html: label 色 cyan、アイコン下に cyan 50% の 1 本罫線 (divider)。
+  # box[] は AA で細ると潰れるので divider は 2px 指定 (見かけ 1px 強)。
   - selector: ".action-btn"
     style:
       w: 88px
@@ -149,6 +158,11 @@ rules:
       bg-image: "url(packermod_btn_neon.png)"
       bg-image-hover: "url(packermod_btn_neon_hover.png)"
       bg-image-middle: 8
+      font-size: 12px
+      label-color: "#00ffe5"
+      label-divider-color: "#00ffe580"
+      label-divider-width: 2px
+      text-transform: uppercase
 
 # ===== 画面2 (Pack Detail) スタイル =====
 

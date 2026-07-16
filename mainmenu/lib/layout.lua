@@ -18,6 +18,11 @@
 
 local M = {}
 
+-- mockup ビューポート (1024x600, density/scaling 1) の unit_px。design px ⇄ units の
+-- 参照値。IconBtnComposite の render で M._unit_px が無い (レガシー呼び出し) ときの
+-- physical px 換算フォールバックに使う。pmui/units.lua の REF_UNIT_PX と一致させる。
+local REF_UNIT_PX = 0.5555 * 96
+
 -- ---- helpers ----
 
 local function fs_escape(s)
@@ -45,6 +50,15 @@ end
 -- Format coordinates so 1.1 + 0.7 doesn't render as "1.7999999...".
 local function fnum(x)
     return ("%g"):format(math.floor(x * 10000 + 0.5) / 10000)
+end
+
+-- padding は scalar (対称) か {t,r,b,l} テーブル (per-side)。4 辺の値を返す。
+local function pad_trbl(w)
+    local p = w.padding or 0
+    if type(p) == "table" then
+        return p.t or 0, p.r or 0, p.b or 0, p.l or 0
+    end
+    return p, p, p, p
 end
 
 local function class(kind, defaults)
@@ -103,43 +117,33 @@ M.Raw      = class("Raw",      {})                 -- {text=}: arbitrary snippet
 M.Icon       = class("Icon",       { w = 0.7, h = 0.7 }) -- {texture=, w=, h=}
 M.IconButton = class("IconButton", { w = 0.9, h = 0.9 }) -- {name=, texture=, label="", w=, h=}
 
--- LabeledIconButton: image_button + 下に Label(別 widget)で構成し、
--- Luanti formspec の image_button label が画像中央に重なる問題(#21)を回避する。
--- label="" の場合は IconButton 1つだけ返す(画面1 のサムネカード等)。
--- name は image_button 側に付くのでクリックイベントは従来通り発火する。
+-- LabeledIconButton: 枠 (9-slice bgimg) がアイコン+ラベル全体を包む単一 composite。
+-- 旧実装は image_button (アイコンのみ) の下に別 Label を積んでいたため、枠がアイコン
+-- だけを囲みラベルが枠外に落ちていた (#2 密着 / #5 意匠 / #8 右端不揃いの根因)。
 --
--- 画像部分は正方形(w = img_h)に固定し、左右に Spacer を入れて中央寄せする。
--- これは Luanti image_button が画像をボタン領域に縦横独立に拡大する仕様で、
--- 横長ボタンだと正方形アイコンが横に潰れて見える(#21 派生)のを回避するため。
+-- Phase 4 の構成 (Phase 0 で全プリミティブを実測):
+--   1. full-box image_button (bgimg=枠 9-slice, fg=blank, ネイティブ label)。クリック/
+--      hover は枠全域。ラベルは content_offset(px) で下帯へ寄せる (エンジンが水平中央に
+--      置くので #1 の幅推定ズレが原理的に無い)。
+--   2. image[] でアイコンを上部へ重ねる (image[] はクリックを下のボタンへ透過)。
+--   3. box[] で divider を重ねる (box[] も透過)。
+-- ラベル帯の意匠 (色/罫線) は theme (.action-btn label-color/label-divider-*) から供給し、
+-- ここは構造 (帯高を font から導出・アイコン正方形・divider 位置) だけを持つ。
+--
+-- label="" の場合は枠飾りの要らないサムネ用途なので IconButton 1つを返す。
 function M.LabeledIconButton(t)
     local label = t.label or ""
     if label == "" then
         return M.IconButton{ name = t.name, texture = t.texture, w = t.w, h = t.h, flex = t.flex }
     end
-    local label_band_h = 0.45
-    local btn_h = t.h or 0.9
-    local img_h = math.max(0.4, btn_h - label_band_h)
-    -- btn_w が未指定なら親が決める(IconButton の natural w = h で扱う)
-    local btn_w = t.w or img_h
-    local img_w = math.min(btn_w, img_h)  -- 画像は正方形に
-    return M.VBox{
-        spacing = 0,
-        w = btn_w, h = btn_h, flex = t.flex,
-        align = "stretch",
-        M.HBox{
-            spacing = 0, w = btn_w, h = img_h,
-            M.Spacer{ flex = 1 },
-            M.IconButton{ name = t.name, texture = t.texture, label = "",
-                          w = img_w, h = img_h },
-            M.Spacer{ flex = 1 },
-        },
-        -- ラベルはバンド全幅を占め hypertext の halign=center で中央寄せする。
-        -- Spacer 挟みの「自然幅センタリング」だと幅推定誤差がそのまま中心ズレに
-        -- なっていた (#1 の +8px)。全幅 + halign なら推定に依存せず中央に載る。
-        M.Label{ text = label, w = btn_w, h = label_band_h,
-                 halign = "center", valign = "middle",
-                 color = t.label_color, font_px = t.label_font_px,
-                 transform = t.label_transform },
+    return {
+        _kind = "IconBtnComposite",
+        _user_w = t.w ~= nil or nil, _user_h = t.h ~= nil or nil,
+        name = t.name, texture = t.texture, label = label,
+        w = t.w, h = t.h, flex = t.flex,
+        label_color = t.label_color, label_font_px = t.label_font_px,
+        label_transform = t.label_transform,
+        divider_color = t.divider_color, divider_width = t.divider_width,
     }
 end
 
@@ -161,12 +165,13 @@ local function measure(w)
             end
         end
         if n > 1 then main = main + w.spacing * (n - 1) end
+        local pt, pr, pb, pl = pad_trbl(w)
         if k == "VBox" then
-            w.h = w.h or (main  + 2 * w.padding)
-            w.w = w.w or (cross + 2 * w.padding)
+            w.h = w.h or (main  + pt + pb)
+            w.w = w.w or (cross + pl + pr)
         else
-            w.w = w.w or (main  + 2 * w.padding)
-            w.h = w.h or (cross + 2 * w.padding)
+            w.w = w.w or (main  + pl + pr)
+            w.h = w.h or (cross + pt + pb)
         end
     elseif k == "Stack" then
         local ww, hh = 0, 0
@@ -217,6 +222,10 @@ local function measure(w)
         w._label_h = has_label and M.FIELD_LABEL_H or 0
         w._box_h   = w.h or 2.0
         w.h = w._box_h + w._label_h
+    elseif k == "IconBtnComposite" then
+        -- leaf: 枠寸法は theme (.action-btn w/h) から来る。未指定なら正方形の既定。
+        w.w = w.w or 0.9
+        w.h = w.h or 0.9
     end
     w.w = w.w or 0
     w.h = w.h or 0
@@ -238,8 +247,9 @@ local function layout(w, x, y, avail_w, avail_h)
 
     local k = w._kind
     if k == "VBox" or k == "HBox" then
-        local inner_w = w.w - 2 * w.padding
-        local inner_h = w.h - 2 * w.padding
+        local pt, pr, pb, pl = pad_trbl(w)
+        local inner_w = w.w - (pl + pr)
+        local inner_h = w.h - (pt + pb)
         local main_avail  = (k == "VBox") and inner_h or inner_w
         local cross_avail = (k == "VBox") and inner_w or inner_h
 
@@ -252,8 +262,8 @@ local function layout(w, x, y, avail_w, avail_h)
         if n > 1 then natural_main = natural_main + w.spacing * (n - 1) end
         local extra = math.max(0, main_avail - natural_main)
 
-        local cx = x + w.padding
-        local cy = y + w.padding
+        local cx = x + pl
+        local cy = y + pt
         for i, child in ipairs(w) do
             local base = (k == "VBox") and child.h or child.w
             local grow = (total_flex > 0) and (extra * (child.flex or 0) / total_flex) or 0
@@ -378,6 +388,46 @@ local function render(w, out, theme)
         out[#out + 1] = ("image_button[%s,%s;%s,%s;%s;%s;%s]"):format(
             fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h),
             fs_escape(w.texture), w.name, fs_escape(w.label or ""))
+    elseif k == "IconBtnComposite" then
+        -- 枠 = ボタン box 全体。bgimg(枠)/hover は paint.lua が style[name;bgimg=...] で
+        -- 供給するので、ここでは fg=blank の image_button 本体 + content_offset で下帯へ
+        -- 寄せたネイティブ label + アイコン image[] + divider box[] を重ねる。
+        -- style[] は要素より前に出す必要があるので image_button の直前に emit する。
+        local up = M._unit_px or REF_UNIT_PX
+        local x, y, bw, bh = w._x, w._y, w.w, w.h
+        local fpx = w.label_font_px or 16
+        -- 帯高・ギャップは font から導出 (px ハードコードを避ける)。band_h は label 行高、
+        -- gap は要素間の呼吸。label_font_px は物理 px なので /up で units 化する。
+        local band_h = (fpx * 1.5) / up
+        local gap    = (fpx * 0.35) / up
+        local pad    = gap
+        local div_th = (w.divider_width and w.divider_width > 0) and w.divider_width or (1 / up)
+        local band_top   = bh - band_h
+        local div_y      = band_top - gap - div_th
+        local icon_top   = pad
+        local icon_region = div_y - gap - icon_top
+        local icon_sz    = math.max(0.1, math.min(icon_region, bw - 2 * pad))
+        -- content_offset(px): ネイティブラベルの自然中心 (= ボタン中心) を帯中心へ下げる。
+        local coff_px = ((bh - band_h) / 2) * up
+        local sp = { "style[", w.name, ";content_offset=0,", ("%g"):format(coff_px) }
+        if w.label_color   then sp[#sp + 1] = ";textcolor=" .. tostring(w.label_color) end
+        if w.label_font_px then sp[#sp + 1] = ";font_size=" .. tostring(math.floor(fpx + 0.5)) end
+        sp[#sp + 1] = "]"
+        out[#out + 1] = table.concat(sp)
+        local lab = tostring(w.label or "")
+        if w.label_transform == "uppercase" then lab = lab:upper() end
+        out[#out + 1] = ("image_button[%s,%s;%s,%s;blank.png;%s;%s]"):format(
+            fnum(x), fnum(y), fnum(bw), fnum(bh), w.name, fs_escape(lab))
+        if w.texture and w.texture ~= "" then
+            local ix = x + (bw - icon_sz) / 2
+            local iy = y + icon_top + math.max(0, (icon_region - icon_sz) / 2)
+            out[#out + 1] = ("image[%s,%s;%s,%s;%s]"):format(
+                fnum(ix), fnum(iy), fnum(icon_sz), fnum(icon_sz), fs_escape(w.texture))
+        end
+        if w.divider_color then
+            out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
+                fnum(x + pad), fnum(y + div_y), fnum(bw - 2 * pad), fnum(div_th), w.divider_color)
+        end
     elseif k == "Box" then
         out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
             fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.color)
@@ -397,7 +447,9 @@ local function compute(root, opts)
     if opts.w then root.w = opts.w end
     if opts.h then root.h = opts.h end
     layout(root, opts.x or 0, opts.y or 0, root.w, root.h)
-    M._unit_px = nil
+    -- M._unit_px は render でも使う (IconBtnComposite の content_offset/帯高の px 換算)
+    -- ため compute では消さない。build_formspec が描画後に消す。次回 compute が先頭で
+    -- 上書きするので呼び出し間の残留は無害。
 end
 
 function M.build_formspec(root, opts)
@@ -415,6 +467,7 @@ function M.build_formspec(root, opts)
     for _, line in ipairs(opts.prepend or {}) do parts[#parts + 1] = line end
     render(root, parts, opts.theme)
     for _, line in ipairs(opts.append or {}) do parts[#parts + 1] = line end
+    M._unit_px = nil
     return table.concat(parts, "")
 end
 

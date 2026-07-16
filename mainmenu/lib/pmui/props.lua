@@ -28,6 +28,8 @@ function M.is_button(tag)    return M.BUTTON_TAGS[tag] == true end
 -- プロパティ名の集合。
 M.KNOWN_PROPS = {
     ["padding"] = true, ["margin"] = true, ["gap"] = true,
+    ["padding-top"] = true, ["padding-right"] = true,
+    ["padding-bottom"] = true, ["padding-left"] = true,
     ["border-width"] = true, ["border-color"] = true,
     ["border-top-width"] = true, ["border-bottom-width"] = true,
     ["border-left-width"] = true, ["border-right-width"] = true,
@@ -39,6 +41,9 @@ M.KNOWN_PROPS = {
     ["bg-image"] = true, ["bg-image-hover"] = true, ["bg-image-middle"] = true,
     ["color"] = true, ["font-size"] = true, ["text-align"] = true,
     ["text-transform"] = true,
+    -- composite icon-button のラベル帯意匠 (Phase 4)。
+    ["label-color"] = true, ["label-divider-color"] = true,
+    ["label-divider-width"] = true,
 }
 
 -- 特定タグで効かないプロパティ (エンジン制約由来の no-op)。

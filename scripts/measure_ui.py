@@ -7,12 +7,10 @@
 測定項目:
 - 背景テクスチャのカバレッジ: bg 単色 (--bg) と異なるピクセルの bbox と余白。
   背景画像がウィンドウ全面を覆っているかの検証に使う。
-- アイコンボタン枠: neon accent 色 (cyan / hover magenta) の連結成分のうち
-  正方形に近い 35-90px のもの。
-- ボタンラベル: 枠列の下の帯にある白文字を単語クラスタリングし、最寄りの枠に
-  割り当てて中心 offset と枠底辺からの gap を出す。
-  前提: ラベルは枠の外・下に白文字で置かれるレイアウト。ラベルを枠内に移す
-  変更をしたらこのスクリプトも追従させること。
+- composite icon-button 枠 (Phase 4): 画面下部の cyan 矩形リング (連結成分)。
+  枠がアイコン+ラベル全体を包む。枠内は「アイコン (上) / divider / ラベル (下、
+  cyan text)」の縦積み。ラベルは divider 下の cyan クラスタとして拾い、枠中心からの
+  水平 offset (#1)・divider からの gap (#2)・枠内包 (#5)・枠右端一致 (#8) を測る。
 
 使い方:
   python3 scripts/measure_ui.py /tmp/mainmenu_library.png
@@ -128,6 +126,68 @@ def detect_dividers(r, g, b, W, H, min_span_frac=0.55, max_thickness=6):
     return dividers
 
 
+def detect_action_buttons(cyan, W, H):
+    """composite icon-button (Phase 4) の枠とラベルを検出する。
+
+    枠 = 画面下部 (action-bar) にある中サイズの cyan 矩形リング (連結成分)。
+    枠内は「アイコン (上) / divider (interior 幅の大半を占める横線) / ラベル (下、
+    cyan text)」の縦積み。ラベルは divider より下の cyan クラスタとして拾い、枠中心
+    からの水平 offset (#1) と divider からの gap (#2) を測る。枠内で拾うので #5 の
+    「ラベルが枠内」は構造的に保証され、label を見つけられたか (labels_inside) で表明。
+    """
+    frames = []
+    for (minx, miny, maxx, maxy) in connected_boxes(cyan):
+        w, h = maxx - minx + 1, maxy - miny + 1
+        # action button 枠: 下部 (miny > 0.6H) の中サイズ矩形。card (296x320↑) や
+        # thumbnail、divider 罫線、ラベル文字 (小) はサイズ/位置で除外される。
+        # 上限は解像度追従で育つボタン (2560 で ~175x130px) を含みつつ card
+        # (2560 で ~534x577px) を外す幅に取る。
+        if 50 <= w <= 280 and 40 <= h <= 240 and miny > H * 0.6:
+            frames.append([minx, miny, maxx, maxy])
+    frames.sort(key=lambda f: f[0])
+
+    out = []
+    for (minx, miny, maxx, maxy) in frames:
+        b = {"color": "cyan", "bbox": [minx, miny, maxx, maxy], "label": None}
+        inx0, inx1 = minx + 5, maxx - 5
+        iny0, iny1 = miny + 4, maxy - 4
+        if inx1 > inx0 and iny1 > iny0:
+            cols_w = inx1 - inx0 + 1
+            # ラベルは枠内の cyan text。アイコンは白 (cyan mask 外) なので枠内 cyan は
+            # 「枠リング/divider (interior 幅の大半を占める横 1 本)」と「ラベル (部分幅の
+            # 文字列)」。前者を「全幅行」として除外し、部分幅 cyan の連続行を text バンド
+            # にまとめて最下バンド=ラベルとする (divider の明暗に依存しない)。
+            text_rows = []
+            for yy in range(iny0, iny1 + 1):
+                xs = np.where(cyan[yy, inx0:inx1 + 1])[0]
+                if len(xs) and (xs.max() - xs.min() + 1) < 0.9 * cols_w:
+                    text_rows.append(yy)
+            bands = []
+            for yy in text_rows:
+                if bands and yy - bands[-1][1] <= 2:
+                    bands[-1][1] = yy
+                else:
+                    bands.append([yy, yy])
+            if bands:
+                lb_y0, lb_y1 = bands[-1]
+                xs_all = []
+                for yy in range(lb_y0, lb_y1 + 1):
+                    xs = np.where(cyan[yy, inx0:inx1 + 1])[0]
+                    xs_all.extend((xs + inx0).tolist())
+                if xs_all:
+                    lminx, lmaxx = min(xs_all), max(xs_all)
+                    bcx = (minx + maxx) / 2
+                    b["label"] = {
+                        "bbox_x": [lminx, lmaxx],
+                        "bbox_y": [lb_y0, lb_y1],
+                        "center_offset": round((lminx + lmaxx) / 2 - bcx, 1),
+                        # #2: ラベル下端と枠底辺の余白 (密着=0 の再発検知)。
+                        "gap": int(maxy - lb_y1),
+                    }
+        out.append(b)
+    return out
+
+
 # --- assertion mode ---
 
 def _measure_scalar(name, result):
@@ -147,6 +207,23 @@ def _measure_scalar(name, result):
         return min((l["gap"] for l in labels), default=None)
     if name == "button_count":
         return len(result.get("buttons", []))
+    if name == "labels_inside_count":
+        # #5: ラベルが枠内 (composite) で検出できたボタン数。detect_action_buttons は
+        # 枠 interior 内でしかラベルを拾わないので、label ありは即ち枠内包の証拠。
+        return sum(1 for f in result.get("buttons", []) if f.get("label"))
+    if name == "right_edge_spread":
+        # #8: 揃うべき 3 要素の右端 x の最大差 (px) — divider 右端 / subtitle 右端 /
+        # 最右ボタン枠右端。枠=box 境界 + action-bar 左右 padding=0 で一致するはず。
+        rights = []
+        d = result.get("dividers", [])
+        if d:
+            rights.append(max(x["x_span"][1] for x in d))
+        if result.get("subtitle_right") is not None:
+            rights.append(result["subtitle_right"])
+        btns = result.get("buttons", [])
+        if btns:
+            rights.append(max(f["bbox"][2] for f in btns))
+        return (max(rights) - min(rights)) if len(rights) >= 2 else None
     if name == "divider_count":
         return len(result.get("dividers", []))
     if name == "divider_thickness_min":
@@ -228,54 +305,26 @@ def main():
             "right": W - 1 - bbox[2], "bottom": H - 1 - bbox[3],
         }
 
-    # --- アイコンボタン枠 (cyan / hover magenta) ---
+    # --- アイコンボタン枠 (cyan) ---
     cyan = (g > 150) & (b > 140) & (r < 120)
-    magenta = (r > 150) & (b > 100) & (g < 120)
 
     # --- divider (header/action-bar の cyan 罫線) ---
     result["dividers"] = detect_dividers(r, g, b, W, H)
-    frames = []
-    for color, mask in (("cyan", cyan), ("magenta", magenta)):
-        for (minx, miny, maxx, maxy) in connected_boxes(mask):
-            w, h = maxx - minx + 1, maxy - miny + 1
-            if 35 <= w <= 90 and 35 <= h <= 90 and abs(w - h) <= 12:
-                frames.append({"color": color, "bbox": [minx, miny, maxx, maxy]})
-    frames.sort(key=lambda f: f["bbox"][0])
-    result["buttons"] = frames
 
-    # --- ラベル割り当て (枠列の下の白文字帯を単語分割) ---
-    if frames:
-        white = (r >= 200) & (g >= 200) & (b >= 200)
-        frame_bottom = max(f["bbox"][3] for f in frames)
-        band_y0, band_y1 = frame_bottom + 1, min(H, frame_bottom + 40)
-        col_has = white[band_y0:band_y1, :].any(axis=0)
-        words, start, gap_run = [], None, 0
-        for x in range(W):
-            if col_has[x]:
-                if start is None:
-                    start = x
-                gap_run = 0
-            elif start is not None:
-                gap_run += 1
-                if gap_run > 10:
-                    words.append((start, x - gap_run))
-                    start = None
-        if start is not None:
-            words.append((start, W - 1))
+    # --- subtitle (magenta "// PACK_LIBRARY") の右端 (#8 の右端一致に使う) ---
+    magenta = (r > 150) & (b > 100) & (g < 120)
+    # 最初の divider より上 (header 帯) の magenta を subtitle とみなす。
+    top_y = result["dividers"][0]["y"] if result["dividers"] else int(H * 0.2)
+    mys, mxs = np.where(magenta[:top_y, :])
+    if len(mxs):
+        result["subtitle_right"] = int(mxs.max())
 
-        for f in frames:
-            minx, miny, maxx, maxy = f["bbox"]
-            bcx = (minx + maxx) / 2
-            if not words:
-                f["label"] = None
-                continue
-            lminx, lmaxx = min(words, key=lambda w: abs((w[0] + w[1]) / 2 - bcx))
-            seg_ys, _ = np.where(white[band_y0:band_y1, lminx:lmaxx + 1])
-            f["label"] = {
-                "bbox_x": [lminx, lmaxx],
-                "center_offset": round((lminx + lmaxx) / 2 - bcx, 1),
-                "gap": int(seg_ys.min() + band_y0 - maxy - 1),
-            }
+    # --- composite icon-button (Phase 4): 枠がアイコン+ラベル全体を包む。
+    # 枠 = 下部 (action-bar) の cyan 矩形リング。枠内はアイコン (上) / divider /
+    # ラベル (下、cyan text) の縦積み。ラベルは枠内下帯の cyan クラスタで、divider
+    # (interior 幅の大半を占める横線) の下にある。旧「ラベルは枠外・下の白文字」前提を
+    # 更新したもの。#1 中心 offset / #2 divider-ラベル gap / #5 枠内包 / #8 右端一致。
+    result["buttons"] = detect_action_buttons(cyan, W, H)
 
     if args.assert_spec:
         ok = run_assertions(args.assert_spec, result, args.unit_px)
@@ -298,14 +347,16 @@ def main():
         print(f"  div{i}: y={d['y']} thickness={d['thickness']}px "
               f"x[{d['x_span'][0]}..{d['x_span'][1]}] brightness(g)={d['brightness']}")
 
-    print(f"\nbutton frames detected: {len(frames)}")
-    for i, f in enumerate(frames):
+    buttons = result.get("buttons", [])
+    print(f"\nbutton frames detected: {len(buttons)}")
+    for i, f in enumerate(buttons):
         minx, miny, maxx, maxy = f["bbox"]
-        line = f"  btn{i} ({f['color']}): frame x[{minx}..{maxx}] center={(minx+maxx)/2:.1f}"
+        line = (f"  btn{i} ({f['color']}): frame x[{minx}..{maxx}] "
+                f"center={(minx+maxx)/2:.1f} right={maxx}")
         if f.get("label"):
             lb = f["label"]
             line += (f" | label x[{lb['bbox_x'][0]}..{lb['bbox_x'][1]}]"
-                     f" | offset={lb['center_offset']:+.1f}px | gap={lb['gap']}px")
+                     f" | offset={lb['center_offset']:+.1f}px | gap(div→lbl)={lb['gap']}px")
         else:
             line += " | label: NOT FOUND"
         print(line)

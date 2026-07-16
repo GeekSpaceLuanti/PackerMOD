@@ -183,7 +183,7 @@ rules: []
         assert.equal("Sub",   node[2].text)
     end)
 
-    it("icon-button → LabeledIconButton structure", function()
+    it("icon-button → LabeledIconButton composite", function()
         local node = compile([[
 root:
   tag: page
@@ -196,19 +196,12 @@ root:
 ]], [[
 rules: []
 ]], { icon_path = function(n) return "icon_" .. n .. ".png" end })
-        -- LabeledIconButton は VBox を返す
+        -- label 付き icon-button は枠=box 全体の単一 composite leaf を返す (Phase 4)。
         local lib = node[1]
-        assert.equal("VBox", lib._kind)
-        -- 中の image_button 探索
-        local row1 = lib[1]
-        assert.equal("HBox", row1._kind)
-        local found_ibtn
-        for _, c in ipairs(row1) do
-            if c._kind == "IconButton" then found_ibtn = c end
-        end
-        assert.is_not_nil(found_ibtn)
-        assert.equal("btn_x", found_ibtn.name)
-        assert.equal("icon_plus.png", found_ibtn.texture)
+        assert.equal("IconBtnComposite", lib._kind)
+        assert.equal("btn_x", lib.name)
+        assert.equal("icon_plus.png", lib.texture)
+        assert.equal("Create", lib.label)
     end)
 
     it("justify: space-between inserts Spacer{flex=1} between siblings", function()

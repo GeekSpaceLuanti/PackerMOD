@@ -15,7 +15,23 @@
       "measure": "label_gap_min",
       "op": ">=",
       "value": 4,
-      "_desc": "ラベルと枠底辺の gap ≥ 4px。現状 0px (帯上端に文字が張り付き)"
+      "_desc": "ラベル下端と枠底辺の gap ≥ 4px。旧 0px (帯上端に密着)。composite ではラベルが枠内下帯に収まり底辺と余白を持つ"
+    },
+    {
+      "id": "button_label_inside_frame",
+      "issue": "#5",
+      "measure": "labels_inside_count",
+      "op": ">=",
+      "value": 3,
+      "_desc": "3 ボタンとも枠 (9-slice) がアイコン+ラベルを内包する composite。旧構造は枠がアイコンのみでラベルが枠外"
+    },
+    {
+      "id": "right_edges_aligned",
+      "issue": "#8",
+      "measure": "right_edge_spread",
+      "op": "<=",
+      "value": 2,
+      "_desc": "divider 右端 / subtitle 右端 / 最右ボタン枠右端が揃う (≤2px)。旧実装は 937/925/923 で最大 14px ズレ"
     },
     {
       "id": "background_covers_window",

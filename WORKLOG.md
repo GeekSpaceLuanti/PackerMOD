@@ -11,6 +11,51 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-16 14:30 (main)
+
+**変更概要**:
+#24 Phase 4: icon-button を「枠 (9-slice) がアイコン+ラベル全体を包む」単一 composite
+に再設計。#2 (ラベル密着)・#5 (ボタン意匠)・#8 (右端不揃い) を green にした。
+
+Phase 0 で全プリミティブを実測 (content_offset がネイティブ label を physical px で
+下帯へ動かす / image[]・box[] はクリック透過) した上で composite を構成:
+1. **枠=ボタン box 全体の image_button (`lib/layout.lua`)**: 旧実装は image_button が
+   アイコンのみを囲み、ラベルは枠外の別 Label だった (#2/#5/#8 の根因)。新 composite は
+   full-box image_button (bgimg=枠 9-slice は paint 供給, fg=blank) + content_offset で
+   下帯へ寄せたネイティブ label + image[] アイコン overlay + box[] divider を重ねる。
+   ネイティブ label はエンジンが水平中央に置くので #1 の幅推定ズレが原理的に無い。
+   帯高・アイコン位置・content_offset は font と box 寸法から導出 (px ハードコード無し)。
+2. **ラベル帯意匠を theme 供給に (`.action-btn`)**: label-color / label-divider-color /
+   label-divider-width / text-transform を CSS 側へ。layout.lua は構造だけ持つ
+   (`label_band_h=0.45` ハードコード廃止)。box_model / props に 3 プロパティを追加。
+3. **per-side padding 実装 (#8)**: `padding: "16px 0 0 0"` ショートハンド + padding-top
+   等を box_model が {t,r,b,l} に解決、layout.lua が 4 辺独立で扱う (後方互換の scalar
+   経路維持)。action-bar を左右 padding=0 にしてボタン右端を content 右端 (divider /
+   subtitle と同じ) へ揃えた。旧実装は左右対称 16px でボタンが 16px 内寄せしていた。
+4. **measure_ui.py を composite 対応に**: 枠検出の正方性制約を外し (88x72)、ラベルを
+   枠内下帯の cyan text バンドとして検出。#5 (labels_inside_count) / #8 (right_edge_spread
+   = divider/subtitle/最右ボタン枠の右端差) の measure を追加。枠サイズ帯を解像度追従化。
+
+検証: `busted spec/` 240 green。`check-design SUBTAB=library` 7/7 PASS
+(#1 offset 0.5px / #2 gap 5px / #5 3/3 / #8 spread 1px / #3 / #6)。解像度
+1024/1600/2560 で composite 維持 (#1/#2/#5/#8 全 green)。#8 は action-bar を対称
+padding へ戻すと spread 16px で FAIL することを確認 (アサーションに歯があること)。
+#3 は高解像度 (size>max_formspec_size で clamp) 時に 14px 余白 → Phase 5 (set_background)
+で完結予定。modal の icon-button も composite になるが最終意匠は Phase 6 でリベース。
+
+**主な変更ファイル**:
+- mainmenu/lib/layout.lua (LabeledIconButton→composite leaf、IconBtnComposite render、per-side padding)
+- mainmenu/lib/pmui/box_model.lua (parse_padding per-side、label-* プロパティ)
+- mainmenu/lib/pmui/layout.lua (icon-button 分岐で divider/label 配線、grid 幅の per-side padding)
+- mainmenu/lib/pmui/props.lua (padding-*/label-* を KNOWN_PROPS へ)
+- mainmenu/ui/themes/synthwave.css.yml (.action-btn label-*、.action-bar align:center + 上 padding のみ)
+- scripts/measure_ui.py (composite 枠/ラベル検出、#5/#8 measure、subtitle 右端)
+- spec/design/library.json (#5/#8 アサーション追加)
+- spec/{pmui_layout,pmui_paint}_spec.lua, spec/support/formspec_helpers.lua (composite 期待値)
+
+**次のTODO**: Phase 5 (背景の set_background 化: clamp 時外周 + modal もカバー = #3 完結、
+scanline tile = #9)
+
 ## 2026-07-16 14:05 (main)
 
 **変更概要**:

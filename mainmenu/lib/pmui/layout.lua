@@ -57,7 +57,10 @@ local function grid_content_width(el, ctx)
     local cur = el
     while cur do
         local bx = cur.box or {}
-        w = w - 2 * (bx.padding or 0) - 2 * (bx.border_width or 0)
+        local p = bx.padding or 0
+        local pl, pr
+        if type(p) == "table" then pl, pr = p.l or 0, p.r or 0 else pl, pr = p, p end
+        w = w - pl - pr - 2 * (bx.border_width or 0)
         cur = cur._parent
     end
     return w
@@ -205,10 +208,13 @@ build = function(el, ctx)
             name    = el.attrs.name or el.id,
             texture = tex,
             label   = el.attrs.label or "",
-            -- ラベル帯の意匠は box から (Phase 4 で .action-btn CSS が供給)。
-            label_color     = box.color,
+            -- ラベル帯の意匠は theme (.action-btn) が box.label_* / font_size で供給。
+            -- label_color は専用プロパティ label-color を使う (native label の textcolor)。
+            label_color     = box.label_color,
             label_font_px   = box.font_size,
             label_transform = box.text_transform,
+            divider_color   = box.label_divider_color,
+            divider_width   = box.label_divider_width,
             w = box.w, h = box.h, flex = box.flex,
         }
     end

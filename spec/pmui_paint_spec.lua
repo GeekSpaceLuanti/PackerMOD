@@ -98,7 +98,7 @@ rules:
         assert.is_truthy(s:find("size=24", 1, true))
     end)
 
-    it("icon-button renders image_button + label and bg styling targets the name", function()
+    it("icon-button renders composite image_button + native label targeting the name", function()
         local s = fs([[
 root:
   tag: footer
@@ -119,7 +119,8 @@ rules:
         assert.is_truthy(s:find("image_button[", 1, true))
         assert.is_truthy(s:find("btn_create", 1, true))
         assert.is_truthy(s:find("icon_plus.png", 1, true))
-        -- label "Create" は別 Label として出力 (LabeledIconButton 構造)
+        -- label "Create" は image_button のネイティブ label (composite の下帯)。
+        -- text-transform 未指定なので大文字化されない。
         assert.is_truthy(s:find("Create", 1, true))
     end)
 
