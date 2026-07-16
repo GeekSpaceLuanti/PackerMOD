@@ -33,6 +33,7 @@ M.layout      = dofile(SELF_DIR .. "layout.lua")
 M.paint       = dofile(SELF_DIR .. "paint.lua")
 M.units       = dofile(SELF_DIR .. "units.lua")
 M.host        = dofile(SELF_DIR .. "host_mainmenu.lua")
+M.props       = dofile(SELF_DIR .. "props.lua")
 
 local function read_file(path)
     local f, err = io.open(path, "r")
@@ -61,6 +62,8 @@ function M.build_formspec(opts)
         page_w = page_w, page_h = page_h,
         hover_ids = opts.hover_ids, active_ids = opts.active_ids,
     })
+    -- 未知/効かない CSS プロパティを警告 (dedupe 済みなので毎回呼んでよい)。
+    M.props.validate(root, M.dom, function(msg) M.host.log(opts.view, "warning", msg) end)
     M.box_model.compute_all(root, { unit_px = unit_px })
     return M.paint.render(root, {
         page_w = page_w, page_h = page_h, ctx = opts.ctx,

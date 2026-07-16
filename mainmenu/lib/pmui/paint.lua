@@ -5,6 +5,7 @@
 local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local dom    = dofile(SELF_DIR .. "dom.lua")
 local layout = dofile(SELF_DIR .. "layout.lua")
+local props  = dofile(SELF_DIR .. "props.lua")
 
 local M = {}
 
@@ -20,21 +21,10 @@ local function name_of(el)
     return el.id
 end
 
--- container タグの判定リスト (layout.lua と同じ集合を保持。
--- 変更時は 2 ファイル更新する規約)。
-local CONTAINER_TAGS = {
-    page = true, div = true, header = true, footer = true, section = true,
-    nav  = true, card = true, grid = true, main = true,
-}
-local LABEL_TAGS = {
-    h1 = true, h2 = true, h3 = true, span = true, p = true, label = true,
-}
-local BUTTON_TAGS = {
-    button = true, ["icon-button"] = true,
-}
-local function is_container_tag(tag) return CONTAINER_TAGS[tag] == true end
-local function is_label_tag(tag)     return LABEL_TAGS[tag] == true end
-local function is_button_tag(tag)    return BUTTON_TAGS[tag] == true end
+-- タグ集合は props.lua に一元化 (旧: このファイルと layout.lua に重複していた)。
+local is_container_tag = props.is_container
+local is_label_tag     = props.is_label
+local is_button_tag    = props.is_button
 
 -- mainmenu の formspec は絶対パス texture を要求する (menu_lua_api.md)。
 -- root の bg-image と同じルールで texture_dir を prepend する。

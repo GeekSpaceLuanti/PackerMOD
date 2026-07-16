@@ -4,16 +4,13 @@
 
 local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local dom = dofile(SELF_DIR .. "dom.lua")
+local props = dofile(SELF_DIR .. "props.lua")
 
 local M = {}
 
-local CONTAINER_TAGS = {
-    page = true, div = true, header = true, footer = true, section = true,
-    nav  = true, card = true, grid = true, main = true,
-}
-local LABEL_TAGS = {
-    h1 = true, h2 = true, h3 = true, span = true, p = true, label = true,
-}
+-- タグ集合は props.lua に一元化 (旧: このファイルと paint.lua に重複していた)。
+local CONTAINER_TAGS = props.CONTAINER_TAGS
+local LABEL_TAGS = props.LABEL_TAGS
 
 local function get_pmlayout()
     if rawget(_G, "packermod") and packermod.layout then return packermod.layout end
