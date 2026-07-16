@@ -58,7 +58,7 @@ rules:
         assert.is_truthy(s:find("bgcolor[#1a0a3a;both;#1a0a3a]", 1, true))
     end)
 
-    it("emits inline ESC color sequence for label text (style[textcolor] is unreliable on labels)", function()
+    it("renders label as hypertext with <global color=> markup", function()
         local s = fs([[
 root:
   tag: page
@@ -72,13 +72,15 @@ rules:
     style:
       color: "#FF52A4"
 ]])
-        -- Label の textcolor は label[] の text 前置 ESC color sequence で埋め込む
-        assert.is_truthy(s:find("\27(c@#FF52A4)PackerMOD", 1, true))
-        -- style[label;textcolor=...] は二重指定回避のため出力しない
-        assert.is_nil(s:find("style[title;textcolor=", 1, true))
+        -- Label は hypertext[] で描画され、色は <global color=> に載る
+        assert.is_truthy(s:find("hypertext[", 1, true))
+        assert.is_truthy(s:find("color=#FF52A4", 1, true))
+        assert.is_truthy(s:find("PackerMOD", 1, true))
+        -- 旧 ESC color 方式は使わない
+        assert.is_nil(s:find("\27(c@", 1, true))
     end)
 
-    it("emits style[name;font_size=*1.8] for named labels", function()
+    it("emits absolute font size in hypertext <global size=> (*k → k*16 px)", function()
         local s = fs([[
 root:
   tag: page
@@ -90,9 +92,10 @@ root:
 rules:
   - selector: "#t"
     style:
-      font-size: "*1.8"
+      font-size: "*1.5"
 ]])
-        assert.is_truthy(s:find("style[t;font_size=*1.8]", 1, true))
+        -- *1.5 は k*REF_FONT_PX = 1.5*16 = 24px の絶対値へ (hypertext size= は px)
+        assert.is_truthy(s:find("size=24", 1, true))
     end)
 
     it("icon-button renders image_button + label and bg styling targets the name", function()
@@ -212,9 +215,9 @@ rules:
 ]]
         local off = fs(html, css)
         local on  = fs(html, css, { hover_ids = { t = true } })
-        -- label の textcolor は ESC color sequence として埋め込まれる
-        assert.is_truthy(off:find("\27(c@#111)x", 1, true))
-        assert.is_truthy(on:find("\27(c@#fff)x", 1, true))
+        -- label の色は hypertext <global color=> に載る (hover で切り替わる)
+        assert.is_truthy(off:find("color=#111", 1, true))
+        assert.is_truthy(on:find("color=#fff", 1, true))
     end)
 
     it("emits border boxes when border-width and border-color are set", function()

@@ -226,12 +226,9 @@ describe("formspec layout", function()
                 "expected primary bgcolor in style[]")
         end)
 
-        it("emits per-widget style[] for labels with a variant", function()
-            local root = L.VBox{ L.Label{text="Heading", name="hd", style="section"} }
-            local fs = L.build_formspec(root, { w = 5, h = 2, version = 6, theme = theme })
-            assert.is_truthy(fs:find("style[hd;", 1, true))
-            assert.is_truthy(fs:find("textcolor=#55FF55", 1, true))
-        end)
+        -- (label の per-widget style[] テストは削除: Label は hypertext[] で描画するように
+        --  なり、色/サイズは <global> markup に載る。style[label;...] は emit しない。
+        --  レガシー theme 経路自体も Phase 7 で撤去予定。)
 
         it("preserves user prepend after theme prelude", function()
             local root = L.VBox{ L.Button{name="a", label="A"} }

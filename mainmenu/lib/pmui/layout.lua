@@ -176,18 +176,18 @@ build = function(el, ctx)
         return build_container(L, el, ctx)
     end
     if LABEL_TAGS[el.tag] then
-        -- Luanti label は style[name;textcolor] や <style color> tag を解釈しないため、
-        -- HUD/translation で使われる ESC color sequence \27(c@#XXXXXX) を text 前置する。
-        -- これは formspec v6 の label renderer が解釈する(色が text 末尾まで適用)。
-        -- fs_escape は ESC (0x1B) をそのまま通すので escape 衝突しない。
-        local text = el.text or ""
-        if box.color then
-            text = ("\27(c@%s)"):format(tostring(box.color)) .. text
-        end
+        -- hypertext[] で描画 (lib/layout.lua)。色/サイズ/整列は box から widget へ渡し、
+        -- <global> markup に載る。attrs.markup があれば整形済み markup をそのまま使う
+        -- (2 色タイトル等)。旧 ESC color hack は廃止。
         local node = L.Label {
-            name = el.id,
-            text = text,
-            w    = box.w, h = box.h,
+            name    = el.id,
+            text    = el.text or "",
+            markup  = el.attrs and el.attrs.markup,
+            color   = box.color,
+            font_px = box.font_size,
+            halign  = box.text_align,
+            transform = box.text_transform,
+            w = box.w, h = box.h, flex = box.flex,
         }
         el._widget = node
         return node
@@ -205,6 +205,10 @@ build = function(el, ctx)
             name    = el.attrs.name or el.id,
             texture = tex,
             label   = el.attrs.label or "",
+            -- ラベル帯の意匠は box から (Phase 4 で .action-btn CSS が供給)。
+            label_color     = box.color,
+            label_font_px   = box.font_size,
+            label_transform = box.text_transform,
             w = box.w, h = box.h, flex = box.flex,
         }
     end
@@ -245,14 +249,14 @@ build = function(el, ctx)
     end
     if el.tag == "status" then
         -- dim 表示の Label 1 行 (情報メッセージや空状態の文言用)。
-        local text = el.text or el.attrs.text or ""
-        if box.color then
-            text = ("\27(c@%s)"):format(tostring(box.color)) .. text
-        end
         local node = L.Label {
-            name = el.id,
-            text = text,
-            w = box.w, h = box.h,
+            name    = el.id,
+            text    = el.text or el.attrs.text or "",
+            color   = box.color,
+            font_px = box.font_size,
+            halign  = box.text_align,
+            transform = box.text_transform,
+            w = box.w, h = box.h, flex = box.flex,
         }
         el._widget = node
         return node

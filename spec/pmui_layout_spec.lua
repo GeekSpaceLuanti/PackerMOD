@@ -50,7 +50,8 @@ describe("pmui.box_model", function()
         assert.equal("#abc",    el.box.bg)
         assert.equal("#fff",    el.box.color)
         assert.equal("#A06EFF", el.box.border_color)
-        assert.equal("*1.2",    el.box.font_size)
+        -- font-size は絶対 px へ解決される (hypertext size= は px)。*1.2 → 1.2*16 = 19px
+        assert.equal(19,        el.box.font_size)
     end)
 
     it("compute_all walks the whole tree", function()

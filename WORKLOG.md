@@ -11,6 +11,50 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-16 14:05 (main)
+
+**変更概要**:
+#24 Phase 3: 全 label を hypertext[] 経路へ一括置換し、幅戦略 (flex ブロック +
+text-align) で hypertext の「自然幅なし」を吸収。#1 (ラベル中心)・#4 (font-size 復活)・
+#7 (空状態中央)・#8 の一部 (subtitle 右端一致) を green にした。
+
+主な変更:
+1. **Label render を hypertext[] emit に変更 (`lib/layout.lua`)**: `<global halign=
+   valign= margin=0 color= size=>` に整列/色/サイズを集約。旧 ESC カラー hack
+   (`\27(c@...)`) を廃止。text は adapter の `hypertext_escape` 経由、`]` も追加
+   エスケープ。`attrs.markup` があれば整形済み markup をそのまま流す (2 色タイトル)。
+2. **幅戦略 (hypertext は自然幅を持たないため必須)**:
+   - title-bar を「左ブロック (title, flex:1) + 右ブロック (subtitle, flex:1
+     text-align:right)」の 2 flex ブロックに再構造化。space-between + 自然幅推定への
+     依存をやめ、右端をブロック右端 (= content 右端) に一致させた (#8 の subtitle 分)。
+   - pack-card を align:stretch にし name/meta をカード全幅へ広げ halign=center。
+     thumb は `.thumb-row` (justify center) で中央配置。折返し + スクロールバーを解消。
+   - 残余の shrink-wrap 幅推定は `n*0.18` 固定から font_px 連動へ。
+3. **ラベル帯を全幅 Label halign=center に (`LabeledIconButton`)**: 旧 Spacer サンド
+   イッチを廃し、ボタン全幅ブロック + halign=center でラベル中心をボタン中心に一致
+   (#1: offset 8~9.5px → 0.5px)。帯の色/font/transform は box (theme) から供給。
+4. **css に text-align / text-transform 追加**: cascade→box_model→hypertext halign
+   /string.upper。`font-size: *k` 倍率形式も units 換算で吸収 (未リベース画面対策)。
+5. **空状態 #7**: pack 0 個のとき grid を出さず (`when: has_packs`)、no-packs-msg を
+   flex:1 + text-align:center で content 全域中央に。汚染のない目視で縦横中央を確認。
+
+検証: `busted spec/` 240 green、`make check-design SUBTAB=library` 5/5 PASS
+(#1 offset 0.5px / #2 gap 5px / #3 margin 4px / #6 divider 2px×2)。three/empty
+fixture の目視も正 (2 色タイトル 28px・右寄せ subtitle・カード中央寄せ・ラベル中央)。
+
+**主な変更ファイル**:
+- mainmenu/lib/layout.lua (Label→hypertext emit、LabeledIconButton 帯全幅化、ht_escape)
+- mainmenu/lib/pmui/layout.lua (LABEL/status/icon-button 分岐で color/font_px/halign/transform 配線)
+- mainmenu/lib/pmui/box_model.lua (text_transform 追加)
+- mainmenu/lib/pmui/paint.lua (hypertext 経路調整)
+- mainmenu/library.lua (title_markup 2 色化、has_packs/no_packs ctx)
+- mainmenu/ui/library.html.yml (title-bar 2 ブロック化、thumb-row、has_packs で grid 出し分け)
+- mainmenu/ui/themes/synthwave.css.yml (text-align、align:stretch、flex ブロック化)
+- spec/{layout,pmui_layout,pmui_paint}_spec.lua (hypertext 期待値へ更新)
+
+**次のTODO**: Phase 4 (composite button の box model 一致: full-frame image_button +
+content_offset + image[] icon + box[] divider、帯意匠の theme 供給、#2/#5/#8 完結)
+
 ## 2026-07-16 13:20 (main)
 
 **変更概要**:

@@ -9,14 +9,13 @@ root:
     - tag: header
       class: title-bar
       children:
-        # neon.html 準拠の 2 色化。text は library.lua が組み立てた ESC 込みの
-        # ${title_text} を差し込む (yaml は "\x1b" 系エスケープを解釈しないため)。
-        # CSS の #title で color を指定するとレイアウト側で ESC prefix が上書きされて
-        # 結果的に単色化するので、テーマ側は #title 用の color を出さず、text 側の
-        # ESC で色を持たせる。
+        # neon.html 準拠の 2 色化。markup 属性に library.lua が組み立てた hypertext
+        # markup (<style color> の 2 span) を差し込む。#title の font-size は効くが
+        # color は出さない (markup 側の per-span color を上書きしないため)。
         - tag: h1
           id: title
-          text: "${title_text}"
+          attrs:
+            markup: "${title_markup}"
         - tag: span
           id: subtitle
           class: subtitle
@@ -27,8 +26,11 @@ root:
       when: "${no_packs}"
       text: "No packs yet. Use Import or Create below to add one."
 
+    # pack が 0 個のときは grid を出さない (flex:1 の空 grid が縦空間を食って
+    # no-packs-msg が中央に来ないため)。空状態は no-packs-msg が content 全体を占める。
     - tag: main
       class: pack-grid
+      when: "${has_packs}"
       children:
         - tag: card
           class: pack-card
@@ -36,12 +38,17 @@ root:
             each: pack
             in: packs
           children:
-            - tag: icon-button
-              class: pack-thumb
-              attrs:
-                name: "${pack.name_attr}"
-                icon: "${pack.thumbnail}"
-                label: ""
+            # thumb は正方形なので full 幅にせず、行 (justify center) で中央に置く。
+            # name/meta はカード全幅に広げて halign=center で中央寄せ (折返し回避)。
+            - tag: div
+              class: thumb-row
+              children:
+                - tag: icon-button
+                  class: pack-thumb
+                  attrs:
+                    name: "${pack.name_attr}"
+                    icon: "${pack.thumbnail}"
+                    label: ""
             - tag: h2
               class: pack-name
               text: "${pack.name}"

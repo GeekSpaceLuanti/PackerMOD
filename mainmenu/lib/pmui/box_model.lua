@@ -36,19 +36,31 @@ end
 
 local function len0(v, unit_px, snap) return len(v, unit_px, snap) or 0 end
 
--- font-size を「formspec/hypertext へ渡す最終値」に解決する。
---   * "Npx"   → design px を unit_px で実 font px へ (font は unit に追従しないため)。
---               絶対値なので style[] / hypertext size= どちらにもそのまま渡せる。
---   * "*k"    → 倍率記法のまま素通し (style[] は *k を解釈する)。
---               未リベース画面 (size[30,16] のまま) の font を壊さないため Phase 2 では
---               変換しない。hypertext 化 (Phase 3) で *k → 絶対 px へ寄せる。
+-- font-size を「hypertext size= へ渡す絶対 px 値」に解決する。
+-- hypertext の size= は絶対 px のみ (label[] と違い *k 構文が無い) なので、
+-- 全形式を絶対 px 数値へ寄せる。
+--   * "Npx"   → design px を unit_px で実 font px へ (font_px = N * unit_px/REF)。
+--               window で比例スケールする (responsive)。
+--   * "*k"    → k * REF_FONT_PX の絶対 px (= 旧 style[] の *k 挙動 k×既定16 と一致)。
+--               unit に追従しない。未リベース画面 (detail/modal) の見た目を保つための
+--               過渡措置で、Phase 6 で px 化すれば responsive になる。
+--   * number  → design px 扱い (px と同義、responsive)。
+local REF_FONT_PX = 16  -- Luanti 既定 font_size (Phase 0 実測)
 local function font_size(v, unit_px)
     if v == nil then return nil end
     local px = units.parse_px(v)
     if px ~= nil then
         return units.font_px(px, unit_px or units.REF_UNIT_PX)
     end
-    return v  -- "*1.5" 等はそのまま
+    if type(v) == "string" then
+        local mult = v:match("^%s*%*([%d%.]+)%s*$")
+        if mult then
+            return math.floor(tonumber(mult) * REF_FONT_PX + 0.5)
+        end
+    end
+    local n = tonumber(v)
+    if n then return units.font_px(n, unit_px or units.REF_UNIT_PX) end
+    return nil
 end
 
 -- opts.unit_px: エンジンが使う実 unit_px (px→font 換算 + snap に使う)。

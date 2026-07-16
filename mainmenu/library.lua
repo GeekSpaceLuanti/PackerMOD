@@ -112,15 +112,15 @@ local function build_grid_formspec(tabdata)
     -- 二重管理しない。
 
     -- neon.html 準拠の title 2 色化: "> " magenta, "PACKERMOD" cyan。
-    -- YAML パーサは "\x1b" 系のエスケープを実バイトに変換しないので、Lua 側で
-    -- ESC (0x1B) を含む文字列を組み立てて ctx 経由で流し込む。
-    local ESC = string.char(27)
-    local title_text = ESC .. "(c@#ff1b8d)> " .. ESC .. "(c@#00ffe5)PACKERMOD"
+    -- hypertext markup の 2 span で表現 (旧 ESC 方式は hypertext 化で廃止)。
+    local title_markup =
+        "<style color=#ff1b8d>> </style><style color=#00ffe5>PACKERMOD</style>"
 
     local ctx = {
         packs        = pack_ctx,
         no_packs     = (#packs == 0),
-        title_text   = title_text,
+        has_packs    = (#packs > 0),
+        title_markup = title_markup,
         icon_path    = function(n) return packermod.icons.path(n, "md") end,
     }
 

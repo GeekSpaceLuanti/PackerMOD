@@ -37,10 +37,12 @@ rules:
       padding: 40px
       gap: 24px
 
+  # title (左) と subtitle (右) を flex:1 の 2 ブロックにして halign で外側へ寄せる。
+  # space-between + 自然幅だと subtitle 右端が幅推定に依存してズレた (#8)。
+  # flex ブロック + halign=right なら右端がブロック右端 (= content 右端) に一致する。
   - selector: ".title-bar"
     style:
       flex-direction: row
-      justify: space-between
       gap: 24px
       h: 48px
       align: center
@@ -51,20 +53,24 @@ rules:
 
   - selector: "#title"
     style:
-      # color は指定しない (テキスト側 ESC で 2 色化するため。指定すると
-      # layout.lua が text 冒頭に ESC prefix を追加し、text 内 ESC を上書きする)。
-      # font-size は Phase 3 (hypertext 化) で有効化。label[] では style 無効 (#4)。
+      # color は出さない (markup 側 per-span color を上書きしないため)。
       font-size: 28px
+      flex: 1
 
   - selector: ".subtitle"
     style:
       color: "#ff1b8d"
       font-size: 13px
+      flex: 1
+      text-align: right
 
+  # 空状態メッセージは content 領域いっぱいに広げ、水平/垂直とも中央へ (#7)。
   - selector: "#no-packs-msg"
     style:
       color: "#e0e0ff"
       font-size: 14px
+      flex: 1
+      text-align: center
 
   - selector: ".pack-grid"
     style:
@@ -77,16 +83,23 @@ rules:
   # 直角に交わる形しか作れず、枠と塗りに縦グラ勾配のような差を付けられない。
   # background9 なら 9-slice 分割で 4 隅を 8px 保ったまま拡縮できる。
   # w: 296px = mockup 1024px 幅で 3 列 (content 928px, gap 20px)。
+  # align: stretch で name/meta をカード全幅に広げ、中で halign=center。
+  # thumb は .thumb-row (justify center) が中央に置く。
   - selector: ".pack-card"
     style:
       bg-image: "url(packermod_panel_neon.png)"
       bg-image-middle: 8
       padding: 12px
       flex-direction: column
-      align: center
+      align: stretch
       gap: 10px
       w: 296px
       h: 320px
+
+  - selector: ".thumb-row"
+    style:
+      flex-direction: row
+      justify: center
 
   # 空きスロット placeholder は cyan 枠を薄く見せたい (下記の 4 辺 border で
   # 実現)。9-slice PNG でも作れるが hex 半透明を焼き込みが必要でコスト高。
@@ -109,11 +122,13 @@ rules:
     style:
       color: "#e0e0ff"
       font-size: 14px
+      text-align: center
 
   - selector: ".pack-meta"
     style:
       color: "#ff1b8d"
       font-size: 11px
+      text-align: center
 
   # neon.html 準拠: 4 辺 border ではなく上端の 1 本罫線のみで区切る。
   # 背景も透明にして下の bg-image を透かす。

@@ -28,6 +28,20 @@ local function fs_escape(s)
     return (s:gsub("([\\%[%]%;,$])", "\\%1"))
 end
 
+-- hypertext[] の text 用エスケープ。hypertext は `<` をタグ開始、`\` を実体参照に
+-- 使うのでそれらを escape する。formspec 特殊文字 (`[` `]` `;` `,`) の escape は
+-- build_formspec 全体で別途 fs_escape が担うが、hypertext text は formspec の
+-- 1 フィールドなので `]` だけは追加で潰す (テキスト中の `]` が要素を閉じないよう)。
+local function ht_escape(s)
+    s = tostring(s or "")
+    if rawget(_G, "core") and core.hypertext_escape then
+        s = core.hypertext_escape(s)
+    else
+        s = s:gsub("\\", "\\\\"):gsub("<", "\\<")
+    end
+    return (s:gsub("]", "\\]"))
+end
+
 -- Format coordinates so 1.1 + 0.7 doesn't render as "1.7999999...".
 local function fnum(x)
     return ("%g"):format(math.floor(x * 10000 + 0.5) / 10000)
@@ -52,8 +66,12 @@ end
 -- Widgets that fill the cross axis when the parent has align="stretch".
 -- Discrete leaf widgets (Button, Field, Label, Image, Box) keep their natural
 -- size; fluid widgets stretch.
+-- Label も stretch 対象にする: hypertext は box 内で halign/valign 整列するので、
+-- 親 (align=stretch) の cross 軸幅いっぱいに広げても左寄せテキストの見た目は不変。
+-- 逆に center/right 整列や空状態の中央寄せは「full 幅 + halign」で初めて効く。
 local STRETCHABLE_KINDS = {
     VBox = true, HBox = true, Stack = true, Spacer = true, TextList = true,
+    Label = true,
 }
 
 -- ---- widget constructors ----
@@ -61,7 +79,16 @@ local STRETCHABLE_KINDS = {
 M.VBox     = class("VBox",     { spacing = 0.2, padding = 0, align = "stretch" })
 M.HBox     = class("HBox",     { spacing = 0.2, padding = 0, align = "stretch" })
 M.Stack    = class("Stack",    {})
-M.Label    = class("Label",    {})                 -- {text=, [w], [h]}
+-- Label は hypertext[] で描画する。フィールド:
+--   text     プレーンテキスト (ht_escape され <global> でラップされる)
+--   markup   整形済み hypertext markup (指定時は text の代わり。escape しない)
+--   color    テキスト色 (<global color=>)
+--   font_px  絶対フォント px (<global size=>)。hypertext の size= は px 単位
+--   halign   left|center|right (<global halign=>)
+--   valign   top|middle|bottom (<global valign=>、既定 middle で 1 行を縦中央に)
+--   transform "uppercase" なら text を大文字化
+--   w, h     ボックス寸法
+M.Label    = class("Label",    {})
 -- The label band Luanti prints above a `field` box. v6 has no declared height
 -- for it; ~0.4 units matches the rendered text + gap.
 M.FIELD_LABEL_H = 0.4
@@ -106,12 +133,13 @@ function M.LabeledIconButton(t)
                           w = img_w, h = img_h },
             M.Spacer{ flex = 1 },
         },
-        M.HBox{
-            spacing = 0, w = btn_w, h = label_band_h,
-            M.Spacer{ flex = 1 },
-            M.Label{ text = label, h = label_band_h },
-            M.Spacer{ flex = 1 },
-        },
+        -- ラベルはバンド全幅を占め hypertext の halign=center で中央寄せする。
+        -- Spacer 挟みの「自然幅センタリング」だと幅推定誤差がそのまま中心ズレに
+        -- なっていた (#1 の +8px)。全幅 + halign なら推定に依存せず中央に載る。
+        M.Label{ text = label, w = btn_w, h = label_band_h,
+                 halign = "center", valign = "middle",
+                 color = t.label_color, font_px = t.label_font_px,
+                 transform = t.label_transform },
     }
 end
 
@@ -150,12 +178,28 @@ local function measure(w)
         w.w = w.w or ww
         w.h = w.h or hh
     elseif k == "Label" then
-        -- v6 labels declare no size; reserve a realistic visual footprint
-        -- so neighbouring widgets don't overlap.
-        w.h = w.h or 0.5
+        -- hypertext には自然幅が無いので footprint を予約する。
+        -- 高さ: font_px から行高を導出 (1 行 ≈ font_px * 1.3)。unit_px 未指定なら
+        -- 従来の 0.5u を使う。
+        local unit_px = M._unit_px
+        if not w.h then
+            if w.font_px and unit_px then
+                w.h = math.max(0.5, (w.font_px * 1.3) / unit_px)
+            else
+                w.h = 0.5
+            end
+        end
         if not w.w then
             local txt = tostring(w.text or "")
-            w.w = math.max(#txt * 0.18, 0.5)
+            local n = #txt
+            if w.font_px and unit_px then
+                -- 既定プロポーショナルフォントの平均字幅 ≈ 0.5em。
+                -- 中央寄せの精度は「ブロック幅の半分ズレ = テキスト中心ズレ」なので
+                -- この推定で ±数 px に収まる (旧 #txt*0.18 は font 非連動で大きくズレた)。
+                w.w = math.max((n * 0.5 * w.font_px) / unit_px, 0.5)
+            else
+                w.w = math.max(n * 0.18, 0.5)
+            end
         end
     elseif k == "Field" then
         -- formspec v6: the `label` text is printed ABOVE the box (lua_api.md
@@ -273,13 +317,26 @@ local function render(w, out, theme)
         end
         for _, child in ipairs(w) do render(child, out, theme) end
     elseif k == "Label" then
-        maybe_emit_style(w, out, theme)
-        -- formspec v6 の label は「y = テキスト第 1 行の垂直中心」(lua_api.md L3334)。
-        -- widget の預約 band 中央に文字を落とすため _y + h/2 を渡す。上端 _y のまま
-        -- 渡すと label が半文字分上に描画され、隣接 image_button/field に食い込む
-        -- (issue #21 派生)。
-        local label_y = w._y + (w.h or 0.5) / 2
-        out[#out + 1] = ("label[%s,%s;%s]"):format(fnum(w._x), fnum(label_y), fs_escape(w.text))
+        -- hypertext[X,Y;W,H;name;text]。<global> でテキスト全体の色/サイズ/整列を指定。
+        -- label[] と違いエンジンが box 内で halign/valign を処理するので、文字幅推定の
+        -- 誤差が中央/右寄せ位置に響かない (issue #21/#24 の中心ズレを機構的に解消)。
+        local g = { "<global",
+                    "halign=" .. (w.halign or "left"),
+                    "valign=" .. (w.valign or "middle"),
+                    "margin=0" }
+        if w.color   then g[#g + 1] = "color=" .. tostring(w.color) end
+        if w.font_px then g[#g + 1] = "size=" .. tostring(w.font_px) end
+        local body
+        if w.markup then
+            body = w.markup  -- 整形済み (2 色タイトル等)。escape しない
+        else
+            local txt = tostring(w.text or "")
+            if w.transform == "uppercase" then txt = txt:upper() end
+            body = ht_escape(txt)
+        end
+        out[#out + 1] = ("hypertext[%s,%s;%s,%s;;%s>%s]"):format(
+            fnum(w._x), fnum(w._y), fnum(w.w or 0.5), fnum(w.h or 0.5),
+            table.concat(g, " "), body)
     elseif k == "Field" then
         maybe_emit_style(w, out, theme)
         -- The reserved label band sits at the top; the actual box lives below.
@@ -333,10 +390,14 @@ end
 -- ---- public API ----
 
 local function compute(root, opts)
+    -- Label の font 連動 measure (行高・字幅推定) に使う unit_px。measure は
+    -- 木を再帰する純関数なので module 一時変数で渡す (opts をスレッドするより軽い)。
+    M._unit_px = opts.unit_px
     measure(root)
     if opts.w then root.w = opts.w end
     if opts.h then root.h = opts.h end
     layout(root, opts.x or 0, opts.y or 0, root.w, root.h)
+    M._unit_px = nil
 end
 
 function M.build_formspec(root, opts)

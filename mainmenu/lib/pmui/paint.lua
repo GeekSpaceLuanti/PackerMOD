@@ -167,7 +167,7 @@ end
 -- 1 回だけ呼ぶ (2 回以上呼ぶと flex 再分配が不安定になり field/list の h が
 -- 変わってしまう回帰があったため)。
 local function emit_container_decor(root, L, page_w, page_h, widget_tree, texture_dir, unit_px)
-    L.iter_elements(widget_tree, { w = page_w, h = page_h })
+    L.iter_elements(widget_tree, { w = page_w, h = page_h, unit_px = unit_px })
     local bg9, borders = {}, {}
     dom.walk(root, function(el)
         local box = el.box
@@ -246,6 +246,7 @@ function M.render(root, opts)
 
     return L.build_formspec(widget_tree, {
         w = page_w, h = page_h,
+        unit_px = opts.unit_px,
         prepend = prepend,
         append = append,
     })
