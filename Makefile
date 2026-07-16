@@ -1,4 +1,4 @@
-.PHONY: test e2e all screenshot screenshot-all icons vendor-icons bgimg thumb
+.PHONY: test e2e all screenshot screenshot-all measure icons vendor-icons bgimg thumb
 
 ICON_NAMES := play reload download search plus trash save settings-2 folder cloud package box
 THEMES ?= synthwave
@@ -20,6 +20,11 @@ screenshot-all:
 	@for s in library worlds multi mods info modal_import modal_create modal_settings; do \
 	    bash scripts/screenshot_mainmenu.sh $$s /tmp/mainmenu_$$s.png; \
 	done
+
+# スクショを取り直して幾何を数値化する (目視レビューの代わりに使う)。
+# Usage: make measure SUBTAB=library
+measure: screenshot
+	python3 scripts/measure_ui.py /tmp/mainmenu_$(SUBTAB).png
 
 vendor-icons:
 	bash scripts/vendor_pixelarticons.sh $(ICON_NAMES)

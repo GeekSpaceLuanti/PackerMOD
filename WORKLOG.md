@@ -11,6 +11,42 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-07-16 10:35 (main)
+
+**変更概要**:
+デザインチェック手段を確立した。背景: 目視 (LLM 画像認識) のレビューはラベルの
++8px ズレ・gap=0 の密着を見逃した実績があり、幾何は測って判定する必要がある。
+
+1. **`scripts/measure_ui.py`**: スクショのピクセル解析で幾何を数値化。bg 単色との
+   差分から背景テクスチャのカバレッジ、accent 色の連結成分からアイコンボタン枠、
+   枠下の白文字を単語クラスタリングしてラベルの中心 offset / gap を測る。
+   `make measure SUBTAB=<画面>` でスクショ取得込みで実行できる。
+2. **`.claude/agents/design-review.md`**: デザインレビュー用サブエージェント定義。
+   スクショ取得 → measure_ui.py → 拡大クロップ目視 → mockup (docs/mockup/) 突き合わせ
+   の手順で、崩壊 / ダサさ / mockup 差異をレポートする (修正はしない)。
+3. **CLAUDE.md**: デザインチェック時は design-review のレポートを読んでから判断する
+   運用ルールを追記。目視のみの合否判定を禁止。
+
+検証: 定義と同内容の指示で library 画面をレビュー実行させ、崩壊 3 件 (ラベル中心
+ズレ +8〜9.5px / gap=0 密着 / 背景が formspec 矩形にクリップされ全面を覆わない)、
+中 2 件 (label 系 font-size が style[] no-op で全滅 → タイトル階層消失、ボタンラベル
+の枠外・白・非 uppercase)、低 4 件を数値証拠つきで検出できることを確認した。
+
+**主な変更ファイル**:
+- scripts/measure_ui.py (新規)
+- Makefile (`make measure` 追加)
+- .claude/agents/design-review.md (新規)
+- CLAUDE.md (デザインチェック節)
+- .gitignore (.claude/settings.local.json を除外)
+
+**コミット**: push 後に追記
+
+**次のTODO**:
+- レビュー検出済みの崩壊 3 件の修正: paint.lua の background 枠外ブリード /
+  layout.lua の Label 幅推定 (0.18u/字 → 実測 0.24u/字) と LabeledIconButton 構造 /
+  style_type[label] 経由の font-size 発行
+- design-review エージェントは次セッションから subagent_type として起動可能
+
 ## 2026-07-15 22:20 (main)
 
 **変更概要**:

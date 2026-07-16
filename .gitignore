@@ -4,3 +4,6 @@ luacov.*.out
 luacov.report.out
 *.swp
 .DS_Store
+
+# Claude Code ローカル設定 (個人環境の許可リスト等) は共有しない
+.claude/settings.local.json
