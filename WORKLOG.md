@@ -39,7 +39,7 @@
 - CLAUDE.md (デザインチェック節)
 - .gitignore (.claude/settings.local.json を除外)
 
-**コミット**: push 後に追記
+**コミット**: 83068be
 
 **次のTODO**:
 - レビュー検出済みの崩壊 3 件の修正: paint.lua の background 枠外ブリード /
