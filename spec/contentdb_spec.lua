@@ -4,7 +4,7 @@ local contentdb_mod = require("mainmenu.contentdb")
 
 local function fake_http(handler)
     return {
-        fetch_sync = function(_, req)
+        fetch_sync = function(req)
             return handler(req)
         end,
     }

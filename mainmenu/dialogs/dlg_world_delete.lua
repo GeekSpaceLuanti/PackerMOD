@@ -42,7 +42,7 @@ local function handler(self, fields)
 end
 
 function M.show(parent, pack, world)
-    local dlg = dialog_create("packermod_dlg_world_delete", get_formspec, handler, nil)
+    local dlg = dialog_create("packermod_dlg_world_delete", get_formspec, handler, packermod.ui_window_event)
     dlg.data.pack = pack
     dlg.data.pack_name = pack and pack.manifest and pack.manifest.name or ""
     dlg.data.world = world

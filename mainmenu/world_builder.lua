@@ -8,6 +8,10 @@ local function fmt_setting_value(v)
 end
 
 function M.gameid_for(base_game)
+    if base_game.installed_id then return base_game.installed_id end
+    if base_game.package and base_game.release then
+        return "pm_" .. base_game.id .. "_r" .. tostring(base_game.release)
+    end
     local id, ver = base_game.id, base_game.version
     return id .. "_" .. (ver:gsub("[^%w]", "_"))
 end
@@ -68,8 +72,7 @@ function M._default_fs()
     return {
         mkdir = function(path)
             if rawget(_G, "core") and core.create_dir then
-                core.create_dir(path)
-                return true
+                return core.create_dir(path)
             end
             os.execute('mkdir -p "' .. path .. '"')
             return true
@@ -84,8 +87,18 @@ function M._default_fs()
         exists = function(path)
             local f = io.open(path, "r")
             if f then f:close(); return true end
-            return (rawget(_G, "core") and core.get_dir_list and core.get_dir_list(path, nil)) ~= nil
+            if rawget(_G, "core") and core.get_dir_list then
+                local clean = path:gsub("[/\\]+$", "")
+                local parent, name = clean:match("^(.*)[/\\]([^/\\]+)$")
+                if parent then
+                    for _, entry in ipairs(core.get_dir_list(parent, true) or {}) do
+                        if entry == name then return true end
+                    end
+                end
+            end
+            return false
         end,
+        rename = function(src, dst) return os.rename(src, dst) end,
         read_file = function(path)
             local f = io.open(path, "rb")
             if not f then return nil end

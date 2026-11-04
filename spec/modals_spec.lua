@@ -69,6 +69,7 @@ describe("modals PMUI smoke", function()
 
     it("modal_settings renders without overlap/OOB", function()
         local fs = build("modal_settings.html.yml", {
+            settings_title = "PackerMOD Settings", show_language = true,
             user_path = "/u",
             version = "0.1.0",
             luanti_version = "5.16",
@@ -81,6 +82,7 @@ describe("modals PMUI smoke", function()
 
     it("modal_create renders without overlap/OOB", function()
         local fs = build("modal_create.html.yml", {
+            show_mods = true, show_details = false, step_title = "Create pack / 2. Choose MODs",
             pack_id = "", pack_name = "", pack_version = "0.1.0", pack_author = "",
             pack_description = "", base_id = "packerbase", base_version = "0.91",
             search_query = "", search_release = "",
@@ -91,7 +93,7 @@ describe("modals PMUI smoke", function()
             format_mod_entry     = function(m) return tostring(m.name) end,
             icon_path = function(n) return "icon_" .. n .. ".png" end,
         })
-        assert.is_truthy(fs:find("Create Pack", 1, true))
+        assert.is_truthy(fs:find("Create pack", 1, true))
         assert_overlap_oob("modal_create", fs)
 
         -- Bug B: 固定高コンテンツが多すぎて flex な textlist が高さ 0.2u 相当まで

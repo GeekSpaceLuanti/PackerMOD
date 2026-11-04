@@ -57,7 +57,9 @@ end
 
 -- 「button name 互換」になる pack id 用 slug。formspec の名前に英数字以外を入れない。
 local function pack_button_name(pack_id)
-    return "pack_select_" .. (tostring(pack_id):gsub("[^%w_]", "_"))
+    return "pack_select_" .. (tostring(pack_id):gsub("[^%w]", function(c)
+        return ("_%02x"):format(c:byte())
+    end))
 end
 
 local function default_thumbnail_texture()
@@ -66,7 +68,7 @@ local function default_thumbnail_texture()
     -- (packermod_default_pack_thumbnail_<theme>.png) を返す。これは make thumb で
     -- scripts/build_thumb.sh から生成される。未設定なら旧 dark 用のフォールバック。
     local base
-    if packermod and packermod.active_theme then
+    if packermod and packermod.active_theme and packermod.active_theme ~= "clean" then
         base = "packermod_default_pack_thumbnail_" .. packermod.active_theme .. ".png"
     else
         base = "packermod_default_pack_thumbnail.png"
@@ -95,9 +97,20 @@ local function build_grid_formspec(tabdata)
     local packs = get_packs()
     tabdata.packs = packs
 
+    local prefs = dofile(packermod.mainmenu_path .. "ui_preferences.lua")
+    local viewport_w, viewport_h = prefs.viewport(30, 16)
+    local grid_cols = math.max(1, math.min(3, math.floor((viewport_w - 1.6 + 0.45) / 8.5)))
+    local grid_rows = math.max(1, math.min(2, math.floor((viewport_h - 5.5) / 4.95)))
+    local page_size = grid_cols * grid_rows
+    local pages = math.max(1, math.ceil(#packs / page_size))
+    tabdata.page = math.max(1, math.min(tabdata.page or 1, pages))
+    tabdata.page_count = pages
+
     local pack_ctx = {}
-    for i, p in ipairs(packs) do
-        pack_ctx[i] = {
+    local first = (tabdata.page - 1) * page_size + 1
+    for i = first, math.min(first + page_size - 1, #packs) do
+        local p = packs[i]
+        pack_ctx[#pack_ctx + 1] = {
             name_attr  = pack_button_name(p.id),
             name       = p.manifest.name or p.id,
             base_label = (p.manifest.base_game.id or "?") .. " " ..
@@ -109,7 +122,6 @@ local function build_grid_formspec(tabdata)
     -- pack 数 % cols の空きスロット (= プレースホルダ数) を埋めて grid を均等に。
     -- 列数は synthwave.css.yml の .pack-grid の grid-columns と一致させる必要がある。
     -- 同期の崩れは見た目に出るので 1 ファイル変更時に注意 (TODO: 動的に CSS から拾う)。
-    local grid_cols = 3
     local placeholder_count = (grid_cols - (#pack_ctx % grid_cols)) % grid_cols
     local placeholders = {}
     for i = 1, placeholder_count do placeholders[i] = {} end
@@ -117,13 +129,18 @@ local function build_grid_formspec(tabdata)
     -- neon.html 準拠の title 2 色化: "> " magenta, "PACKERMOD" cyan。
     -- YAML パーサは "\x1b" 系のエスケープを実バイトに変換しないので、Lua 側で
     -- ESC (0x1B) を含む文字列を組み立てて ctx 経由で流し込む。
-    local ESC = string.char(27)
-    local title_text = ESC .. "(c@#ff1b8d)> " .. ESC .. "(c@#00ffe5)PACKERMOD"
+    local title_text = "PackerMOD"
 
     local ctx = {
+        grid_cols = grid_cols,
         packs        = pack_ctx,
         placeholders = placeholders,
         no_packs     = (#packs == 0),
+        has_packs    = (#packs > 0),
+        has_previous = tabdata.page > 1,
+        has_next     = tabdata.page < pages,
+        page_label   = packermod.i18n and packermod.i18n.t("%d packs   /   Page %d of %d", #packs, tabdata.page, pages)
+            or ("%d packs   /   Page %d of %d"):format(#packs, tabdata.page, pages),
         title_text   = title_text,
         icon_path    = function(n) return packermod.icons.path(n, "md") end,
     }
@@ -257,10 +274,14 @@ end
 
 -- ----- launch ヘルパ(symlink trick 経由) -----
 
-local function start_with_link(link_name, gameid)
+local function start_with_link(link_name, gameid, world)
     local worlds = core.get_worlds() or {}
     for i, w in ipairs(worlds) do
-        if w.name == link_name then
+        if packermod.pack_launcher_mod.is_launch_link(w, link_name) then
+            if world then
+                local ok, err = packermod.launcher.begin_world_settings(world)
+                if not ok then gamedata.errormessage = err; return true end
+            end
             gamedata.selected_world = i
             gamedata.singleplayer = true
             if gameid then core.settings:set("menu_last_game", gameid) end
@@ -271,13 +292,14 @@ local function start_with_link(link_name, gameid)
     return false
 end
 
-local function launch_existing(world)
-    local link_name, err = packermod.launcher.prepare_launch(world)
+local function launch_existing(world, pack)
+    local link_name, err = packermod.launcher.prepare_launch(world, pack)
     if not link_name then
         gamedata.errormessage = "Could not prepare launch: " .. tostring(err)
         return
     end
-    if not start_with_link(link_name, world.gameid) then
+    if not start_with_link(link_name, world.gameid, world) then
+        packermod.launcher.cancel_launch()
         gamedata.errormessage = "Could not locate launch link: " .. link_name
     end
 end
@@ -323,10 +345,8 @@ end
 local function find_pack_by_button(fields, packs)
     for k in pairs(fields) do
         if k:sub(1, #"pack_select_") == "pack_select_" then
-            local slug = k:sub(#"pack_select_" + 1)
             for _, p in ipairs(packs or {}) do
                 if pack_button_name(p.id) == k then return p end
-                if p.id == slug then return p end
             end
         end
     end
@@ -339,6 +359,12 @@ local function button_handler(self, fields)
 
     -- ---- グリッド画面 ----
     if tabdata.view == "grid" then
+        if fields.page_previous or fields.page_next then
+            local delta = fields.page_next and 1 or -1
+            tabdata.page = math.max(1, math.min((tabdata.page or 1) + delta,
+                tabdata.page_count or 1))
+            return true
+        end
         local picked = find_pack_by_button(fields, tabdata.packs)
         if picked then
             tabdata.view = "detail"
@@ -351,7 +377,7 @@ local function button_handler(self, fields)
             packermod.dialogs.dlg_import.show(M._dlg)
             return true
         end
-        if fields.btn_create then
+        if fields.btn_create or fields.empty_create then
             packermod.dialogs.dlg_create.show(M._dlg)
             return true
         end
@@ -393,7 +419,7 @@ local function button_handler(self, fields)
 
     if fields.play_world and pack then
         local world = tabdata.worlds and tabdata.worlds[tabdata.selected_world]
-        if world then launch_existing(world) end
+        if world then launch_existing(world, pack) end
         return true
     end
 
@@ -401,6 +427,11 @@ local function button_handler(self, fields)
         if packermod.dialogs and packermod.dialogs.dlg_world_create then
             packermod.dialogs.dlg_world_create.show(M._dlg, pack)
         end
+        return true
+    end
+    if fields.edit_world and pack then
+        local world = tabdata.worlds and tabdata.worlds[tabdata.selected_world]
+        if world then packermod.dialogs.dlg_settings.show_world(M._dlg, world) end
         return true
     end
 
@@ -538,8 +569,9 @@ local function button_handler(self, fields)
 end
 
 function M.show()
-    local dlg = dialog_create("packermod_library", get_formspec, button_handler, nil)
+    local dlg = dialog_create("packermod_library", get_formspec, button_handler, packermod.ui_window_event)
     M._dlg = dlg
+    dlg.data.page = tonumber(core.settings:get("packermod_initial_page")) or 1
     -- Dev hook: 直接 detail / subtab を開く
     local initial = core.settings and core.settings:get("packermod_initial_subtab")
     if initial and initial ~= "" then
@@ -574,6 +606,7 @@ M._internal = {
     subtab_variant = subtab_variant,
     clamp_selection = clamp_selection,
     pack_button_name = pack_button_name,
+    find_pack_by_button = find_pack_by_button,
     resolve_thumbnail = resolve_thumbnail,
     SUBTABS = SUBTABS,
     -- 単体テスト用に内部関数も export

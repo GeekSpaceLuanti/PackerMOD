@@ -28,7 +28,7 @@ local function handler(self, fields)
         return true
     end
     if fields.world_name ~= nil then data.world_name = fields.world_name end
-    if fields.confirm_create then
+    if fields.confirm_create or fields.create_only then
         local pack = data.pack
         local raw = (data.world_name or ""):match("^%s*(.-)%s*$")
         if raw == "" then
@@ -44,16 +44,24 @@ local function handler(self, fields)
         -- 起動は親 library 画面の launch_existing と同じ流れ:
         --   prepare_launch → core.start
         self:delete()
-        local link_name, err = packermod.launcher.prepare_launch({
+        if fields.create_only then
+            packermod.dialogs.dlg_settings.show_world(self.parent, {
+                path = info.world_path, name = info.world_name, display_name = raw, gameid = info.gameid })
+            return true
+        end
+        local launch_world = {
             path = info.world_path, name = info.world_name,
-        })
+        }
+        local link_name, err = packermod.launcher.prepare_launch(launch_world)
         if not link_name then
             gamedata.errormessage = "Could not prepare launch: " .. tostring(err)
             return true
         end
         local worlds = core.get_worlds() or {}
         for i, w in ipairs(worlds) do
-            if w.name == link_name then
+            if packermod.pack_launcher_mod.is_launch_link(w, link_name) then
+                local ok, err = packermod.launcher.begin_world_settings(launch_world)
+                if not ok then gamedata.errormessage = err; return true end
                 gamedata.selected_world = i
                 gamedata.singleplayer = true
                 core.settings:set("menu_last_game", info.gameid)
@@ -61,6 +69,7 @@ local function handler(self, fields)
                 return true
             end
         end
+        packermod.launcher.cancel_launch()
         gamedata.errormessage = "Could not locate launch link: " .. link_name
         return true
     end
@@ -68,7 +77,7 @@ local function handler(self, fields)
 end
 
 function M.show(parent, pack)
-    local dlg = dialog_create("packermod_dlg_world_create", get_formspec, handler, nil)
+    local dlg = dialog_create("packermod_dlg_world_create", get_formspec, handler, packermod.ui_window_event)
     dlg.data.pack = pack
     dlg.data.pack_name = pack and pack.manifest and pack.manifest.name or ""
     dlg.data.world_name = ""

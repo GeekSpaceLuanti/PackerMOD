@@ -23,13 +23,19 @@ end
 local function save_manifest(pack, opts)
     opts = opts or {}
     local manifest_mod = resolve_manifest_mod(opts)
+    local previous_version = pack.manifest.version
+    local major, minor, patch = tostring(previous_version):match("^(%d+)%.(%d+)%.(%d+)$")
+    pack.manifest.version = major and (major .. "." .. minor .. "." .. (tonumber(patch) + 1)) or "1.0.1"
     local ok, dumped = manifest_mod.dump(pack.manifest)
-    if not ok then return false, dumped end
+    if not ok then pack.manifest.version = previous_version; return false, dumped end
     local writer = opts.write_file or default_write
-    return writer(pack.path .. "/manifest.yaml", dumped)
+    local written, err = writer(pack.path .. "/manifest.yaml", dumped)
+    if not written then pack.manifest.version = previous_version end
+    return written, err
 end
 
 function M.add_mod(pack, mod_spec, opts)
+    local had_mods = pack.manifest.mods ~= nil
     pack.manifest.mods = pack.manifest.mods or {}
     for _, existing in ipairs(pack.manifest.mods) do
         if existing.name == mod_spec.name then
@@ -37,27 +43,40 @@ function M.add_mod(pack, mod_spec, opts)
         end
     end
     table.insert(pack.manifest.mods, mod_spec)
-    return save_manifest(pack, opts)
+    local ok, err = save_manifest(pack, opts)
+    if not ok then
+        table.remove(pack.manifest.mods)
+        if not had_mods then pack.manifest.mods = nil end
+    end
+    return ok, err
 end
 
 function M.remove_mod(pack, index, opts)
     if not pack.manifest.mods or index < 1 or index > #pack.manifest.mods then
         return false, "index out of range"
     end
-    table.remove(pack.manifest.mods, index)
-    return save_manifest(pack, opts)
+    local removed = table.remove(pack.manifest.mods, index)
+    local ok, err = save_manifest(pack, opts)
+    if not ok then table.insert(pack.manifest.mods, index, removed) end
+    return ok, err
 end
 
 -- name / version / description を更新。空文字列は (description は nil 化、
 -- 必須項目 name/version は無視) として扱う。
 function M.update_meta(pack, fields, opts)
+    local old_name, old_version, old_description = pack.manifest.name,
+        pack.manifest.version, pack.manifest.description
     if fields.name and fields.name ~= "" then pack.manifest.name = fields.name end
-    if fields.version and fields.version ~= "" then pack.manifest.version = fields.version end
     if fields.description ~= nil then
         if fields.description == "" then pack.manifest.description = nil
         else pack.manifest.description = fields.description end
     end
-    return save_manifest(pack, opts)
+    local ok, err = save_manifest(pack, opts)
+    if not ok then
+        pack.manifest.name, pack.manifest.version, pack.manifest.description =
+            old_name, old_version, old_description
+    end
+    return ok, err
 end
 
 -- ContentDB の検索結果 1 件 → manifest 用 mod entry。

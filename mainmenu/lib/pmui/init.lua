@@ -22,6 +22,7 @@
 local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 
 local M = {}
+local ui_preferences = dofile(SELF_DIR .. "../../ui_preferences.lua")
 
 M.dom         = dofile(SELF_DIR .. "dom.lua")
 M.stylesheet  = dofile(SELF_DIR .. "stylesheet.lua")
@@ -41,6 +42,13 @@ end
 
 function M.build_formspec(opts)
     opts = opts or {}
+    if packermod and packermod.i18n and opts.ctx then
+        local context = {}
+        for k, v in pairs(opts.ctx) do
+            context[k] = type(v) == "string" and k:find("status") and packermod.i18n.message(v) or v
+        end
+        opts.ctx = context
+    end
     local html_text = opts.html or (opts.html_path and read_file(opts.html_path))
     local css_text  = opts.css  or (opts.css_path  and read_file(opts.css_path))
     if not html_text then error("pmui.build_formspec: missing html / html_path") end
@@ -48,6 +56,7 @@ function M.build_formspec(opts)
 
     local page_w = opts.page_w or 13.0
     local page_h = opts.page_h or 8.5
+    page_w, page_h = ui_preferences.viewport(page_w, page_h, opts.fixed_viewport)
 
     local root  = M.parser_html.parse(html_text, opts.ctx or {})
     local sheet = M.parser_css.parse(css_text)
@@ -56,6 +65,46 @@ function M.build_formspec(opts)
         hover_ids = opts.hover_ids, active_ids = opts.active_ids,
     })
     M.box_model.compute_all(root)
+    -- One spacing scale for the page, instead of offsets for each field/button.
+    -- Form rows measure their labels + controls; flex panels take what remains.
+    local gap = math.max(0.3, math.min(0.55, page_w / 60))
+    M.dom.walk(root, function(el)
+        if el.tag == "grid" and opts.ctx and opts.ctx.grid_cols then el.box.grid_columns = opts.ctx.grid_cols end
+        if el.tag == "page" then el.box.padding = gap * 1.6 end
+        for _, class in ipairs(el.classes or {}) do
+            if page_w < 25 then
+                if class == "subtab-actions" or class == "modal-actions" then
+                    el.box.display, el.box.grid_columns, el.box.h = "grid", 2, nil
+                elseif class == "subtab-btn" then
+                    el.box.font_size = "*0.8"
+                elseif class == "modal-dim" and #(el.text or "") > 40 then
+                    el.tag, el.box.h, el.box.font_size = "paragraph", 1.6, "*0.8"
+                elseif class == "detail-header" then
+                    el.box.flex_direction, el.box.gap, el.box.h = "column", 0.15, nil
+                    M.dom.walk(el, function(child)
+                        if child.tag == "h2" or child.tag == "span" then
+                            child.box.w, child._ellipsize = page_w - gap * 4, true
+                        end
+                    end)
+                end
+            end
+            if class == "page-label" then
+                el.box.w, el._ellipsize = math.min(12, page_w - 12), true
+            end
+            if class == "pack-card" and opts.ctx and opts.ctx.grid_cols then
+                el.box.w = (page_w - gap * 3.2 - (opts.ctx.grid_cols - 1) * 0.45) / opts.ctx.grid_cols
+                el.box.h = math.max(4.5, 3.5 + 0.9 * ui_preferences.font_scale())
+            end
+            if class == "modal-card" then
+                el.box.padding = gap * 1.6
+                el.box.gap = gap
+                el.box.w = math.min(el.box.w or page_w, page_w - gap * 3.2)
+            elseif class == "modal-card-wide" then
+                el.box.h = nil
+                el._max_h = page_h - gap * 3.2
+            end
+        end
+    end)
     return M.paint.render(root, {
         page_w = page_w, page_h = page_h, ctx = opts.ctx,
         texture_dir = opts.texture_dir,

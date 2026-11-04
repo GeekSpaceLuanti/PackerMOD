@@ -6,6 +6,27 @@
 local helpers = dofile("spec/support/formspec_helpers.lua")
 local escape_min = helpers.escape_min
 
+describe("layout repeated rendering", function()
+    it("gives equal flex columns equal widths regardless of their intrinsic labels", function()
+        local L = dofile("mainmenu/lib/layout.lua")
+        local first = L.VBox { flex = 1, L.Label { text = "A longer heading" } }
+        local second = L.VBox { flex = 1, L.Label { text = "Short" } }
+        L.iter_elements(L.HBox { first, second }, { w = 20, h = 5 })
+        assert.equal(first.w, second.w)
+        assert.is_true(first._x + first.w < second._x)
+    end)
+
+    it("does not add label height again on a second render", function()
+        local L = dofile("mainmenu/lib/layout.lua")
+        local root = L.VBox {
+            L.Field { name = "title", label = "Title", h = 1 },
+            L.TextArea { name = "description", label = "Description", h = 2 },
+        }
+        local first = L.build_formspec(root, { w = 10, h = 8 })
+        assert.equal(first, L.build_formspec(root, { w = 10, h = 8 }))
+    end)
+end)
+
 local function setup_mocks()
     _G.core = _G.core or {}
     core.formspec_escape         = escape_min

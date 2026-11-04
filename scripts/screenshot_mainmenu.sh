@@ -1,121 +1,243 @@
 #!/usr/bin/env bash
-# Capture the PackerMOD main menu under Xvfb and save a PNG.
-#
-# Phase 8+: メニューは単一の Library 画面に統合された。引数は subtab を指す:
-#
-# Usage:
-#   scripts/screenshot_mainmenu.sh [subtab] [out_path]
-#     subtab: library | worlds | multi | mods | info   (default: library)
-#     out:    PNG path                                 (default: /tmp/mainmenu_<subtab>.png)
-#
-# Subtab switching is settings-driven via `packermod_initial_subtab` so we
-# don't need pixel-perfect xdotool clicks. The setting is written to
-# minetest.conf before launching Luanti and removed afterwards.
-#
-# Requires: Xvfb, xdotool, luanti (>= 5.16 for in-menu F12).
-# PackerMOD must already be installed via install/install.sh.
-
+# Deterministic engine screenshots under Xvfb, using disposable user data only.
+# Usage: LUANTI_BIN=/path/to/luanti bash scripts/screenshot_mainmenu.sh [view] [png]
 set -euo pipefail
-
-SUBTAB="${1:-library}"
-OUT="${2:-/tmp/mainmenu_${SUBTAB}.png}"
-
-# Phase 11+: modal_<name> 引数で Library 起動と同時に該当モーダルを開く。
-case "$SUBTAB" in
-    library|worlds|multi|mods|info) MODAL="" ;;
-    modal_import|modal_create|modal_settings) MODAL="${SUBTAB#modal_}"; SUBTAB="library" ;;
-    *) echo "unknown subtab: $SUBTAB (expected library|worlds|multi|mods|info|modal_import|modal_create|modal_settings)" >&2; exit 2 ;;
+repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+view="${1:-library}"
+out="${2:-$repo_root/.screenshots/$view.png}"
+width="${WIN_W:-1280}"
+height="${WIN_H:-800}"
+if [[ "${PACKERMOD_XVFB:-}" != 1 ]]; then
+    exec xvfb-run -a -s "-screen 0 ${width}x${height}x24 -nolisten tcp" \
+        env PACKERMOD_XVFB=1 bash "$0" "$view" "$out"
+fi
+runner="${LUANTI_BIN:-luanti}"
+if ! command -v "$runner" >/dev/null && [[ -z "${LUANTI_BIN:-}" ]]; then
+    runner="${XDG_CACHE_HOME:-$HOME/.cache}/packermod-tools/luanti-5.16.1/bin/luanti"
+fi
+command -v "$runner" >/dev/null || { echo "Luanti not found: set LUANTI_BIN" >&2; exit 1; }
+count=3
+page=1
+subtab=""
+modal=""
+step=details
+language=ja
+native_settings=false
+engine_setting=""
+settings_tab=general
+settings_group=""
+gui_scale=1
+button_scale=1
+gui_size=standard
+font_size=18
+show_expert=false
+show_developer=false
+main_script="$repo_root/mainmenu/init.lua"
+ready_marker="PackerMOD: menu ready"
+case "$view" in
+    library) ;;
+    contentdb_live) main_script="$repo_root/scripts/contentdb_smoke_mainmenu.lua"; ready_marker="PackerMOD: live ContentDB verified" ;;
+    contentdb_catalog) main_script="$repo_root/scripts/contentdb_catalog_mainmenu.lua"; ready_marker="PackerMOD: ContentDB catalog ready" ;;
+    library_empty) count=0 ;;
+    library_many) count=7 ;;
+    library_page2) count=7; page=2 ;;
+    worlds|multi|mods|info) subtab="$view" ;;
+    modal_create_mods) modal=create; step=mods ;;
+    modal_create_game) modal=create; step=game ;;
+    native_settings) native_settings=true ;;
+    settings_ui_test) main_script="$repo_root/scripts/settings_ui_smoke_mainmenu.lua"; ready_marker="PackerMOD: settings UI verified" ;;
+    modal_create_scale_large) modal=create; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
+    worlds_scale_large) subtab=worlds; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
+    settings_resize) modal=settings; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
+    settings_size_dropdown|settings_scale_dropdown|settings_scale_interaction) modal=settings; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
+    settings_scale_large) modal=settings; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
+    library_scale_large) count=7; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
+    settings_keymap) modal=settings; settings_tab=keymap ;;
+    settings_keymap_end) modal=settings; settings_tab=keymap; settings_group=Hotbar ;;
+    settings_expert) modal=settings; settings_tab=graphics; show_expert=true ;;
+    settings_controls) modal=settings; settings_tab=controls ;;
+    settings_graphics) modal=settings; settings_tab=graphics ;;
+    settings_audio|settings_interaction) modal=settings; settings_tab=audio ;;
+    settings_interface) modal=settings; settings_tab=interface ;;
+    settings_world) modal=settings; settings_tab=world ;;
+    settings_advanced) modal=settings; settings_tab=advanced; show_developer=true ;;
+    world_settings_test) main_script="$repo_root/scripts/world_settings_smoke_mainmenu.lua"; ready_marker="PackerMOD: world isolation verified" ;;
+    world_settings|world_physics|world_terrain|world_hosting) main_script="$repo_root/scripts/world_settings_preview_mainmenu.lua"; settings_tab="${view#world_}" ;;
+    settings_movement) modal=settings; settings_tab=keymap; settings_group=Movement ;;
+    settings_actions) modal=settings; settings_tab=keymap; settings_group=Actions ;;
+    settings_hotbar) modal=settings; settings_tab=keymap; settings_group=Hotbar ;;
+    engine_settings_test) main_script="$repo_root/scripts/engine_settings_smoke_mainmenu.lua"; ready_marker="PackerMOD: engine settings verified" ;;
+    engine_settings_bool) modal=settings; engine_setting=autojump ;;
+    engine_settings_enum) modal=settings; engine_setting=video_driver ;;
+    engine_settings_keys) modal=settings; engine_setting=keymap_forward ;;
+    engine_settings_noise|engine_settings_noise_end) main_script="$repo_root/scripts/world_settings_preview_mainmenu.lua"; engine_setting=mg_biome_np_heat ;;
+    engine_settings_vector) main_script="$repo_root/scripts/world_settings_preview_mainmenu.lua"; engine_setting=mgfractal_scale ;;
+    engine_settings_flags) main_script="$repo_root/scripts/world_settings_preview_mainmenu.lua"; engine_setting=mg_flags ;;
+    engine_settings_path) modal=settings; engine_setting=screenshot_path ;;
+    library_en) language=en ;;
+    modal_settings_en) modal=settings; language=en ;;
+    modal_import|modal_create|modal_settings) modal="${view#modal_}" ;;
+    *) echo "Unknown view: $view" >&2; exit 2 ;;
 esac
-
-DISPLAY_NUM="${DISPLAY_NUM:-99}"
-# Xvfb canvas must be at least as large as Luanti's screen_w/screen_h from
-# the user's minetest.conf; oversize is harmless.
-WIN_W="${WIN_W:-1280}"
-WIN_H="${WIN_H:-960}"
-SHOT_DIR="${HOME}/.minetest/screenshots"
-CONF="${HOME}/.minetest/minetest.conf"
-LOG="${LOG:-/tmp/luanti_${SUBTAB}.log}"
-
-mkdir -p "$SHOT_DIR"
-
-XVFB_PID=""
-LUANTI_PID=""
+run_dir="$(mktemp -d -t packermod-screenshot.XXXXXX)"
+engine_pid=""
 cleanup() {
-    [[ -n "$LUANTI_PID" ]] && kill "$LUANTI_PID" 2>/dev/null || true
-    [[ -n "$LUANTI_PID" ]] && wait "$LUANTI_PID" 2>/dev/null || true
-    [[ -n "$XVFB_PID"  ]] && kill "$XVFB_PID"   2>/dev/null || true
-    [[ -n "$XVFB_PID"  ]] && wait "$XVFB_PID"   2>/dev/null || true
-    # Always strip the dev hook so it doesn't leak into normal runs.
-    if [[ -f "$CONF" ]]; then
-        sed -i '/^packermod_initial_subtab/d;/^packermod_initial_modal/d' "$CONF"
+    if [[ -n "$engine_pid" ]]; then
+        kill "$engine_pid" 2>/dev/null || true
+        wait "$engine_pid" 2>/dev/null || true
     fi
+    rm -rf -- "$run_dir"
 }
 trap cleanup EXIT
-
-# Inject the initial-subtab / initial-modal setting and strip previous values.
-if [[ -f "$CONF" ]]; then
-    sed -i '/^packermod_initial_subtab/d;/^packermod_initial_modal/d' "$CONF"
+user_dir="$run_dir/user"
+mkdir -p "$user_dir/PackerMOD/packs" "$user_dir/games/packerbase_0_91/mods" "$(dirname "$out")"
+# Portable builds ignore LUANTI_USER_PATH. Give their executable a disposable
+# physical location (a symlink would resolve back to the original user folder).
+runner="$(command -v "$runner")"
+runner_root="$(cd "$(dirname "$runner")/.." && pwd)"
+if [[ -d "$runner_root/builtin" ]]; then
+    mkdir -p "$user_dir/bin"
+    cp "$runner" "$user_dir/bin/luanti"
+    for asset in builtin client textures fonts locale settingtypes.txt; do
+        [[ ! -e "$runner_root/$asset" ]] || ln -s "$runner_root/$asset" "$user_dir/$asset"
+    done
+    runner="$user_dir/bin/luanti"
 fi
-if [[ "$SUBTAB" != "library" ]]; then
-    echo "packermod_initial_subtab = $SUBTAB" >> "$CONF"
-fi
-if [[ -n "${MODAL:-}" ]]; then
-    echo "packermod_initial_modal = $MODAL" >> "$CONF"
-fi
 
-# Start Xvfb (auth disabled so xdotool can attach without juggling Xauthority).
-Xvfb ":$DISPLAY_NUM" -screen 0 "${WIN_W}x${WIN_H}x24" -ac -nolisten tcp \
-    >/tmp/xvfb_${DISPLAY_NUM}.log 2>&1 &
-XVFB_PID=$!
-
-for _ in $(seq 1 20); do
-    if DISPLAY=":$DISPLAY_NUM" xdpyinfo >/dev/null 2>&1; then
-        break
-    fi
-    if ! kill -0 "$XVFB_PID" 2>/dev/null; then
-        echo "Xvfb failed to start. log:" >&2
-        cat /tmp/xvfb_${DISPLAY_NUM}.log >&2
-        exit 1
-    fi
-    sleep 0.2
+printf 'title = Screenshot Base\n' > "$user_dir/games/packerbase_0_91/game.conf"
+for ((i=1; i<=count; i++)); do
+    pack="$user_dir/PackerMOD/packs/sample_$i"
+    mkdir -p "$pack/worlds/demo"
+    cat > "$pack/manifest.yaml" <<YAML
+schema_version: 1
+id: sample_$i
+name: Sample Pack $i
+version: "1.0.0"
+base_game:
+  id: packerbase
+  version: "0.91"
+YAML
+    printf 'gameid = packerbase_0_91\nworld_name = Demo world\n' > "$pack/worlds/demo/world.mt"
 done
-
-TS_BEFORE=$(date +%s)
-
-DISPLAY=":$DISPLAY_NUM" LIBGL_ALWAYS_SOFTWARE=1 luanti >"$LOG" 2>&1 &
-LUANTI_PID=$!
-
-for _ in $(seq 1 40); do
-    if grep -q "GUIEngine\|game_t" "$LOG" 2>/dev/null; then
-        break
-    fi
-    if ! kill -0 "$LUANTI_PID" 2>/dev/null; then
-        echo "Luanti exited early. log tail:" >&2
-        tail -20 "$LOG" >&2
-        exit 1
-    fi
-    sleep 0.25
+cat > "$run_dir/minetest.conf" <<CONF
+main_menu_script = $main_script
+packermod_source_path = $repo_root
+packermod_smoke_config = $run_dir/minetest.conf
+packermod_initial_engine_setting = $engine_setting
+packermod_initial_settings_tab = $settings_tab
+packermod_initial_settings_group = $settings_group
+screen_w = $width
+screen_h = $height
+fullscreen = false
+enable_sound = false
+menu_clouds = false
+show_debug = false
+font_size = $font_size
+packermod_gui_size = $gui_size
+gui_scaling = $gui_scale
+packermod_button_scale = $button_scale
+packermod_initial_show_expert = $show_expert
+packermod_initial_show_developer = $show_developer
+packermod_language = $language
+language = $language
+packermod_initial_native_settings = $native_settings
+packermod_expected_pack_count = $count
+packermod_initial_subtab = $subtab
+packermod_initial_modal = $modal
+packermod_initial_page = $page
+packermod_initial_create_step = $step
+CONF
+LUANTI_USER_PATH="$user_dir" LIBGL_ALWAYS_SOFTWARE=1 "$runner" \
+    --config "$run_dir/minetest.conf" --logfile "$run_dir/engine.log" \
+    > "$run_dir/console.log" 2>&1 &
+engine_pid=$!
+window=""
+for ((i=0; i<600; i++)); do
+    kill -0 "$engine_pid" 2>/dev/null || { cat "$run_dir/console.log" >&2; exit 1; }
+    window="$(xdotool search --onlyvisible --pid "$engine_pid" 2>/dev/null | head -1 || true)"
+    if grep -q 'ERROR\[' "$run_dir/console.log"; then cat "$run_dir/console.log" >&2; exit 1; fi
+    if [[ -n "$window" ]] && grep -q "$ready_marker" "$run_dir/engine.log"; then break; fi
+    sleep 0.1
 done
-sleep 1.5
-
-DISPLAY=":$DISPLAY_NUM" xdotool key F12
-sleep 1
-
-LATEST=$(find "$SHOT_DIR" -name '*.png' -newermt "@$TS_BEFORE" 2>/dev/null | sort | tail -1)
-
-if [[ -z "$LATEST" ]]; then
-    if command -v import >/dev/null; then
-        DISPLAY=":$DISPLAY_NUM" import -window root "$OUT"
-        echo "saved (root-capture fallback): $OUT" >&2
+[[ -n "$window" ]] && grep -q "$ready_marker" "$run_dir/engine.log" || { echo "Luanti menu did not become ready" >&2; cat "$run_dir/console.log" >&2; exit 1; }
+sleep 0.5
+if grep -E 'ERROR\[|Mod security' "$run_dir/console.log" "$run_dir/engine.log"; then
+    cp "$run_dir/console.log" "$out.log"
+    exit 1
+fi
+if [[ "$view" == settings_resize ]]; then
+    xdotool windowsize --sync "$window" 800 600
+    sleep 0.5
+    gui="$(sed -n 's/^gui_scaling = //p' "$run_dir/minetest.conf")"
+    font="$(sed -n 's/^font_size = //p' "$run_dir/minetest.conf")"
+    awk -v gui="$gui" -v font="$font" 'BEGIN { exit !(gui <= 1 && font <= 20) }' || { echo "Resize safety failed: GUI=$gui font=$font" >&2; exit 1; }
+    echo "Verified automatic safe scaling after a live window resize to 800x600."
+fi
+if [[ "$view" == settings_size_dropdown || "$view" == settings_scale_dropdown || "$view" == settings_scale_interaction ]]; then
+    [[ "$width" == 800 && "$height" == 600 ]] || { echo "Scale interaction fixture requires 800x600" >&2; exit 1; }
+    if [[ "$view" == settings_size_dropdown ]]; then
+        xdotool mousemove --window "$window" 623 232 click 1
     else
-        echo "screenshot_mainmenu: F12 produced no PNG and ImageMagick not installed" >&2
-        echo "Luanti log tail:" >&2
-        tail -20 "$LOG" >&2
-        exit 1
+        xdotool mousemove --window "$window" 623 197 click 1
     fi
-else
-    cp "$LATEST" "$OUT"
-    echo "saved: $OUT (from $LATEST)" >&2
+    sleep 0.3
+    if [[ "$view" == settings_scale_interaction ]]; then
+        xdotool windowfocus --sync "$window"
+        xdotool key Down Return
+        sleep 0.3
+        grep -q '^packermod_language = en' "$run_dir/minetest.conf" || { echo "Scaled language dropdown failed" >&2; exit 1; }
+        # The next slider remains reachable after a native dropdown selection.
+        xdotool mousemove --window "$window" 515 266 mousedown 1
+        xdotool mousemove --sync --window "$window" 565 266
+        xdotool mouseup 1
+        sleep 0.4
+        fov="$(sed -n 's/^fov = //p' "$run_dir/minetest.conf")"
+        awk -v value="$fov" 'BEGIN { exit !(value != "" && value > 90) }' || { echo "Scaled slider failed: $fov" >&2; exit 1; }
+        # Done is fixed outside the scrolling item list at every size.
+        xdotool mousemove --window "$window" 687 480 click 1
+        sleep 0.3
+        echo "Verified maximum-size native dropdown, slider drag and Done at 800x600."
+    fi
 fi
-
-echo "$OUT"
+if [[ "$view" == settings_interaction ]]; then
+    [[ "$width" == 1280 && "$height" == 800 ]] || { echo "Interaction fixture requires 1280x800" >&2; exit 1; }
+    # Real pointer input: drag volume, toggle mute, switch tabs and bind a key.
+    xdotool mousemove --window "$window" 888 255 mousedown 1
+    for x in 875 860 845 830 815 800; do
+        xdotool mousemove --sync --window "$window" "$x" 255
+        sleep 0.05
+    done
+    xdotool mouseup 1
+    sleep 0.3
+    volume="$(sed -n 's/^sound_volume = //p' "$run_dir/minetest.conf")"
+    awk -v volume="$volume" 'BEGIN { exit !(volume != "" && volume < 0.3) }' || { echo "Volume drag failed: $volume" >&2; exit 1; }
+    xdotool mousemove --window "$window" 900 364 click 1
+    sleep 0.3
+    grep -q '^mute_sound = true' "$run_dir/minetest.conf" || { echo "Mute button failed" >&2; exit 1; }
+    xdotool mousemove --window "$window" 205 260 click 1
+    sleep 0.3
+    xdotool mousemove --window "$window" 425 247 click 1
+    sleep 0.3
+    xdotool mousemove --window "$window" 900 343 click 1
+    xdotool windowfocus --sync "$window"
+    sleep 0.15
+    xdotool key Up
+    sleep 0.3
+    grep -Eq '^keymap_forward = (KEY_UP|SYSTEM_SCANCODE_82)$' "$run_dir/minetest.conf" || { echo "Key button failed" >&2; import -window "$window" "$out.failed.png"; grep "^keymap_" "$run_dir/minetest.conf" >&2 || true; exit 1; }
+    xdotool mousemove --window "$window" 1095 343 click 1
+    sleep 0.3
+    if grep -q '^keymap_forward =' "$run_dir/minetest.conf"; then echo "Per-item reset failed" >&2; exit 1; fi
+    echo "Verified real UI drag, toggle, Keymap tab, key capture and per-item reset."
+fi
+if [[ "$view" == settings_keymap_end ]]; then
+    xdotool mousemove --window "$window" "$((width * 3 / 4))" "$((height / 2))" click --repeat 220 --delay 5 5
+    sleep 0.3
+fi
+if [[ "$view" == engine_settings_noise_end ]]; then
+    xdotool mousemove --window "$window" "$((width * 3 / 4))" "$((height / 2))" click --repeat 20 --delay 20 5
+    sleep 0.3
+fi
+# Capture only the engine window. No foreground focus, desktop input or F12 needed.
+import -window "$window" "$out"
+cp "$run_dir/engine.log" "$out.log"
+printf '%s\n' "$out"

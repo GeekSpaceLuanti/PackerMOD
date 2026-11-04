@@ -154,6 +154,13 @@ end
 
 local dump_value
 
+local function sorted_keys(t)
+    local keys = {}
+    for k in pairs(t) do keys[#keys + 1] = k end
+    table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+    return keys
+end
+
 local function is_array(t)
     if type(t) ~= "table" then return false end
     local n = 0
@@ -205,7 +212,8 @@ dump_value = function(v, indent)
         for _, item in ipairs(v) do
             if type(item) == "table" then
                 local first = true
-                for k, val in pairs(item) do
+                for _, k in ipairs(sorted_keys(item)) do
+                    local val = item[k]
                     local prefix = first and (pad .. "- ") or (pad .. "  ")
                     if type(val) == "table" then
                         table.insert(parts, prefix .. k .. ":\n" .. dump_value(val, indent + 2))
@@ -221,7 +229,8 @@ dump_value = function(v, indent)
         return table.concat(parts, "\n")
     end
     local parts = {}
-    for k, val in pairs(v) do
+    for _, k in ipairs(sorted_keys(v)) do
+        local val = v[k]
         if type(val) == "table" then
             table.insert(parts, pad .. k .. ":\n" .. dump_value(val, indent + 1))
         else

@@ -110,10 +110,16 @@ expand = function(node, ctx, resolve)
     if not node.tag then return nil end
 
     -- 属性解決
+    local function translate(value)
+        if type(value) == "string" and packermod and packermod.i18n then
+            return packermod.i18n.t(value)
+        end
+        return value
+    end
     local resolved_attrs = {}
     if node.attrs then
         for k, v in pairs(node.attrs) do
-            resolved_attrs[k] = resolve(v, ctx)
+            resolved_attrs[k] = resolve(k == "label" and translate(v) or v, ctx)
         end
     end
 
@@ -123,7 +129,7 @@ expand = function(node, ctx, resolve)
         tag      = node.tag,
         id       = node.id,
         classes  = classes_from(resolved_class),
-        text     = node.text ~= nil and resolve(node.text, ctx) or nil,
+        text     = node.text ~= nil and resolve(translate(node.text), ctx) or nil,
         attrs    = resolved_attrs,
         children = expand_children(node.children, ctx, resolve),
     }

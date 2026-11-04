@@ -29,7 +29,7 @@ root:
         - tag: span
           id: detail-meta
           class: detail-meta
-          text: "v${pack_version}   base=${pack_base}   mods=${pack_mods_count}"
+          text: "v${pack_version}   ${pack_base}   ${pack_mods_count} mods"
 
     # subtab buttons (active 状態は ${subtab_class_*} で動的にクラスを付与)
     - tag: nav
@@ -85,6 +85,13 @@ root:
                 name: new_world
                 icon: plus
                 label: "New World"
+            - tag: icon-button
+              id: btn-edit-world
+              class: "action-btn"
+              when: "${has_world}"
+              attrs:
+                name: edit_world
+                label: "Edit world"
             - tag: icon-button
               id: btn-delete-world
               class: action-btn
@@ -245,23 +252,14 @@ root:
       when: "${show_info}"
       children:
         - tag: field
-          class: form-field
+          class: "form-field info-name"
           attrs:
             name: info_name
             label: Name
             default: "${pack_name}"
-        - tag: div
-          class: form-row
-          children:
-            - tag: field
-              class: form-field
-              attrs:
-                name: info_version
-                label: Version
-                default: "${pack_version}"
-            - tag: span
-              class: info-base
-              text: "Base: ${pack_base}"
+        - tag: span
+          class: modal-dim
+          text: "Pack revision: ${pack_version} (automatic)"
         - tag: textarea
           class: form-textarea
           attrs:

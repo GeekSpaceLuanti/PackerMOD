@@ -1,6 +1,3 @@
-# Pack Create modal (HTML 風 DSL)。最も大きい modal で、識別子フォーム + ContentDB
-# 検索 + 現 mods リストが横に並ぶ。
-
 root:
   tag: page
   class: modal-page
@@ -17,71 +14,85 @@ root:
           children:
             - tag: h2
               class: modal-title
-              text: "Create Pack"
-
-            # Pack identity (4 fields + 3 fields の 2 行)
+              text: "${step_title}"
             - tag: span
-              class: modal-section-label
-              text: "Pack identity"
-            - tag: div
-              class: modal-row
+              class: modal-dim
+              text: "${step_help}"
+            - tag: section
+              class: modal-create-col
+              when: "${show_details}"
               children:
-                - tag: field
-                  class: modal-field-create
-                  attrs:
-                    name: pack_id
-                    label: "Pack id"
-                    default: "${pack_id}"
-                - tag: field
-                  class: modal-field-create
-                  attrs:
-                    name: pack_name
-                    label: "Name"
-                    default: "${pack_name}"
-                - tag: field
-                  class: modal-field-create
-                  attrs:
-                    name: pack_version
-                    label: "Version"
-                    default: "${pack_version}"
-                - tag: field
-                  class: modal-field-create
-                  attrs:
-                    name: pack_author
-                    label: "Author"
-                    default: "${pack_author}"
-            - tag: div
-              class: modal-row
-              children:
-                - tag: field
-                  class: modal-field-create
-                  attrs:
-                    name: base_id
-                    label: "Base id"
-                    default: "${base_id}"
-                - tag: field
-                  class: modal-field-create
-                  attrs:
-                    name: base_version
-                    label: "Base ver"
-                    default: "${base_version}"
-                - tag: field
-                  class: modal-field-create-grow
+                - tag: div
+                  class: modal-row
+                  children:
+                    - tag: field
+                      class: modal-field-create-grow
+                      attrs:
+                        name: pack_name
+                        label: "Pack name"
+                        default: "${pack_name}"
+                    - tag: field
+                      class: modal-field-create
+                      attrs:
+                        name: pack_author
+                        label: Author
+                        default: "${pack_author}"
+                - tag: textarea
+                  class: form-textarea
                   attrs:
                     name: pack_description
-                    label: "Description"
+                    label: Description
                     default: "${pack_description}"
-
-            # 2 列: 検索結果 + 現 mods リスト
-            - tag: div
+            - tag: section
               class: modal-create-body
+              when: "${show_game}"
               children:
                 - tag: div
                   class: modal-create-col
                   children:
-                    - tag: span
+                    - tag: div
+                      class: modal-row
+                      children:
+                        - tag: field
+                          class: modal-field-create-grow
+                          attrs:
+                            name: game_query
+                            label: "Game search"
+                            default: "${game_query}"
+                        - tag: button
+                          class: modal-btn
+                          attrs:
+                            name: game_search
+                            label: Search
+                    - tag: list
+                      class: catalog-list
+                      attrs:
+                        name: game_list
+                        items: "${game_items}"
+                        selected: "${game_selected}"
+                - tag: div
+                  class: modal-create-col
+                  children:
+                    - tag: h2
                       class: modal-section-label
-                      text: "ContentDB search"
+                      text: "${selected_game_title}"
+                    - tag: dropdown
+                      class: catalog-version
+                      attrs:
+                        name: game_release
+                        label: "Base game version"
+                        items: "${version_items}"
+                        selected: "${release_selected}"
+                    - tag: span
+                      class: modal-dim
+                      text: "The selected game release is installed when the pack is created."
+            - tag: div
+              class: modal-create-body
+              when: "${show_mods}"
+              children:
+                - tag: div
+                  class: modal-create-col
+                  children:
                     - tag: div
                       class: modal-row
                       children:
@@ -89,68 +100,70 @@ root:
                           class: modal-field-create-grow
                           attrs:
                             name: search_query
-                            label: "Query"
+                            label: "Find MODs on ContentDB"
                             default: "${search_query}"
-                        - tag: field
-                          class: modal-field-create
-                          attrs:
-                            name: search_release
-                            label: "Release"
-                            default: "${search_release}"
-                        - tag: icon-button
-                          class: modal-icon-btn-small
+                        - tag: button
+                          class: modal-btn
                           attrs:
                             name: search
-                            icon: search
                             label: Search
-                        - tag: icon-button
-                          class: modal-icon-btn-small
-                          attrs:
-                            name: add_search
-                            icon: plus
-                            label: Add
                     - tag: list
-                      class: modal-list
+                      class: catalog-list
                       attrs:
                         name: search_results
                         items: "${search_results | format_search_result}"
                         selected: "${search_selected}"
-                    - tag: status
-                      class: modal-status
-                      text: "${status}"
-
+                    - tag: button
+                      class: modal-btn
+                      attrs:
+                        name: add_search
+                        label: "Add to pack"
                 - tag: div
                   class: modal-create-col
                   children:
                     - tag: span
                       class: modal-section-label
-                      text: "Current mods"
+                      text: "MODs in this pack"
                     - tag: list
-                      class: modal-list
+                      class: catalog-list
                       attrs:
                         name: mod_list
                         items: "${mods | format_mod_entry}"
                         selected: "${mod_selected}"
-                    - tag: footer
-                      class: modal-actions
-                      children:
-                        - tag: icon-button
-                          class: "modal-icon-btn modal-btn-danger"
-                          attrs:
-                            name: remove_mod
-                            icon: trash
-                            label: Remove
-                        - tag: icon-button
-                          class: "modal-icon-btn modal-btn-primary"
-                          attrs:
-                            name: export
-                            icon: save
-                            label: Export
-                        - tag: button
-                          class: "modal-btn"
-                          attrs:
-                            name: dlg_close
-                            label: Close
+                    - tag: button
+                      class: modal-btn
+                      attrs:
+                        name: remove_mod
+                        label: Remove
+            - tag: status
+              class: modal-status
+              text: "${status}"
+            - tag: footer
+              class: modal-actions
+              children:
+                - tag: button
+                  class: modal-btn
+                  attrs:
+                    name: dlg_close
+                    label: Cancel
+                - tag: button
+                  class: modal-btn
+                  when: "${has_previous}"
+                  attrs:
+                    name: previous_step
+                    label: Back
+                - tag: button
+                  class: modal-btn-primary
+                  when: "${has_next}"
+                  attrs:
+                    name: next_step
+                    label: "${next_label}"
+                - tag: button
+                  class: modal-btn-primary
+                  when: "${show_mods}"
+                  attrs:
+                    name: export
+                    label: "Create pack"
         - tag: spacer
           class: modal-hspacer
     - tag: spacer

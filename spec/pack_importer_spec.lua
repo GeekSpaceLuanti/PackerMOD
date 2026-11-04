@@ -189,3 +189,31 @@ describe("pack_importer.import_from_url", function()
         assert.are.equal(1, #cl.downloads)
     end)
 end)
+
+describe("pack_importer protects existing data", function()
+    for _, extension in ipairs({ "zip", "yaml" }) do
+        it("rejects an existing Pack ID from " .. extension, function()
+            local target = "/user/PackerMOD/packs/imported_pack"
+            local fs_t = fake_fs({
+                [target] = "directory", [target .. "/worlds/main/map.sqlite"] = "world data",
+                ["/tmp/x.yaml"] = SAMPLE_YAML,
+                ["__zip:/tmp/x.zip"] = SAMPLE_YAML,
+            })
+            local pi = new_importer(fs_t, fake_client())
+            local ok, err = pi.import_from_path("/tmp/x." .. extension)
+            assert.is_false(ok)
+            assert.is_truthy(err:find("already exists", 1, true))
+            assert.equal("world data", fs_t.files[target .. "/worlds/main/map.sqlite"])
+            for _, path in ipairs(fs_t.deleted) do assert.are_not.equal(target, path) end
+        end)
+    end
+
+    it("reports a failed manifest write instead of success", function()
+        local fs_t = fake_fs({})
+        fs_t.write_file = function() return false, "disk full" end
+        local pi = new_importer(fs_t, fake_client())
+        local ok, err = pi.import_from_yaml_text(SAMPLE_YAML)
+        assert.is_false(ok)
+        assert.is_truthy(err:find("disk full", 1, true))
+    end)
+end)

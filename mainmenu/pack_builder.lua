@@ -1,13 +1,30 @@
 local M = {}
 
+function M.uuid(bytes)
+    local random_class = rawget(_G, "SecureRandom")
+    if not bytes and random_class then bytes = random_class():next_bytes(16) end
+    if not bytes then
+        local out = {}
+        for i = 1, 16 do out[i] = string.char(math.random(0, 255)) end
+        bytes = table.concat(out)
+    end
+    assert(#bytes == 16, "UUID needs 16 random bytes")
+    local b = { bytes:byte(1, 16) }
+    b[7], b[9] = b[7] % 16 + 64, b[9] % 64 + 128
+    return ("%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x"):format(unpack(b))
+end
+
 local function nonempty(s)
     return type(s) == "string" and s:match("^%s*(.-)%s*$") ~= ""
 end
 
 function M.build_manifest(tabdata)
-    if not nonempty(tabdata.pack_id) then return false, "pack_id required" end
+    if not nonempty(tabdata.pack_id) then tabdata.pack_id = M.uuid() end
     if not nonempty(tabdata.pack_name) then return false, "pack_name required" end
-    if not nonempty(tabdata.pack_version) then return false, "pack_version required" end
+    if not nonempty(tabdata.pack_version) then tabdata.pack_version = "1.0.0" end
+    if tabdata.base_game then
+        tabdata.base_id, tabdata.base_version = tabdata.base_game.id, tabdata.base_game.version
+    end
     if not nonempty(tabdata.base_id) then return false, "base_id required" end
     if not nonempty(tabdata.base_version) then return false, "base_version required" end
 
@@ -16,7 +33,7 @@ function M.build_manifest(tabdata)
         id = tabdata.pack_id,
         name = tabdata.pack_name,
         version = tabdata.pack_version,
-        base_game = {
+        base_game = tabdata.base_game or {
             id = tabdata.base_id,
             version = tabdata.base_version,
         },

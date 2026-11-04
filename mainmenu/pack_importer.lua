@@ -16,9 +16,14 @@ function M.new(opts)
         local ok, m = manifest_mod.parse(text)
         if not ok then return false, m end
         local target = packs_root() .. "/" .. m.id
+        if fs.exists(target) then return false, "Pack already exists: " .. m.id end
         fs.mkdir(packs_root())
-        fs.mkdir(target)
-        fs.write_file(target .. "/manifest.yaml", text)
+        if not fs.mkdir(target) then return false, "cannot create pack directory" end
+        local written, err = fs.write_file(target .. "/manifest.yaml", text)
+        if not written then
+            fs.delete_dir(target)
+            return false, "cannot write manifest: " .. tostring(err)
+        end
         return true, m.id
     end
 
@@ -41,9 +46,14 @@ function M.new(opts)
             return false, m
         end
         local target = packs_root() .. "/" .. m.id
+        if fs.exists(target) then
+            fs.delete_dir(temp)
+            return false, "Pack already exists: " .. m.id
+        end
         fs.mkdir(packs_root())
-        fs.delete_dir(target)
         if not fs.copy_dir(temp, target, false) then
+            fs.delete_dir(target)
+            fs.delete_dir(temp)
             return false, "copy_dir to packs/ failed"
         end
         return true, m.id

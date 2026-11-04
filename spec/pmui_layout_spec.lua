@@ -120,10 +120,10 @@ root:
 ]], [[
 rules: []
 ]])
-        assert.equal("TextArea", node[1]._kind)
-        assert.equal("ta", node[1].name)
-        assert.equal("Notes", node[1].label)
-        assert.equal("hi", node[1].default)
+        assert.equal("TextArea", node[1][2]._kind)
+        assert.equal("ta", node[1][2].name)
+        assert.equal("Notes", node[1][1].text)
+        assert.equal("hi", node[1][2].default)
     end)
 
     it("status tag → dim Label", function()
@@ -182,7 +182,7 @@ rules: []
         assert.equal("Sub",   node[2].text)
     end)
 
-    it("icon-button → LabeledIconButton structure", function()
+    it("labeled icon-button uses a full-width text button", function()
         local node = compile([[
 root:
   tag: page
@@ -195,19 +195,10 @@ root:
 ]], [[
 rules: []
 ]], { icon_path = function(n) return "icon_" .. n .. ".png" end })
-        -- LabeledIconButton は VBox を返す
-        local lib = node[1]
-        assert.equal("VBox", lib._kind)
-        -- 中の image_button 探索
-        local row1 = lib[1]
-        assert.equal("HBox", row1._kind)
-        local found_ibtn
-        for _, c in ipairs(row1) do
-            if c._kind == "IconButton" then found_ibtn = c end
-        end
-        assert.is_not_nil(found_ibtn)
-        assert.equal("btn_x", found_ibtn.name)
-        assert.equal("icon_plus.png", found_ibtn.texture)
+        local button = node[1]
+        assert.equal("Button", button._kind)
+        assert.equal("btn_x", button.name)
+        assert.equal("Create", button.label)
     end)
 
     it("justify: space-between inserts Spacer{flex=1} between siblings", function()

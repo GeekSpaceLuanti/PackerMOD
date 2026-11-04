@@ -2,6 +2,14 @@ package.path = "./?.lua;" .. package.path
 
 local pack_launcher = require("mainmenu.pack_launcher")
 
+describe("launch link identification", function()
+    it("matches directory names even when the world display name differs", function()
+        assert.is_true(pack_launcher.is_launch_link({ path = "/worlds/_pm_test", name = "My world" }, "_pm_test"))
+        assert.is_true(pack_launcher.is_launch_link({ path = "C:\\worlds\\_pm_test", name = "My world" }, "_pm_test"))
+        assert.is_false(pack_launcher.is_launch_link({ path = "/worlds/other", name = "_pm_test" }, "_pm_test"))
+    end)
+end)
+
 local function fake_world_builder(behavior)
     return {
         create_world = function(manifest, user_path, opts)
@@ -96,6 +104,20 @@ describe("pack_launcher.launch / new_world", function()
 end)
 
 describe("pack_launcher.prepare_launch (symlink)", function()
+    it("blocks launch when synchronizing the Pack fails", function()
+        local linked = false
+        local pl = pack_launcher.new({
+            user_path = "/user", world_builder = fake_world_builder("ok"),
+            mod_installer = fake_installer("ok", {}),
+            world_sync = { sync = function() return false, "update failed" end },
+            create_symlink = function() linked = true; return true end,
+        })
+        local ok, err = pl.prepare_launch({ path = "/world" }, { id = "p" })
+        assert.is_false(ok)
+        assert.equal("update failed", err)
+        assert.is_false(linked)
+    end)
+
     it("creates a _pm_* symlink pointing at the world path", function()
         local link_calls = {}
         local pl = pack_launcher.new({

@@ -11,6 +11,28 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+
+## 2026-11-04 19:35 (main)
+
+**変更概要**:
+PackerMODのパック作成・設定・ワールド管理とUIを改善。ContentDBからのゲーム／公開版選択、UUIDとパック版の自動化、日本語既定の言語切替を実装した。
+Luanti設定を用途別タブ・スクロール一覧・項目別初期化へ整理し、キーマップを独立。上級者／開発用の表示状態を保存し、ワールド設定をワールド編集へ分離した。
+表示サイズは「GUIの大きさ：自動・小・標準・大」の1項目へ統合し、文字・ボタン・余白を連動、画面に収まらない選択肢を除外する。データ保護・起動失敗時の復旧とWindows配置検証も追加した。
+
+**主な変更ファイル**:
+- mainmenu/settings_pages.lua, ui_preferences.lua, engine_settings.lua, settings_catalog.lua, world_settings.lua
+- mainmenu/dialogs/, lib/layout.lua, lib/pmui/, library.lua, game_store.lua, i18n.lua
+- mainmenu/pack_launcher.lua, world_sync.lua, pack_importer.lua, pack_builder.lua
+- scripts/deploy_local.ps1, visual_tests.ps1, screenshot_mainmenu.sh, 各実エンジン検証スクリプト
+- spec/, docs/create-and-settings.md, docs/review-fixes.md, docs/visual-tests.md, AGENTS.md
+
+**検証**:
+303件のLuaテスト、実エンジン起動・設定保存・言語選択・スライダー・キー入力・ワールド分離テストが成功。WSL＋Xvfbで全画面を撮影し、800×600とウィンドウ縮小後の操作性を確認。
+Windows版へバックアップ・保護対象確認・配置ハッシュ検証付きで反映し、実画面も確認した。
+
+**コミット**: 本エントリを含むコミット。
+
+
 ## 2026-07-15 22:20 (main)
 
 **変更概要**:

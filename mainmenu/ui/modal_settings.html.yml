@@ -1,51 +1,193 @@
-# PackerMOD Settings modal (HTML 風 DSL)。
-
 root:
-  tag: page
-  class: modal-page
+  tag: "page"
+  class: "modal-page"
   children:
-    - tag: spacer
-      class: modal-vspacer
-    - tag: div
-      class: modal-center-row
+    - tag: "spacer"
+      class: "modal-vspacer"
+    - tag: "div"
+      class: "modal-center-row"
       children:
-        - tag: spacer
-          class: modal-hspacer
-        - tag: card
-          class: modal-card
+        - tag: "spacer"
+          class: "modal-hspacer"
+        - tag: "card"
+          class: "modal-card modal-card-wide"
           children:
-            - tag: h2
-              class: modal-title
-              text: "PackerMOD Settings"
-            - tag: span
-              class: modal-dim
-              text: "User data path: ${user_path}"
-            - tag: span
-              class: modal-dim
-              text: "PackerMOD version: ${version}"
-            - tag: span
-              class: modal-dim
-              text: "Luanti version: ${luanti_version}"
-            - tag: status
-              class: modal-status
-              text: "${status}"
-            - tag: spacer
-              class: modal-vspacer
-            - tag: footer
-              class: modal-actions
+            - tag: "header"
+              class: "settings-header"
               children:
-                - tag: icon-button
-                  class: "modal-icon-btn"
+                - tag: "h2"
+                  class: "modal-title"
+                  text: "${settings_title}"
+                - tag: "spacer"
+                  class: "grow"
+                - tag: "dropdown"
+                  class: "settings-language"
+                  when: "${show_language}"
                   attrs:
-                    name: open_luanti_settings
-                    icon: sliders
-                    label: "Open Luanti settings"
-                - tag: button
+                    name: "ui_language"
+                    label: "PackerMOD language"
+                    items: "${languages}"
+                    selected: "${language_index}"
+            - tag: "section"
+              class: "settings-body"
+              children:
+                - tag: "div"
+                  class: "settings-navigation"
+                  children:
+                    - tag: "button"
+                      class: "modal-btn"
+                      attrs:
+                        name: "settings_back"
+                        label: "Back to settings"
+                    - tag: "paragraph"
+                      class: "engine-description"
+                      text: "${help_text}"
+                - tag: "scroll"
+                  class: "settings-editor"
+                  attrs:
+                    name: "engine_scroll"
+                    value: "${scroll_value}"
+                  children:
+                    - tag: "h2"
+                      class: "engine-title"
+                      text: "${setting_title}"
+                    - tag: "span"
+                      class: "modal-dim"
+                      text: "${setting_name}"
+                    - tag: "paragraph"
+                      class: "engine-bounds"
+                      text: "${bounds_text}"
+                      when: "${has_bounds}"
+                    - tag: "paragraph"
+                      class: "engine-description"
+                      text: "${readonly_value}"
+                      when: "${is_readonly}"
+                    - tag: "dropdown"
+                      class: "catalog-version"
+                      attrs:
+                        name: "engine_choice"
+                        label: "Value"
+                        items: "${choice_items}"
+                        selected: "${choice_index}"
+                      when: "${show_choice}"
+                    - tag: "field"
+                      class: "modal-field-create"
+                      attrs:
+                        name: "engine_value"
+                        label: "Value"
+                        default: "${value}"
+                      when: "${show_scalar}"
+                    - tag: "div"
+                      class: "modal-row"
+                      when: "${show_vector}"
+                      children:
+                        - tag: "field"
+                          class: "modal-field-create"
+                          attrs:
+                            name: "engine_x"
+                            label: "X"
+                            default: "${vector_x}"
+                        - tag: "field"
+                          class: "modal-field-create"
+                          attrs:
+                            name: "engine_y"
+                            label: "Y"
+                            default: "${vector_y}"
+                        - tag: "field"
+                          class: "modal-field-create"
+                          attrs:
+                            name: "engine_z"
+                            label: "Z"
+                            default: "${vector_z}"
+                    - tag: "section"
+                      class: "engine-fields"
+                      when: "${show_noise}"
+                      children:
+                        - tag: "div"
+                          class: "modal-row"
+                          for:
+                            each: "noise_row"
+                            in: "noise_rows"
+                          children:
+                            - tag: "field"
+                              class: "modal-field-create"
+                              attrs:
+                                name: "${field.name}"
+                                label: "${field.label}"
+                                default: "${field.value}"
+                              for:
+                                each: "field"
+                                in: "noise_row.fields"
+                        - tag: "field"
+                          class: "modal-field-create"
+                          attrs:
+                            name: "noise_flags"
+                            label: "Flags"
+                            default: "${noise_flags}"
+                    - tag: "section"
+                      class: "engine-fields"
+                      when: "${show_keys}"
+                      children:
+                        - tag: "span"
+                          class: "modal-dim"
+                          text: "Press a key to assign"
+                        - tag: "list"
+                          class: "engine-key-list"
+                          attrs:
+                            name: "engine_keys"
+                            items: "${key_items}"
+                            selected: "${key_index}"
+                        - tag: "div"
+                          class: "modal-row"
+                          children:
+                            - tag: "key-button"
+                              class: "modal-btn"
+                              attrs:
+                                name: "engine_bind"
+                                label: "${binding_key}"
+                            - tag: "button"
+                              class: "modal-btn"
+                              attrs:
+                                name: "engine_unbind"
+                                label: "Remove binding"
+                    - tag: "div"
+                      class: "modal-actions"
+                      when: "${show_browse}"
+                      children:
+                        - tag: "button"
+                          class: "modal-btn"
+                          attrs:
+                            name: "engine_browse"
+                            label: "Browse"
+                    - tag: "div"
+                      class: "modal-actions"
+                      when: "${has_setting}"
+                      children:
+                        - tag: "button"
+                          class: "modal-btn"
+                          attrs:
+                            name: "engine_reset"
+                            label: "Restore default"
+                        - tag: "button"
+                          class: "modal-btn-primary"
+                          attrs:
+                            name: "engine_apply"
+                            label: "Apply"
+            - tag: "status"
+              class: "modal-status"
+              text: "${status}"
+            - tag: "footer"
+              class: "settings-footer"
+              children:
+                - tag: "paragraph"
+                  class: "settings-restart-note"
+                  text: "${footer_note}"
+                - tag: "button"
                   class: "modal-btn"
                   attrs:
-                    name: dlg_close
-                    label: Close
-        - tag: spacer
-          class: modal-hspacer
-    - tag: spacer
-      class: modal-vspacer
+                    name: "dlg_close"
+                    label: "Close"
+        - tag: "spacer"
+          class: "modal-hspacer"
+    - tag: "spacer"
+      class: "modal-vspacer"

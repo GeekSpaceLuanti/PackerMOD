@@ -30,9 +30,9 @@ describe("library._internal helpers", function()
     end)
 
     it("pack_button_name produces alphanumeric formspec name", function()
-        assert.are.equal("pack_select_my_pack",   lib._internal.pack_button_name("my_pack"))
-        assert.are.equal("pack_select_my_pack",   lib._internal.pack_button_name("my-pack"))
-        assert.are.equal("pack_select_a_b_c",     lib._internal.pack_button_name("a.b.c"))
+        assert.are.equal("pack_select_my_5fpack", lib._internal.pack_button_name("my_pack"))
+        assert.are.equal("pack_select_my_2dpack", lib._internal.pack_button_name("my-pack"))
+        assert.are.equal("pack_select_a_2eb_2ec", lib._internal.pack_button_name("a.b.c"))
     end)
 
     it("resolve_thumbnail returns default when manifest has no thumbnail", function()
@@ -136,17 +136,17 @@ describe("library grid view (画面1)", function()
         lib = dofile("mainmenu/library.lua")
     end)
 
-    it("renders pack cards and action bar with Synthwave background", function()
+    it("renders pack cards and action bar with clean dark theme", function()
         local fs = lib._internal.build_grid_formspec({})
         assert.is_string(fs)
-        assert.is_truthy(fs:find("pack_select_pack_a", 1, true))
+        assert.is_truthy(fs:find("pack_select_pack_5fa", 1, true))
         assert.is_truthy(fs:find("Pack A", 1, true))
         assert.is_truthy(fs:find("btn_import", 1, true))
         assert.is_truthy(fs:find("btn_create", 1, true))
         assert.is_truthy(fs:find("btn_settings", 1, true))
         -- Synthwave テーマの背景画像と PackerMOD タイトルが出ていること
-        assert.is_truthy(fs:find("packermod_bg_synthwave.png", 1, true))
-        assert.is_truthy(fs:find("PACKERMOD", 1, true))
+        assert.is_truthy(fs:find("#13171D", 1, true))
+        assert.is_truthy(fs:find("PackerMOD", 1, true))
     end)
 
     it("has no overlap and fits in page size", function()
@@ -160,6 +160,42 @@ describe("library grid view (画面1)", function()
         end
         local ok, bad = helpers.fits_in_size(els, size)
         assert.is_true(ok, "OOB: " .. (bad and helpers.describe_el(bad) or ""))
+    end)
+
+    for _, count in ipairs({ 0, 1, 3, 4, 6, 7, 13 }) do
+        it("keeps " .. count .. " packs within the page", function()
+            local original = packermod.pack_manager.list_packs
+            packermod.pack_manager.list_packs = function()
+                local packs = {}
+                for i = 1, count do
+                    packs[i] = { id = "p" .. i, path = "/p" .. i,
+                        manifest = { name = "Pack " .. i,
+                            base_game = { id = "base", version = "1" } } }
+                end
+                return packs
+            end
+            local data = {}
+            local fs = lib._internal.build_grid_formspec(data)
+            local size, els = helpers.parse_formspec(fs)
+            local fits, bad = helpers.fits_in_size(els, size)
+            packermod.pack_manager.list_packs = original
+            assert.is_true(fits, bad and helpers.describe_el(bad))
+            local overlaps = helpers.find_overlaps(els)
+            assert.equal(0, #overlaps, helpers.format_overlaps(overlaps))
+            assert.equal(math.max(1, math.ceil(count / 6)), data.page_count)
+            if count > 6 then
+                assert.is_nil(fs:find(";pack_select_p7;", 1, true))
+            end
+        end)
+    end
+
+    it("uses distinct buttons for hyphen and underscore Pack IDs", function()
+        local name = lib._internal.pack_button_name
+        assert.are_not.equal(name("my-pack"), name("my_pack"))
+        assert.are_not.equal(name("my-pack"), name("my_2dpack"))
+        local first, selected = { id = "my_2dpack" }, { id = "my-pack" }
+        assert.equal(selected, lib._internal.find_pack_by_button(
+            { [name(selected.id)] = true }, { first, selected }))
     end)
 end)
 
@@ -213,7 +249,7 @@ describe("library detail view PMUI (画面2)", function()
             assert.is_truthy(fs:find("Pack A", 1, true))         -- title
             assert.is_truthy(fs:find("btn_back", 1, true))        -- Back button
             assert.is_truthy(fs:find("subtab_worlds", 1, true))   -- subtab buttons
-            assert.is_truthy(fs:find("packermod_bg_synthwave.png", 1, true))  -- bg
+            assert.is_truthy(fs:find("#13171D", 1, true))  -- bg
 
             local size, els = helpers.parse_formspec(fs)
             assert.equal(30.0, size.w)

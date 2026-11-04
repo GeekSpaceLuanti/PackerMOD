@@ -30,7 +30,7 @@ local LABEL_TAGS = {
     h1 = true, h2 = true, h3 = true, span = true, p = true, label = true,
 }
 local BUTTON_TAGS = {
-    button = true, ["icon-button"] = true,
+    button = true, ["icon-button"] = true, ["key-button"] = true,
 }
 local function is_container_tag(tag) return CONTAINER_TAGS[tag] == true end
 local function is_label_tag(tag)     return LABEL_TAGS[tag] == true end
@@ -67,7 +67,7 @@ local function build_style_props(el, texture_dir)
     -- style bgimg + bgimg_middle + border=false)。middle 未指定なら 8 を default。
     if box.bg_image and is_button_tag(el.tag) then
         local img = resolve_texture(box.bg_image, texture_dir)
-        props[#props + 1] = "bgimg=" .. img
+        props[#props + 1] = "bgimg=" .. get_pmlayout().fs_escape(img)
         props[#props + 1] = "bgimg_middle=" .. tostring(box.bg_image_middle or 8)
         props[#props + 1] = "border=false"
     end
@@ -80,7 +80,7 @@ local function build_hover_props(el, texture_dir)
     local props = {}
     if box.bg_image_hover and is_button_tag(el.tag) then
         local img = resolve_texture(box.bg_image_hover, texture_dir)
-        props[#props + 1] = "bgimg=" .. img
+        props[#props + 1] = "bgimg=" .. get_pmlayout().fs_escape(img)
         props[#props + 1] = "bgimg_middle=" .. tostring(box.bg_image_middle or 8)
         props[#props + 1] = "border=false"
     end
@@ -90,6 +90,7 @@ end
 local function emit_per_element_styles(root, texture_dir)
     local out = {}
     dom.walk(root, function(el)
+        if is_label_tag(el.tag) then return end
         local nm = name_of(el)
         if not nm then return end
         local props = build_style_props(el, texture_dir)
@@ -116,7 +117,7 @@ local function emit_background(root, page_w, page_h, texture_dir)
     -- auto_clip = true: formspec の枠外まで背景を拡大し、Luanti メインメニューの
     -- 雲アニメーション/青空背景を覆い隠す。これで PackerMOD の世界観が画面全体に広がる。
     return ("background[%s,%s;%s,%s;%s;true;0]"):format(
-        fnum(0), fnum(0), fnum(page_w), fnum(page_h), img)
+        fnum(0), fnum(0), fnum(page_w), fnum(page_h), get_pmlayout().fs_escape(img))
 end
 
 -- border_width / border_color が指定された container を 4 辺の box[] で囲む。
@@ -170,7 +171,7 @@ local function emit_container_decor(root, L, page_w, page_h, widget_tree, textur
             local img = resolve_texture(box.bg_image, texture_dir)
             bg9[#bg9 + 1] = ("background9[%s,%s;%s,%s;%s;false;%s]"):format(
                 fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h),
-                img, tostring(box.bg_image_middle or 8))
+                get_pmlayout().fs_escape(img), tostring(box.bg_image_middle or 8))
         end
 
         -- 4 辺 border (border-width + border-color)。
@@ -199,7 +200,12 @@ function M.render(root, opts)
     local widget_tree = layout.flow(root, opts.ctx)
     local L = get_pmlayout()
 
-    local prepend = {}
+    local prepend = {
+        "style_type[button;border=false;bgcolor=#2B333E;textcolor=#EDF2F7;font_size=*1]",
+        "style_type[image_button;border=false;bgcolor=#202731]",
+        "style_type[field,textarea;textcolor=#EDF2F7;font_size=*1]",
+        "style_type[textlist;bgcolor=#171D25;textcolor=#EDF2F7;font_size=*1]",
+    }
     local bg = emit_background(root, page_w, page_h, opts.texture_dir)
     if bg then prepend[#prepend + 1] = bg end
     for _, line in ipairs(emit_per_element_styles(root, opts.texture_dir)) do

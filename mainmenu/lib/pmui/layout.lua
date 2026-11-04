@@ -81,6 +81,7 @@ local function build_container(L, el, ctx)
         spacing = box.gap, padding = box.padding,
         align = box.align,
         w = box.w, h = box.h, flex = box.flex,
+        max_h = el._max_h,
         bgcolor = bgcolor_for_widget,
     }
     if box.justify == "space-between" then
@@ -112,6 +113,13 @@ build = function(el, ctx)
     local L = get_pmlayout()
     local box = el.box or {}
 
+    if el.tag == "scroll" then
+        local content = L.VBox { spacing = box.gap, padding = box.padding }
+        for _, child in ipairs(build_children(el, ctx)) do content[#content + 1] = child end
+        return L.Scroll { name = el.attrs.name, value = tonumber(el.attrs.value) or 0,
+            w = box.w, h = box.h, flex = box.flex, content }
+    end
+
     if CONTAINER_TAGS[el.tag] then
         return build_container(L, el, ctx)
     end
@@ -127,19 +135,29 @@ build = function(el, ctx)
         local node = L.Label {
             name = el.id,
             text = text,
+            font_size = box.font_size,
+            ellipsize = el._ellipsize,
             w    = box.w, h = box.h,
         }
         el._widget = node
         return node
     end
-    if el.tag == "button" then
-        return L.Button {
+    if el.tag == "button" or el.tag == "key-button" then
+        return (el.tag == "key-button" and L.KeyButton or L.Button) {
             name  = el.attrs.name or el.id,
             label = el.attrs.label or el.text or "",
+            bgcolor = box.bg or "#2B333E",
             w = box.w, h = box.h, flex = box.flex,
         }
     end
     if el.tag == "icon-button" then
+        if el.attrs.label and el.attrs.label ~= "" then
+            return L.Button {
+                name = el.attrs.name or el.id, label = el.attrs.label,
+                bgcolor = box.bg or "#2B333E",
+                w = box.w, h = box.h, flex = box.flex,
+            }
+        end
         local tex = icon_path(ctx, el.attrs.icon)
         return L.LabeledIconButton {
             name    = el.attrs.name or el.id,
@@ -158,20 +176,33 @@ build = function(el, ctx)
         return L.Spacer { flex = box.flex, w = box.w, h = box.h }
     end
     if el.tag == "field" then
-        return L.Field {
+        local field = L.Field {
             name = el.attrs.name or el.id,
-            label = el.attrs.label,
+            label = "",
             default = el.attrs.default,
-            w = box.w, h = box.h,
+            h = box.h, bgcolor = box.bg,
+            close_on_enter = false,
         }
+        return L.VBox { w = box.w, flex = box.flex, spacing = 0.2,
+            L.Label { text = el.attrs.label or "", h = 0.5 }, field }
     end
     if el.tag == "textarea" then
-        return L.TextArea {
+        return L.VBox { w = box.w, flex = box.flex, spacing = 0.2,
+          L.Label { text = el.attrs.label or "", h = 0.5 }, L.TextArea {
             name = el.attrs.name or el.id,
-            label = el.attrs.label,
+            label = "",
             default = el.attrs.default or el.text,
-            w = box.w, h = box.h, flex = box.flex,
-        }
+            h = box.h, bgcolor = box.bg,
+          } }
+    end
+    if el.tag == "dropdown" then
+        return L.VBox { w = box.w, flex = box.flex, spacing = 0.2,
+            L.Label { text = el.attrs.label or "", h = 0.5 },
+            L.Dropdown { name = el.attrs.name or el.id, h = box.h,
+                items = el.attrs.items or {}, selected = el.attrs.selected or 1 } }
+    end
+    if el.tag == "paragraph" then
+        return L.Paragraph { text = el.text or "", w = box.w, h = box.h, flex = box.flex, font_size = box.font_size }
     end
     if el.tag == "list" then
         -- attrs.items は { string... }、selected は 1-based index。
@@ -192,6 +223,7 @@ build = function(el, ctx)
         local node = L.Label {
             name = el.id,
             text = text,
+            font_size = box.font_size,
             w = box.w, h = box.h,
         }
         el._widget = node

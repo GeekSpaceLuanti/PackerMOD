@@ -1,7 +1,3 @@
-# PackerMOD 画面1 (Pack Library) の HTML 風 DSL。
-# 対応する style は mainmenu/ui/themes/<theme>.css.yml。
-# library.lua の build_grid_formspec_pmui がこのファイルを読み込む。
-
 root:
   tag: page
   id: pack-library
@@ -9,26 +5,52 @@ root:
     - tag: header
       class: title-bar
       children:
-        # neon.html 準拠の 2 色化。text は library.lua が組み立てた ESC 込みの
-        # ${title_text} を差し込む (yaml は "\x1b" 系エスケープを解釈しないため)。
-        # CSS の #title で color を指定するとレイアウト側で ESC prefix が上書きされて
-        # 結果的に単色化するので、テーマ側は #title 用の color を出さず、text 側の
-        # ESC で色を持たせる。
         - tag: h1
           id: title
           text: "${title_text}"
         - tag: span
-          id: subtitle
           class: subtitle
-          text: "// PACK_LIBRARY"
-
-    - tag: span
-      id: no-packs-msg
+          text: "Pack library"
+    - tag: nav
+      class: action-bar
+      children:
+        - tag: button
+          class: action-btn
+          attrs:
+            name: btn_import
+            label: Import pack
+        - tag: button
+          class: "action-btn primary-btn"
+          attrs:
+            name: btn_create
+            label: Create pack
+        - tag: button
+          class: action-btn
+          attrs:
+            name: btn_settings
+            label: Settings
+    - tag: section
+      class: empty-state
       when: "${no_packs}"
-      text: "No packs yet. Use Import or Create below to add one."
-
+      children:
+        - tag: spacer
+          class: grow
+        - tag: h2
+          class: empty-title
+          text: "A home for your next world"
+        - tag: span
+          class: empty-help
+          text: "Create your first pack, or import one to get started."
+        - tag: button
+          class: "action-btn primary-btn"
+          attrs:
+            name: empty_create
+            label: Create a pack
+        - tag: spacer
+          class: grow
     - tag: main
       class: pack-grid
+      when: "${has_packs}"
       children:
         - tag: card
           class: pack-card
@@ -48,34 +70,26 @@ root:
             - tag: span
               class: pack-meta
               text: "${pack.base_label}"
-        # 残り列を埋めるプレースホルダ。pack 数 % cols の空き分だけ並ぶ。
         - tag: card
           class: pack-card-placeholder
           for:
             each: _
             in: placeholders
-
     - tag: footer
-      class: action-bar
+      class: pagination
       children:
-        - tag: icon-button
-          id: btn-import
-          class: action-btn
+        - tag: span
+          class: page-label
+          text: "${page_label}"
+        - tag: button
+          class: page-btn
+          when: "${has_previous}"
           attrs:
-            name: btn_import
-            icon: download
-            label: Import
-        - tag: icon-button
-          id: btn-create
-          class: action-btn
+            name: page_previous
+            label: Previous
+        - tag: button
+          class: page-btn
+          when: "${has_next}"
           attrs:
-            name: btn_create
-            icon: plus
-            label: Create
-        - tag: icon-button
-          id: btn-settings
-          class: action-btn
-          attrs:
-            name: btn_settings
-            icon: sliders
-            label: Settings
+            name: page_next
+            label: Next

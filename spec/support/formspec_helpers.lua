@@ -14,14 +14,31 @@ function M.parse_formspec(s)
     local elements = {}
     local sw, sh = s:match("size%[([%d.]+),([%d.]+)%]")
     if sw then size.w, size.h = tonumber(sw), tonumber(sh) end
-    for kind, body in s:gmatch("(%w+)%[([^%]]*)%]") do
+    local offset, parents, scrollbar_values = { x = 0, y = 0 }, {}, {}
+    for kind, body in s:gmatch("([%w_]+)%[([^%]]*)%]") do
+        local before = #elements
+        if kind == "scrollbar" then
+            local name, value = body:match(";vertical;([^;]+);([%d.]+)$")
+            if name then scrollbar_values[name] = tonumber(value) end
+        end
+        if kind == "scroll_container" then
+            local x, y, w, h, name, factor = body:match("^([%d.]+),([%d.]+);([%d.]+),([%d.]+);([^;]+);vertical;([%d.]+)")
+            if x then
+                parents[#parents + 1] = offset
+                local ax, ay = offset.x + tonumber(x), offset.y + tonumber(y)
+                offset = { x = ax, y = ay - (scrollbar_values[name] or 0) * tonumber(factor),
+                    clip = { x = ax, y = ay, w = tonumber(w), h = tonumber(h) } }
+            end
+        elseif kind == "scroll_container_end" then
+            offset = table.remove(parents) or { x = 0, y = 0 }
+        end
         if kind == "field" then
             local x, y, w, h, name = body:match("^([%d.]+),([%d.]+);([%d.]+),([%d.]+);([^;]+)")
             if x then
                 table.insert(elements, { kind = kind, name = name,
                     x = tonumber(x), y = tonumber(y), w = tonumber(w), h = tonumber(h) })
             end
-        elseif kind == "button" or kind == "image_button" or kind == "button_exit" then
+        elseif kind == "button" or kind == "image_button" or kind == "button_exit" or kind == "button_key" or kind == "dropdown" then
             local x, y, w, h, name = body:match("^([%d.]+),([%d.]+);([%d.]+),([%d.]+);([^;]+)")
             if x then
                 table.insert(elements, { kind = "button", name = name,
@@ -40,6 +57,10 @@ function M.parse_formspec(s)
                 table.insert(elements, { kind = kind, text = text or "",
                     x = tonumber(x), y = tonumber(y), w = 0, h = 0 })
             end
+        end
+        for i = before + 1, #elements do
+            elements[i].x, elements[i].y = elements[i].x + offset.x, elements[i].y + offset.y
+            elements[i].clip = offset.clip
         end
     end
     return size, elements
@@ -66,8 +87,15 @@ local function label_visual(el, opts)
 end
 
 local function rect_of(el, opts)
-    if el.kind == "label" then return label_visual(el, opts) end
-    return el.x, el.y, el.w, el.h
+    local x, y, w, h = el.x, el.y, el.w, el.h
+    if el.kind == "label" then x, y, w, h = label_visual(el, opts) end
+    if el.clip then
+        local c = el.clip
+        local right, bottom = math.min(x + w, c.x + c.w), math.min(y + h, c.y + c.h)
+        x, y = math.min(math.max(x, c.x), c.x + c.w), math.min(math.max(y, c.y), c.y + c.h)
+        w, h = math.max(0, right - x), math.max(0, bottom - y)
+    end
+    return x, y, w, h
 end
 
 -- 浮動小数点誤差で「ピッタリ接している」widget 同士(LabeledIconButton の
@@ -75,6 +103,7 @@ end
 -- 微小 epsilon を引いて余裕を持たせる。
 local EPSILON = 1e-3
 local function overlaps_rect(ax, ay, aw, ah, bx, by, bw, bh)
+    if aw <= EPSILON or ah <= EPSILON or bw <= EPSILON or bh <= EPSILON then return false end
     return ax + EPSILON < bx + bw and bx + EPSILON < ax + aw and
            ay + EPSILON < by + bh and by + EPSILON < ay + ah
 end

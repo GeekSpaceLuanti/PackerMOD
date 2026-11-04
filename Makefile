@@ -17,8 +17,8 @@ screenshot:
 	bash scripts/screenshot_mainmenu.sh $(SUBTAB)
 
 screenshot-all:
-	@for s in library worlds multi mods info modal_import modal_create modal_settings; do \
-	    bash scripts/screenshot_mainmenu.sh $$s /tmp/mainmenu_$$s.png; \
+	@set -e; for s in library_empty library library_many library_page2 worlds multi mods info modal_import modal_create modal_create_mods modal_create_game modal_settings settings_keymap settings_keymap_end settings_scale_large settings_resize library_scale_large settings_expert settings_ui_test settings_controls settings_movement settings_actions settings_hotbar settings_graphics settings_audio settings_interface world_settings world_physics world_terrain world_hosting world_settings_test settings_advanced settings_interaction engine_settings_bool engine_settings_enum engine_settings_keys engine_settings_noise engine_settings_noise_end engine_settings_vector engine_settings_flags engine_settings_path engine_settings_test library_en modal_settings_en; do \
+	    bash scripts/screenshot_mainmenu.sh $$s; \
 	done
 
 vendor-icons:

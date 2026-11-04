@@ -46,7 +46,7 @@ local function handler(self, fields)
 end
 
 function M.show(parent)
-    local dlg = dialog_create("packermod_dlg_import", get_formspec, handler, nil)
+    local dlg = dialog_create("packermod_dlg_import", get_formspec, handler, packermod.ui_window_event)
     if parent then
         dlg:set_parent(parent)
         parent:hide()

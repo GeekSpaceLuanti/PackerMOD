@@ -284,3 +284,16 @@ spec は 190 件(+1 pending = #15)、回帰検出に `spec/library_spec.lua` の
 - #23 Windows Junction の動作確認
 
 進捗は `WORKLOG.md`(逆時系列)に push ごとに 1 セクション追記される。
+
+## レビュー修正と画面確認
+
+- [修正項目と動作](docs/review-fixes.md)
+- [WSLで実画面を一括撮影](docs/visual-tests.md)
+
+同じIDのPackはImport／Createで上書きせずエラーにします。既存PackのMOD変更は、次回World起動前に反映されます。更新前のMODと設定はWorld配下の `.packermod-backup-*` に残り、マップ・プレイヤーデータは更新対象に含みません。
+
+## パック作成と設定の更新
+
+日本語が既定です。「設定」から日本語／英語を切り替え、Luanti標準設定も開けます。パック作成ではContentDBからベースゲームと対応する公開版を選びます。Pack IDとPackの版は自動で決まり、数値やIDの手入力は不要です。
+
+詳しくは [パック作成・設定・言語](docs/create-and-settings.md) を参照してください。

@@ -31,10 +31,11 @@ function M.new(opts)
     opts = opts or {}
     local http = opts.http or default_http()
     local parse_json = opts.parse_json or default_parse_json
-    local base_url = opts.base_url or "https://content.luanti.org"
+    local base_url = opts.base_url or (core and core.settings and core.settings:get("contentdb_url"))
+        or "https://content.luanti.org"
 
     local function fetch_json(path)
-        local res = http:fetch_sync({ url = base_url .. path, timeout = 30 })
+        local res = http.fetch_sync({ url = base_url .. path, timeout = 15 })
         if not res or not res.succeeded then
             return nil, ("HTTP fetch failed (%s)"):format(res and tostring(res.code) or "no response")
         end
@@ -46,6 +47,35 @@ function M.new(opts)
     end
 
     local self = {}
+
+    local function fetch_async(path, callback)
+        if not (core and core.handle_async) or opts.http then
+            local data, err = fetch_json(path)
+            callback(data, err)
+            return true
+        end
+        return core.handle_async(function(params)
+            local api = core.get_http_api()
+            local response = api.fetch_sync({ url = params.url, timeout = 15 })
+            if not response or not response.succeeded then
+                return { error = "ContentDB HTTP " .. tostring(response and response.code or "unavailable") }
+            end
+            local data = core.parse_json(response.data)
+            if type(data) ~= "table" then return { error = "Invalid ContentDB response" } end
+            return { data = data }
+        end, { url = base_url .. path }, function(result)
+            if not result then callback(nil, "ContentDB unavailable")
+            else callback(result.data, result.error) end
+        end)
+    end
+
+    function self.search_async(query, package_type, callback)
+        return fetch_async("/api/packages/?type=" .. (package_type or "mod") .. "&q=" .. urlencode(query or ""), callback)
+    end
+
+    function self.releases_async(package_id, callback)
+        return fetch_async("/api/packages/" .. package_id .. "/releases/", callback)
+    end
 
     function self.search(query, package_type)
         package_type = package_type or "mod"
@@ -62,7 +92,7 @@ function M.new(opts)
     end
 
     function self.download(url, dest_path)
-        local res = http:fetch_sync({ url = url, timeout = 60 })
+        local res = http.fetch_sync({ url = url, timeout = 60 })
         if not res or not res.succeeded then
             return false, ("download failed (%s)"):format(res and tostring(res.code) or "no response")
         end

@@ -17,16 +17,18 @@
 --   local fs = L.build_formspec(root, { w = 15.5, h = 7.1, version = 6 })
 
 local M = {}
+local ui_preferences = dofile((debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./") .. "../ui_preferences.lua")
 
 -- ---- helpers ----
 
-local function fs_escape(s)
+function M.fs_escape(s)
     s = tostring(s or "")
     if rawget(_G, "core") and core.formspec_escape then
         return core.formspec_escape(s)
     end
     return (s:gsub("([\\%[%]%;,$])", "\\%1"))
 end
+local fs_escape = M.fs_escape
 
 -- Format coordinates so 1.1 + 0.7 doesn't render as "1.7999999...".
 local function fnum(x)
@@ -45,6 +47,15 @@ local function class(kind, defaults)
         for k, v in pairs(defaults) do
             if t[k] == nil then t[k] = v end
         end
+        if kind == "Button" or kind == "KeyButton" then
+            t.h = t.h * ui_preferences.button_scale()
+        elseif kind == "Dropdown" then
+            t.h = t.h * math.max(ui_preferences.button_scale(), ui_preferences.font_scale())
+        elseif kind == "Slider" then
+            t.h = math.max(0.65, t.h * ui_preferences.button_scale())
+        elseif (kind == "Label" or kind == "Field" or kind == "TextArea") and t.h then
+            t.h = t.h * math.max(1, ui_preferences.font_scale())
+        end
         return t
     end
 end
@@ -54,6 +65,7 @@ end
 -- size; fluid widgets stretch.
 local STRETCHABLE_KINDS = {
     VBox = true, HBox = true, Stack = true, Spacer = true, TextList = true,
+    Field = true, TextArea = true, Dropdown = true, Paragraph = true, Scroll = true,
 }
 
 -- ---- widget constructors ----
@@ -68,6 +80,11 @@ M.FIELD_LABEL_H = 0.4
 M.Field    = class("Field",    { w = 3, h = 0.7 }) -- {name=, [label], [default], [close_on_enter]}
 M.TextArea = class("TextArea", { w = 4, h = 2.0 }) -- {name=, [label], [default]}
 M.Button   = class("Button",   { w = 2, h = 0.7 }) -- {name=, label=}
+M.Dropdown = class("Dropdown", { w = 4, h = 0.95 })
+M.KeyButton = class("KeyButton", { w = 2, h = 1.0 })
+M.Paragraph = class("Paragraph", { w = 4, h = 1.8 })
+M.Scroll = class("Scroll", { w = 4, h = 6 })
+M.Slider = class("Slider", { w = 4, h = 0.55 })
 M.TextList = class("TextList", {})                 -- {name=, items={}, [selected], [transparent], w=, h=}
 M.Image    = class("Image",    {})                 -- {texture=, w=, h=}
 M.Box      = class("Box",      {})                 -- {color=, w=, h=}
@@ -138,8 +155,11 @@ local function measure(w)
             w.w = w.w or (cross + 2 * w.padding)
         else
             w.w = w.w or (main  + 2 * w.padding)
-            w.h = w.h or (cross + 2 * w.padding)
+            w.h = math.max(w.h or 0, cross + 2 * w.padding)
         end
+        if w.max_h then w.h = math.min(w.h, w.max_h) end
+    elseif k == "Scroll" then
+        measure(w[1])
     elseif k == "Stack" then
         local ww, hh = 0, 0
         for _, child in ipairs(w) do
@@ -149,13 +169,26 @@ local function measure(w)
         end
         w.w = w.w or ww
         w.h = w.h or hh
+    elseif (k == "Button" or k == "KeyButton") and not w._user_w then
+        local text = tostring(w.label or "")
+        local count = 0
+        for char in text:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+            count = count + (#char > 1 and 2 or 1)
+        end
+        w.w = math.max(2.4, count * 0.26 * ui_preferences.font_scale() + ui_preferences.button_scale())
     elseif k == "Label" then
         -- v6 labels declare no size; reserve a realistic visual footprint
         -- so neighbouring widgets don't overlap.
         w.h = w.h or 0.5
         if not w.w then
             local txt = tostring(w.text or "")
-            w.w = math.max(#txt * 0.18, 0.5)
+            txt = txt:gsub("\27%([^)]*%)", "")
+            local chars = 0
+            for char in txt:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+                chars = chars + (#char > 1 and 2 or 1)
+            end
+            local scale = tonumber(tostring(w.font_size or ""):match("^%*([%d.]+)$")) or 1
+            w.w = math.max(chars * 0.24 * scale * ui_preferences.font_scale(), 0.5)
         end
     elseif k == "Field" then
         -- formspec v6: the `label` text is printed ABOVE the box (lua_api.md
@@ -164,14 +197,14 @@ local function measure(w)
         -- doesn't get clipped by the next row's label band.
         local has_label = w.label ~= nil and w.label ~= ""
         w._label_h = has_label and M.FIELD_LABEL_H or 0
-        w._box_h   = w.h or 0.7
+        w._box_h   = w._box_h or w.h or 0.7
         w.h = w._box_h + w._label_h
     elseif k == "TextArea" then
         -- formspec textarea[X,Y;W,H;name;label;default]: label is also printed
         -- ABOVE the box in v6, so reserve the same band as Field.
         local has_label = w.label ~= nil and w.label ~= ""
         w._label_h = has_label and M.FIELD_LABEL_H or 0
-        w._box_h   = w.h or 2.0
+        w._box_h   = w._box_h or w.h or 2.0
         w.h = w._box_h + w._label_h
     end
     w.w = w.w or 0
@@ -202,7 +235,9 @@ local function layout(w, x, y, avail_w, avail_h)
         local n = #w
         local natural_main, total_flex = 0, 0
         for _, child in ipairs(w) do
-            natural_main = natural_main + ((k == "VBox") and child.h or child.w)
+            if not child.flex or child.flex <= 0 then
+                natural_main = natural_main + ((k == "VBox") and child.h or child.w)
+            end
             total_flex   = total_flex   + (child.flex or 0)
         end
         if n > 1 then natural_main = natural_main + w.spacing * (n - 1) end
@@ -213,7 +248,7 @@ local function layout(w, x, y, avail_w, avail_h)
         for i, child in ipairs(w) do
             local base = (k == "VBox") and child.h or child.w
             local grow = (total_flex > 0) and (extra * (child.flex or 0) / total_flex) or 0
-            local main_size = base + grow
+            local main_size = (child.flex and child.flex > 0) and grow or base
             local cross_size = (k == "VBox") and child.w or child.h
 
             local cross_axis_flag = (k == "VBox") and "_user_w" or "_user_h"
@@ -237,6 +272,10 @@ local function layout(w, x, y, avail_w, avail_h)
                 if i < n then cx = cx + w.spacing end
             end
         end
+    elseif k == "Scroll" then
+        local child = w[1]
+        w._content_h = math.max(child.h, w.h)
+        layout(child, 0, 0, math.max(0.1, w.w - 0.5), w._content_h)
     elseif k == "Stack" then
         for _, child in ipairs(w) do
             layout(child, x + (child.x or 0), y + (child.y or 0), child.w, child.h)
@@ -263,10 +302,34 @@ local function maybe_emit_style(w, out, theme)
     if line then out[#out + 1] = line end
 end
 
+local function field_background(w, out, y, h)
+    if not w.bgcolor then return end
+    out[#out + 1] = ("box[%s,%s;%s,%s;#384451]"):format(
+        fnum(w._x), fnum(y), fnum(w.w), fnum(h))
+    out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
+        fnum(w._x + 0.03), fnum(y + 0.03), fnum(math.max(0, w.w - 0.06)),
+        fnum(math.max(0, h - 0.06)), w.bgcolor)
+    out[#out + 1] = "style[" .. w.name .. ";border=false]"
+end
+
 local function render(w, out, theme)
     out = out or {}
     local k = w._kind
-    if k == "VBox" or k == "HBox" or k == "Stack" then
+    if k == "Scroll" then
+        local max = math.max(0, math.ceil((w._content_h - w.h) * 10))
+        out[#out + 1] = ("scrollbaroptions[min=0;max=%d;smallstep=3;largestep=15;thumbsize=%d;arrows=show]"):format(
+            max, math.max(1, math.floor(w.h * 10)))
+        if max > 0 then
+            out[#out + 1] = ("scrollbar[%s,%s;0.3,%s;vertical;%s;%d]"):format(
+                fnum(w._x + w.w - 0.3), fnum(w._y), fnum(w.h), w.name, math.max(0, w.value or 0))
+        end
+        -- Let the engine measure actual rendered child bounds. This includes
+        -- pixel rounding and native control extents at any GUI scale.
+        out[#out + 1] = ("scroll_container[%s,%s;%s,%s;%s;vertical;0.1;0.2]"):format(
+            fnum(w._x), fnum(w._y), fnum(w.w - 0.5), fnum(w.h), w.name)
+        render(w[1], out, theme)
+        out[#out + 1] = "scroll_container_end[]"
+    elseif k == "VBox" or k == "HBox" or k == "Stack" then
         if w.bgcolor then
             out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
                 fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.bgcolor)
@@ -274,19 +337,35 @@ local function render(w, out, theme)
         for _, child in ipairs(w) do render(child, out, theme) end
     elseif k == "Label" then
         maybe_emit_style(w, out, theme)
+        local text = w.text
+        if w.ellipsize then
+            local prefix = text:match("^(\27%(c@[^)]*%))") or ""
+            local plain, parts, used = text:gsub("\27%([^)]*%)", ""), {}, 0
+            for char in plain:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+                local size = (#char > 1 and 0.48 or 0.24) * ui_preferences.font_scale()
+                if used + size > w.w - 0.6 then parts[#parts + 1] = "…"; break end
+                parts[#parts + 1], used = char, used + size
+            end
+            text = prefix .. table.concat(parts)
+        end
+        -- label[] has no name; style[name] cannot select it. Set its type style
+        -- immediately before the element, resetting for every following label.
+        out[#out + 1] = "style_type[label;font_size=" .. (w.font_size or "*1") .. "]"
         -- formspec v6 の label は「y = テキスト第 1 行の垂直中心」(lua_api.md L3334)。
         -- widget の預約 band 中央に文字を落とすため _y + h/2 を渡す。上端 _y のまま
         -- 渡すと label が半文字分上に描画され、隣接 image_button/field に食い込む
         -- (issue #21 派生)。
         local label_y = w._y + (w.h or 0.5) / 2
-        out[#out + 1] = ("label[%s,%s;%s]"):format(fnum(w._x), fnum(label_y), fs_escape(w.text))
+        out[#out + 1] = ("label[%s,%s;%s]"):format(fnum(w._x), fnum(label_y), fs_escape(text))
     elseif k == "Field" then
         maybe_emit_style(w, out, theme)
         -- The reserved label band sits at the top; the actual box lives below.
         local box_y = w._y + (w._label_h or 0)
         local box_h = w._box_h or w.h
+        field_background(w, out, box_y, box_h)
+        local inset = w.bgcolor and 0.16 or 0
         out[#out + 1] = ("field[%s,%s;%s,%s;%s;%s;%s]"):format(
-            fnum(w._x), fnum(box_y), fnum(w.w), fnum(box_h),
+            fnum(w._x + inset), fnum(box_y + inset), fnum(w.w - inset * 2), fnum(box_h - inset * 2),
             w.name, fs_escape(w.label or ""), fs_escape(w.default))
         if w.close_on_enter ~= nil then
             out[#out + 1] = ("field_close_on_enter[%s;%s]"):format(w.name, tostring(w.close_on_enter))
@@ -295,12 +374,34 @@ local function render(w, out, theme)
         maybe_emit_style(w, out, theme)
         local box_y = w._y + (w._label_h or 0)
         local box_h = w._box_h or w.h
+        field_background(w, out, box_y, box_h)
         out[#out + 1] = ("textarea[%s,%s;%s,%s;%s;%s;%s]"):format(
-            fnum(w._x), fnum(box_y), fnum(w.w), fnum(box_h),
+            fnum(w._x + (w.bgcolor and 0.16 or 0)), fnum(box_y + (w.bgcolor and 0.16 or 0)),
+            fnum(w.w - (w.bgcolor and 0.32 or 0)), fnum(box_h - (w.bgcolor and 0.32 or 0)),
             w.name, fs_escape(w.label or ""), fs_escape(w.default or ""))
-    elseif k == "Button" then
+    elseif k == "Slider" then
+        out[#out + 1] = "scrollbaroptions[min=0;max=1000;smallstep=10;largestep=100;thumbsize=120;arrows=hide]"
+        out[#out + 1] = ("scrollbar[%s,%s;%s,%s;horizontal;%s;%d]"):format(
+            fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.name, w.value or 0)
+    elseif k == "Dropdown" then
+        local values = {}
+        for _, value in ipairs(w.items or {}) do values[#values + 1] = fs_escape(value) end
+        out[#out + 1] = ("dropdown[%s,%s;%s,%s;%s;%s;%d;true]"):format(
+            fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.name,
+            table.concat(values, ","), tonumber(w.selected) or 1)
+    elseif k == "Paragraph" then
+        out[#out + 1] = "style_type[textarea;border=false;textcolor=" .. (w.color or "#98A5B3") .. ";font_size=" .. (w.font_size or "*1") .. "]"
+        out[#out + 1] = ("textarea[%s,%s;%s,%s;;;%s]"):format(
+            fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), fs_escape(w.text))
+        out[#out + 1] = "style_type[textarea;border=false;textcolor=#EDF2F7;font_size=*1]"
+    elseif k == "Button" or k == "KeyButton" then
         maybe_emit_style(w, out, theme)
-        out[#out + 1] = ("button[%s,%s;%s,%s;%s;%s]"):format(
+        if w.bgcolor then
+            out[#out + 1] = ("box[%s,%s;%s,%s;%s]"):format(
+                fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.bgcolor)
+        end
+        out[#out + 1] = ("%s[%s,%s;%s,%s;%s;%s]"):format(
+            k == "KeyButton" and "button_key" or "button",
             fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.name, fs_escape(w.label))
     elseif k == "TextList" then
         maybe_emit_style(w, out, theme)
@@ -362,7 +463,7 @@ function M.iter_elements(root, opts)
     local list = {}
     local function walk(w)
         local k = w._kind
-        if k == "VBox" or k == "HBox" or k == "Stack" then
+        if k == "VBox" or k == "HBox" or k == "Stack" or k == "Scroll" then
             for _, child in ipairs(w) do walk(child) end
         elseif k ~= "Spacer" and k ~= "Raw" then
             list[#list + 1] = { kind = k, name = w.name, text = w.text,

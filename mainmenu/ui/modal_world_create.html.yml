@@ -43,6 +43,11 @@ root:
                     name: dlg_close
                     label: Cancel
                 - tag: icon-button
+                  class: "modal-btn"
+                  attrs:
+                    name: create_only
+                    label: "Create and configure"
+                - tag: icon-button
                   class: "modal-icon-btn modal-btn-primary"
                   attrs:
                     name: confirm_create

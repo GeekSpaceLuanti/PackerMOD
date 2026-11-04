@@ -31,6 +31,9 @@ local function validate_mod(mod, idx)
     local ctx = ("mods[%d]"):format(idx)
     if type(mod) ~= "table" then return err("%s must be a map", ctx) end
     local r, e = check_string(mod, "name", ctx); if r == false then return r, e end
+    if not mod.name:match("^[a-z0-9_]+$") then
+        return err("%s.name must contain only lowercase letters, digits or underscores", ctx)
+    end
     if not VALID_SOURCES[mod.source] then
         return err("%s.source must be one of contentdb|bundle|url", ctx)
     end
@@ -64,6 +67,15 @@ function M.validate(data)
     if type(data.base_game) ~= "table" then return err("base_game must be a map") end
     local r1, e1 = check_string(data.base_game, "id", "base_game"); if r1 == false then return r1, e1 end
     local r2, e2 = check_string(data.base_game, "version", "base_game"); if r2 == false then return r2, e2 end
+    if not data.base_game.id:match("^[%w_%-]+$") then return err("invalid base game id") end
+    if data.base_game.installed_id and not data.base_game.installed_id:match("^[%w_%-]+$") then
+        return err("invalid installed game id")
+    end
+    if data.base_game.package then
+        if not data.base_game.package:match("^[%w_%-]+/[%w_%-]+$") then return err("invalid game package") end
+        if type(data.base_game.release) ~= "number" or data.base_game.release < 1
+                or data.base_game.release % 1 ~= 0 then return err("invalid game release") end
+    end
 
     if data.mods ~= nil then
         if type(data.mods) ~= "table" then return err("mods must be a list") end

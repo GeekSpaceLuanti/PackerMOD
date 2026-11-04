@@ -1,421 +1,410 @@
-# Synthwave テーマ. library.html.yml に対するスタイル。
-# neon.html 準拠: 濃紺 bg + cyan (#00ffe5) / magenta (#ff1b8d) の 2 色アクセント。
-# glow / scanline / hover は Luanti formspec 非対応につき素の色のみ。
-#
-# 寸法は formspec size[30, 16] (= window 1608x853, 1 unit ≈ 52 px) 前提。
-
-variables:
-  --fg: "#e0e0ff"
-  --fg-dim: "#7a7aa8"
-  --accent-purple: "#00ffe5"
-  --accent-pink: "#ff1b8d"
-  --accent-yellow: "#ff1b8d"
-  --card-bg: "#14143a"
-
+# Clean dark theme. Dimensions are in formspec units.
 rules:
   - selector: "page"
     style:
-      bg: "#0a0a18"
-      bg-image: "url(packermod_bg_synthwave.png)"
+      bg: "#13171D"
       padding: 0.8
       flex-direction: column
-      gap: 0.8
-
+      gap: 0.5
   - selector: ".title-bar"
     style:
       flex-direction: row
       justify: space-between
-      gap: 0.8
-      h: 1.4
       align: center
-      border-bottom-width: 0.04
-      border-bottom-color: "#00ffe5"
-
+      h: 1.2
   - selector: "#title"
     style:
-      # color は指定しない (テキスト側 ESC で 2 色化するため。指定すると
-      # layout.lua が text 冒頭に ESC prefix を追加し、text 内 ESC を上書きする)。
-      font-size: "*2.0"
-
+      color: "#F2F5F8"
+      font-size: "*1.8"
   - selector: ".subtitle"
     style:
-      color: "#ff1b8d"
-      font-size: "*1.2"
-
-  - selector: "#no-packs-msg"
+      color: "#98A5B3"
+      font-size: "*1.0"
+  - selector: ".action-bar"
     style:
-      color: "#e0e0ff"
-      font-size: "*1.4"
-
+      flex-direction: row
+      justify: end
+      gap: 0.3
+      h: 1.0
+  - selector: ".action-btn"
+    style:
+      h: 1.0
+      bg: "#2B333E"
+      color: "#EDF2F7"
+  - selector: ".primary-btn"
+    style:
+      bg: "#59D9AD"
+      color: "#10251D"
   - selector: ".pack-grid"
     style:
       display: grid
       grid-columns: 3
-      gap: 0.6
+      gap: 0.45
       flex: 1
-
-  # 9-slice PNG で cyan 枠付きパネルを描く。単純な border では 4 辺が
-  # 直角に交わる形しか作れず、枠と塗りに縦グラ勾配のような差を付けられない。
-  # background9 なら 9-slice 分割で 4 隅を 8px 保ったまま拡縮できる。
   - selector: ".pack-card"
     style:
-      bg-image: "url(packermod_panel_neon.png)"
-      bg-image-middle: 8
-      padding: 0.4
+      bg: "#202731"
+      padding: 0.3
       flex-direction: column
       align: center
-      gap: 0.2
-      w: 8.5
-      h: 8.0
-
-  # 空きスロット placeholder は cyan 枠を薄く見せたい (下記の 4 辺 border で
-  # 実現)。9-slice PNG でも作れるが hex 半透明を焼き込みが必要でコスト高。
+      gap: 0.15
+      w: 9.0
+      h: 4.5
   - selector: ".pack-card-placeholder"
     style:
-      bg: "#0a0a1855"
-      border-width: 0.06
-      border-color: "#00ffe555"
-      w: 8.5
-      h: 8.0
-
+      w: 9.0
+      h: 4.5
   - selector: ".pack-thumb"
     style:
-      w: 5.5
-      h: 5.5
-
+      w: 2.6
+      h: 2.6
   - selector: ".pack-name"
     style:
-      color: "#e0e0ff"
-      font-size: "*1.5"
-
+      color: "#EDF2F7"
+      font-size: "*1.1"
+      h: 0.5
   - selector: ".pack-meta"
     style:
-      color: "#ff1b8d"
-      font-size: "*1.2"
-
-  # neon.html 準拠: 4 辺 border ではなく上端の 1 本罫線のみで区切る。
-  # 背景も透明にして下の bg-image を透かす。
-  - selector: ".action-bar"
+      color: "#98A5B3"
+      font-size: "*0.9"
+      h: 0.4
+  - selector: ".pagination"
     style:
-      border-top-width: 0.04
-      border-top-color: "#00ffe5"
       flex-direction: row
       justify: end
-      gap: 0.45
-      h: 2.8
-      padding: 0.3
-
-  - selector: ".action-btn"
+      align: center
+      gap: 0.4
+      h: 0.9
+  - selector: ".page-label"
     style:
-      w: 2.2
-      h: 2.4
-      bg-image: "url(packermod_btn_neon.png)"
-      bg-image-hover: "url(packermod_btn_neon_hover.png)"
-      bg-image-middle: 8
-
-# ===== 画面2 (Pack Detail) スタイル =====
-
+      color: "#98A5B3"
+      font-size: "*1.0"
+  - selector: ".page-btn"
+    style:
+      h: 0.9
+  - selector: ".empty-state"
+    style:
+      flex: 1
+      align: center
+      flex-direction: column
+      gap: 0.4
+  - selector: ".empty-title"
+    style:
+      color: "#EDF2F7"
+      font-size: "*1.6"
+      h: 0.8
+  - selector: ".empty-help"
+    style:
+      color: "#98A5B3"
+      h: 0.7
+  - selector: ".grow"
+    style:
+      flex: 1
   - selector: ".detail-header"
     style:
       flex-direction: row
       align: center
       gap: 0.6
-      h: 1.5
-
+      h: 1.1
   - selector: ".back-btn"
     style:
-      w: 3.0
-      h: 1.5
-
+      h: 1.0
   - selector: ".detail-title"
     style:
-      color: "#00ffe5"
-      font-size: "*2.5"
-
+      color: "#EDF2F7"
+      font-size: "*1.5"
   - selector: ".detail-spacer"
     style:
       flex: 1
-
   - selector: ".detail-meta"
     style:
-      color: "#ff1b8d"
-      font-size: "*1.2"
-
+      w: 10.0
+      color: "#98A5B3"
+      font-size: "*0.9"
   - selector: ".subtab-bar"
     style:
       flex-direction: row
-      gap: 0.3
-      h: 1.3
-
+      gap: 0.2
+      h: 1.0
   - selector: ".subtab-btn"
     style:
       flex: 1
-      h: 1.3
-      bg: "#14143a"
-      color: "#e0e0ff"
-      font-size: "*1.3"
-
+      h: 1.0
+      bg: "#202731"
+      color: "#B1BCC8"
   - selector: ".subtab-btn-active"
     style:
-      bg: "#00ffe5"
-      color: "#0a0a18"
-
+      bg: "#59D9AD"
+      color: "#10251D"
   - selector: ".subtab-pane"
     style:
       flex: 1
       flex-direction: column
-      gap: 0.4
-      bg: "#0a0a18cc"
-      padding: 0.4
-      border-width: 0.05
-      border-color: "#00ffe5"
-
+      gap: 0.5
+      bg: "#202731"
+      padding: 0.5
   - selector: ".detail-list"
     style:
       flex: 1
-      bg: "#14143a"
-      color: "#e0e0ff"
-
+      bg: "#171D25"
+      color: "#EDF2F7"
   - selector: ".empty-status"
     style:
-      color: "#ff1b8d"
-      font-size: "*1.2"
-      h: 1.0
-
+      color: "#98A5B3"
+      h: 0.7
   - selector: ".subtab-actions"
     style:
       flex-direction: row
       justify: end
-      gap: 0.6
-      h: 1.6
-
-  # 画面2 の action-btn は画面1 用 (4.0x2.7) のまま入れると subtab-actions を超えて
-  # OOB するので子孫 selector で小さく上書き。
-  - selector: ".subtab-actions .action-btn"
-    style:
-      w: 3.5
-      h: 1.6
-
+      gap: 0.3
+      h: 1.0
   - selector: ".form-row"
     style:
+      align: end
       flex-direction: row
       gap: 0.4
-      h: 1.8
-
   - selector: ".form-field"
     style:
       flex: 1
-      h: 1.2
-      bg: "#14143a"
-      color: "#e0e0ff"
-
+      h: 1.0
+      bg: "#171D25"
+      color: "#EDF2F7"
   - selector: ".form-field-narrow"
     style:
-      w: 4.5
-      h: 1.2
-      bg: "#14143a"
-      color: "#e0e0ff"
-
+      w: 4.0
+      h: 1.0
+      bg: "#171D25"
+      color: "#EDF2F7"
   - selector: ".form-textarea"
     style:
-      h: 1.6
-      bg: "#14143a"
-      color: "#e0e0ff"
-
+      h: 2.4
+      bg: "#171D25"
+      color: "#EDF2F7"
   - selector: ".mods-grid"
     style:
       flex: 1
       flex-direction: row
       gap: 0.6
-
   - selector: ".mods-col"
     style:
       flex: 1
       flex-direction: column
       gap: 0.3
-
   - selector: ".mods-col-title"
     style:
-      color: "#ff1b8d"
-      font-size: "*1.4"
-      h: 0.8
-
+      color: "#98A5B3"
+      font-size: "*1.1"
+      h: 0.7
   - selector: ".info-base"
     style:
-      color: "#ff1b8d"
-      font-size: "*1.1"
-      align: center
-
-# ===== Modal 共通スタイル =====
-# 各 modal は size[30, 16] で page を取り、外側を bgcolor(both) で塗りつぶした上で
-# 画面中央に modal-card を配置する。これで雲・Luanti デフォ背景が完全に隠れる。
-
+      color: "#98A5B3"
   - selector: ".modal-page"
     style:
-      bg: "#0a0a18"
-      bg-image: "url(packermod_bg_synthwave.png)"
+      bg: "#13171D"
       padding: 0.8
       flex-direction: column
-
   - selector: ".modal-vspacer"
     style:
       flex: 1
-
   - selector: ".modal-center-row"
     style:
       flex-direction: row
-
   - selector: ".modal-hspacer"
     style:
       flex: 1
-
   - selector: ".modal-card"
     style:
-      bg: "#14143a"
-      border-width: 0.08
-      border-color: "#00ffe5"
-      padding: 0.6
+      bg: "#202731"
+      padding: 0.7
       flex-direction: column
-      gap: 0.3
-      w: 16.0
-      h: 9.0
-
+      gap: 0.4
+      w: 21.0
   - selector: ".modal-card-narrow"
     style:
-      w: 13.0
-      h: 8.0
-
+      w: 16.0
   - selector: ".modal-card-mid"
     style:
-      w: 18.0
-      h: 9.0
-
+      w: 21.0
   - selector: ".modal-title"
     style:
-      color: "#00ffe5"
-      font-size: "*2.2"
-      h: 1.2
-
+      color: "#EDF2F7"
+      font-size: "*1.5"
+      h: 1.0
   - selector: ".modal-dim"
     style:
-      color: "#7a7aa8"
-      font-size: "*1.1"
-
+      color: "#98A5B3"
+      font-size: "*0.9"
   - selector: ".modal-info"
     style:
-      color: "#e0e0ff"
-      font-size: "*1.2"
-
+      color: "#EDF2F7"
+      h: 0.6
   - selector: ".modal-status"
     style:
-      color: "#ff1b8d"
-      font-size: "*1.1"
+      color: "#98A5B3"
       h: 0.8
-
   - selector: ".modal-field"
     style:
-      h: 1.2
-      bg: "#14143a"
-      color: "#e0e0ff"
-
+      h: 1.0
+      bg: "#171D25"
+      color: "#EDF2F7"
   - selector: ".modal-actions"
     style:
       flex-direction: row
       justify: end
-      gap: 0.5
-      h: 1.8
-
+      gap: 0.3
+      h: 1.0
   - selector: ".modal-btn"
     style:
-      w: 3.0
-      h: 1.6
-      bg: "#14143a"
-      color: "#e0e0ff"
-
+      h: 1.0
+      bg: "#2B333E"
+      color: "#EDF2F7"
   - selector: ".modal-btn-primary"
     style:
-      w: 4.0
-      h: 1.6
-      bg: "#00ffe5"
-      color: "#0a0a18"
-
+      h: 1.0
+      bg: "#59D9AD"
+      color: "#10251D"
   - selector: ".modal-btn-danger"
     style:
-      w: 3.5
-      h: 1.6
-      bg: "#ff1b8d"
-      color: "#0a0a18"
-
+      h: 1.0
+      bg: "#713B45"
+      color: "#FFE7EC"
   - selector: ".modal-icon-btn"
     style:
-      w: 4.0
-      h: 1.6
-
-  # modal_create / modal_import で使う追加スタイル
+      h: 1.0
   - selector: ".modal-row"
     style:
+      align: end
       flex-direction: row
-      gap: 0.4
-      h: 1.7
-
+      gap: 0.5
   - selector: ".modal-field-grow"
     style:
       flex: 1
-      h: 1.2
-      bg: "#14143a"
-      color: "#e0e0ff"
-
+      h: 1.0
+      bg: "#171D25"
+      color: "#EDF2F7"
   - selector: ".modal-field-create"
     style:
-      w: 3.2
-      h: 1.2
-      bg: "#14143a"
-      color: "#e0e0ff"
-
+      flex: 1
+      h: 1.0
+      bg: "#171D25"
+      color: "#EDF2F7"
   - selector: ".modal-field-create-grow"
     style:
-      flex: 1
-      h: 1.2
-      bg: "#14143a"
-      color: "#e0e0ff"
-
+      flex: 2
+      h: 1.0
+      bg: "#171D25"
+      color: "#EDF2F7"
   - selector: ".modal-icon-btn-small"
     style:
-      w: 2.4
-      h: 1.5
-
+      h: 1.0
   - selector: ".modal-list"
     style:
       flex: 1
-      bg: "#0a0a18"
-      color: "#e0e0ff"
-
+      bg: "#171D25"
+      color: "#EDF2F7"
   - selector: ".modal-create-body"
     style:
       flex: 1
       flex-direction: row
       gap: 0.6
-
   - selector: ".modal-create-col"
     style:
       flex: 1
       flex-direction: column
-      gap: 0.3
-
+      gap: 0.4
   - selector: ".modal-section-label"
     style:
-      color: "#ff1b8d"
-      font-size: "*1.3"
-      h: 0.6
-
+      color: "#98A5B3"
+      font-size: "*1.0"
+      h: 0.7
   - selector: ".modal-card-wide"
     style:
       w: 28.4
       h: 14.4
+  - selector: ".info-name"
+    style:
+      flex: 0
+  - selector: "#btn-play-world"
+    style:
+      bg: "#59D9AD"
+      color: "#10251D"
+  - selector: "#btn-server-connect"
+    style:
+      bg: "#59D9AD"
+      color: "#10251D"
+  - selector: "#btn-info-save"
+    style:
+      bg: "#59D9AD"
+      color: "#10251D"
+  - selector: ".catalog-list"
+    style:
+      flex: 1
+      h: 4.0
+      color: "#EDF2F7"
+  - selector: ".catalog-version"
+    style:
+      h: 1.0
+  - selector: ".catalog-info"
+    style:
+      color: "#98A5B3"
+      h: 1.0
 
-media:
-  - query: "max-width 20.0"
-    rules:
-      - selector: ".pack-grid"
-        style:
-          grid-columns: 2
+  - selector: ".settings-header"
+    style:
+      flex-direction: row
+      align: center
+      gap: 0.6
+  - selector: ".settings-language"
+    style:
+      w: 6.0
+      h: 1.0
+  - selector: ".settings-body"
+    style:
+      flex-direction: row
+      gap: 0.6
+      flex: 1
+  - selector: ".settings-navigation"
+    style:
+      flex-direction: column
+      gap: 0.4
+      flex: 1
+  - selector: ".engine-setting-list"
+    style:
+      h: 6.0
+      flex: 1
+  - selector: ".settings-editor"
+    style:
+      flex: 2
+      gap: 0.4
+      h: 10.0
+  - selector: ".engine-title"
+    style:
+      font-size: "*1.3"
+      color: "#EDF2F7"
+      h: 0.9
+  - selector: ".engine-description"
+    style:
+      h: 1.8
+  - selector: ".engine-bounds"
+    style:
+      h: 0.7
+  - selector: ".engine-fields"
+    style:
+      flex-direction: column
+      gap: 0.4
+  - selector: ".engine-key-list"
+    style:
+      h: 2.0
+  - selector: ".settings-footer"
+    style:
+      flex-direction: row
+      align: center
+      gap: 0.5
+  - selector: ".settings-restart-note"
+    style:
+      flex: 1
+      h: 0.8
+
+  - selector: ".engine-query"
+    style:
+      flex: 0

@@ -18,6 +18,7 @@ describe("pmui.paint (end-to-end formspec)", function()
             page_h = (opts or {}).page_h or 8.5,
             hover_ids  = (opts or {}).hover_ids,
             active_ids = (opts or {}).active_ids,
+            texture_dir = (opts or {}).texture_dir,
         }
     end
 
@@ -43,6 +44,44 @@ rules:
       bg-image: "url(packermod_bg.png)"
 ]])
         assert.is_truthy(s:find("background[0,0;13,8.5;packermod_bg.png;true;0]", 1, true))
+    end)
+
+    -- Windows で texture_dir が DIR_DELIM='\' 由来のバックスラッシュ区切りになると、
+    -- formspec parser が '\' を escape として消費し 'C:Users...' に化けて Irrlicht が open 失敗する。
+    -- image path は formspec に埋める直前に fs_escape で '\' → '\\' に escape する必要がある。
+    it("escapes backslashes in Windows-style texture_dir for background[]", function()
+        local s = fs([[
+root:
+  tag: page
+]], [[
+rules:
+  - selector: "page"
+    style:
+      bg-image: "url(bg.png)"
+]], { texture_dir = "C:\\Users\\x\\textures\\" })
+        -- Lua 文字列で "\\\\" = 2 chars ('\\'), find の plain=true でリテラル一致。
+        assert.is_truthy(s:find("C:\\\\Users\\\\x\\\\textures\\\\bg.png", 1, true))
+        -- 生の 'C:\Users' (backslash + 'U') が残っていないこと (escape 漏れ検出)。
+        assert.is_nil(s:find("C:\\U", 1, true))
+    end)
+
+    it("escapes backslashes in bgimg style for button 9-slice", function()
+        local s = fs([[
+root:
+  tag: page
+  children:
+    - tag: button
+      id: btn
+      name: btn
+      text: OK
+]], [[
+rules:
+  - selector: "button"
+    style:
+      bg-image: "url(btn.png)"
+      bg-image-middle: 8
+]], { texture_dir = "C:\\Users\\x\\textures\\" })
+        assert.is_truthy(s:find("bgimg=C:\\\\Users\\\\x\\\\textures\\\\btn.png", 1, true))
     end)
 
     it("emits bgcolor[ ;both; ] when page has bg (formspec 外側の Luanti 雲も塗り潰す)", function()
@@ -78,7 +117,7 @@ rules:
         assert.is_nil(s:find("style[title;textcolor=", 1, true))
     end)
 
-    it("emits style[name;font_size=*1.8] for named labels", function()
+    it("sets label type font size immediately before rendering the label", function()
         local s = fs([[
 root:
   tag: page
@@ -92,10 +131,11 @@ rules:
     style:
       font-size: "*1.8"
 ]])
-        assert.is_truthy(s:find("style[t;font_size=*1.8]", 1, true))
+        assert.is_truthy(s:find("style_type[label;font_size=*1.8]label[", 1, true))
+        assert.is_nil(s:find("style[t;", 1, true))
     end)
 
-    it("icon-button renders image_button + label and bg styling targets the name", function()
+    it("labeled icon-button renders one clickable text button", function()
         local s = fs([[
 root:
   tag: footer
@@ -113,9 +153,9 @@ rules:
       flex-direction: row
       justify: end
 ]], { ctx = { icon_path = function(n) return "icon_" .. n .. ".png" end } })
-        assert.is_truthy(s:find("image_button[", 1, true))
-        assert.is_truthy(s:find("btn_create", 1, true))
-        assert.is_truthy(s:find("icon_plus.png", 1, true))
+        assert.is_truthy(s:find("button[", 1, true))
+        assert.is_truthy(s:find("btn_create;Create]", 1, true))
+        assert.is_nil(s:find("image_button[", 1, true))
         -- label "Create" は別 Label として出力 (LabeledIconButton 構造)
         assert.is_truthy(s:find("Create", 1, true))
     end)
