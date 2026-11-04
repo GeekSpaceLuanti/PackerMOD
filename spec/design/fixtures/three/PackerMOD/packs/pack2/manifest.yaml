@@ -1,0 +1,8 @@
+schema_version: 1
+id: pack2
+name: Cave Survival
+version: "1.0.2"
+description: Fixture pack 2 for design testing
+base_game:
+  id: minetest_game
+  version: "5.9"

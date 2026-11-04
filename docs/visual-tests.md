@@ -115,3 +115,8 @@ GUIサイズの選択肢（800×600では「大」を表示しない）:
 ```powershell
 .\scripts\visual_tests.ps1 -View settings_size_dropdown -Width 800 -Height 600
 ```
+
+
+リモート由来の `scripts/measure_ui.py` は計測ツールとして維持しています。`make check-design` は現行のLua幾何テストと実エンジン撮影・計測を行います。`spec/design/library.json` のcyan罫線・composite枠アサーションは旧Synthwave向けの履歴資料で、現行の無彩色UIには適用しません。
+
+計測ツールにはPythonの `numpy` と `Pillow` が必要です。`make measure`／`make check-design` の `PYTHON` 変数で、これらを導入した仮想環境のPython実行ファイルを指定できます。測定画像は `.screenshots/measure_<画面>.png` に保存します。

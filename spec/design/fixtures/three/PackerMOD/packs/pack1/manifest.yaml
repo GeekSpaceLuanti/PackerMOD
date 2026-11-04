@@ -1,0 +1,8 @@
+schema_version: 1
+id: pack1
+name: Neon Skyblock
+version: "1.0.1"
+description: Fixture pack 1 for design testing
+base_game:
+  id: packerbase
+  version: "0.91"

@@ -6,3 +6,9 @@ luacov.report.out
 .DS_Store
 
 .screenshots/
+# Claude Code ローカル設定 (個人環境の許可リスト等) は共有しない
+.claude/settings.local.json
+
+# Python bytecode
+__pycache__/
+*.pyc

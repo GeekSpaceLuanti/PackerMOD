@@ -1,0 +1,61 @@
+{
+  "_comment": "#24 library 画面デザイン問題の再現→修正アサーション。measure_ui.py --assert で使う。閾値は px (品質バー) か 'Nu' (unit_px 倍、解像度非依存の性質)。--unit-px を渡すと 'Nu' が解決される。'only' に issue 番号を並べると Phase ごとに green ゲート対象を絞れる。",
+  "checks": [
+    {
+      "id": "button_labels_centered",
+      "issue": "#1",
+      "measure": "label_offset_abs_max",
+      "op": "<=",
+      "value": 2,
+      "_desc": "アイコンボタンのラベル中心が枠中心から ±2px 以内。現状 +8〜9.5px (自然幅推定が過小)"
+    },
+    {
+      "id": "button_label_gap",
+      "issue": "#2",
+      "measure": "label_gap_min",
+      "op": ">=",
+      "value": 4,
+      "_desc": "ラベル下端と枠底辺の gap ≥ 4px。旧 0px (帯上端に密着)。composite ではラベルが枠内下帯に収まり底辺と余白を持つ"
+    },
+    {
+      "id": "button_label_inside_frame",
+      "issue": "#5",
+      "measure": "labels_inside_count",
+      "op": ">=",
+      "value": 3,
+      "_desc": "3 ボタンとも枠 (9-slice) がアイコン+ラベルを内包する composite。旧構造は枠がアイコンのみでラベルが枠外"
+    },
+    {
+      "id": "right_edges_aligned",
+      "issue": "#8",
+      "measure": "right_edge_spread",
+      "op": "<=",
+      "value": 2,
+      "_desc": "divider 右端 / subtitle 右端 / 最右ボタン枠右端が揃う (≤2px)。旧実装は 937/925/923 で最大 14px ズレ"
+    },
+    {
+      "id": "background_covers_window",
+      "issue": "#3",
+      "measure": "bg_margin_max",
+      "op": "<=",
+      "value": 4,
+      "_desc": "背景テクスチャが window 全面を覆う (外周余白 ≤ 4px)。現状 60〜62px フラット帯"
+    },
+    {
+      "id": "divider_present",
+      "issue": "#6",
+      "measure": "divider_count",
+      "op": ">=",
+      "value": 2,
+      "_desc": "content 全幅の cyan divider が 2 本 (header 下 / action-bar 上)"
+    },
+    {
+      "id": "divider_thickness",
+      "issue": "#6",
+      "measure": "divider_thickness_min",
+      "op": ">=",
+      "value": 2,
+      "_desc": "divider は見かけ ≥2px の solid 線。現状 1px サブピクセルで潰れる (box[] は AA で上下 1px 失うため 3px 指定)"
+    }
+  ]
+}

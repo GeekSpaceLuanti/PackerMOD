@@ -11,7 +11,6 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
-
 ## 2026-11-04 19:35 (main)
 
 **変更概要**:
@@ -30,8 +29,262 @@ Luanti設定を用途別タブ・スクロール一覧・項目別初期化へ�
 303件のLuaテスト、実エンジン起動・設定保存・言語選択・スライダー・キー入力・ワールド分離テストが成功。WSL＋Xvfbで全画面を撮影し、800×600とウィンドウ縮小後の操作性を確認。
 Windows版へバックアップ・保護対象確認・配置ハッシュ検証付きで反映し、実画面も確認した。
 
-**コミット**: 本エントリを含むコミット。
+**コミット**: 12f845c（実装）、本エントリを含む統合コミット。
 
+**リモート統合**:
+リモートの旧Synthwave／hypertext・composite UIと今回の日本語・統合GUIサイズ版は同じ描画経路を変更していたため、実画面確認済みの現行描画・テーマを採用。計測ツール・補助モジュール・開発フック・既存作業記録は保持した。
+統合後も303件のテストとエンジン起動が成功。計測用numpy／Pillowは一時仮想環境に分離し、`make check-design PYTHON=<仮想環境のPython>` で1024×600の実画面計測も成功。旧テーマ専用のcyan枠アサーションは履歴資料として保持する。
+
+
+## 2026-07-16 14:30 (main)
+
+**変更概要**:
+#24 Phase 4: icon-button を「枠 (9-slice) がアイコン+ラベル全体を包む」単一 composite
+に再設計。#2 (ラベル密着)・#5 (ボタン意匠)・#8 (右端不揃い) を green にした。
+
+Phase 0 で全プリミティブを実測 (content_offset がネイティブ label を physical px で
+下帯へ動かす / image[]・box[] はクリック透過) した上で composite を構成:
+1. **枠=ボタン box 全体の image_button (`lib/layout.lua`)**: 旧実装は image_button が
+   アイコンのみを囲み、ラベルは枠外の別 Label だった (#2/#5/#8 の根因)。新 composite は
+   full-box image_button (bgimg=枠 9-slice は paint 供給, fg=blank) + content_offset で
+   下帯へ寄せたネイティブ label + image[] アイコン overlay + box[] divider を重ねる。
+   ネイティブ label はエンジンが水平中央に置くので #1 の幅推定ズレが原理的に無い。
+   帯高・アイコン位置・content_offset は font と box 寸法から導出 (px ハードコード無し)。
+2. **ラベル帯意匠を theme 供給に (`.action-btn`)**: label-color / label-divider-color /
+   label-divider-width / text-transform を CSS 側へ。layout.lua は構造だけ持つ
+   (`label_band_h=0.45` ハードコード廃止)。box_model / props に 3 プロパティを追加。
+3. **per-side padding 実装 (#8)**: `padding: "16px 0 0 0"` ショートハンド + padding-top
+   等を box_model が {t,r,b,l} に解決、layout.lua が 4 辺独立で扱う (後方互換の scalar
+   経路維持)。action-bar を左右 padding=0 にしてボタン右端を content 右端 (divider /
+   subtitle と同じ) へ揃えた。旧実装は左右対称 16px でボタンが 16px 内寄せしていた。
+4. **measure_ui.py を composite 対応に**: 枠検出の正方性制約を外し (88x72)、ラベルを
+   枠内下帯の cyan text バンドとして検出。#5 (labels_inside_count) / #8 (right_edge_spread
+   = divider/subtitle/最右ボタン枠の右端差) の measure を追加。枠サイズ帯を解像度追従化。
+
+検証: `busted spec/` 240 green。`check-design SUBTAB=library` 7/7 PASS
+(#1 offset 0.5px / #2 gap 5px / #5 3/3 / #8 spread 1px / #3 / #6)。解像度
+1024/1600/2560 で composite 維持 (#1/#2/#5/#8 全 green)。#8 は action-bar を対称
+padding へ戻すと spread 16px で FAIL することを確認 (アサーションに歯があること)。
+#3 は高解像度 (size>max_formspec_size で clamp) 時に 14px 余白 → Phase 5 (set_background)
+で完結予定。modal の icon-button も composite になるが最終意匠は Phase 6 でリベース。
+
+**主な変更ファイル**:
+- mainmenu/lib/layout.lua (LabeledIconButton→composite leaf、IconBtnComposite render、per-side padding)
+- mainmenu/lib/pmui/box_model.lua (parse_padding per-side、label-* プロパティ)
+- mainmenu/lib/pmui/layout.lua (icon-button 分岐で divider/label 配線、grid 幅の per-side padding)
+- mainmenu/lib/pmui/props.lua (padding-*/label-* を KNOWN_PROPS へ)
+- mainmenu/ui/themes/synthwave.css.yml (.action-btn label-*、.action-bar align:center + 上 padding のみ)
+- scripts/measure_ui.py (composite 枠/ラベル検出、#5/#8 measure、subtitle 右端)
+- spec/design/library.json (#5/#8 アサーション追加)
+- spec/{pmui_layout,pmui_paint}_spec.lua, spec/support/formspec_helpers.lua (composite 期待値)
+
+**次のTODO**: Phase 5 (背景の set_background 化: clamp 時外周 + modal もカバー = #3 完結、
+scanline tile = #9)
+
+## 2026-07-16 14:05 (main)
+
+**変更概要**:
+#24 Phase 3: 全 label を hypertext[] 経路へ一括置換し、幅戦略 (flex ブロック +
+text-align) で hypertext の「自然幅なし」を吸収。#1 (ラベル中心)・#4 (font-size 復活)・
+#7 (空状態中央)・#8 の一部 (subtitle 右端一致) を green にした。
+
+主な変更:
+1. **Label render を hypertext[] emit に変更 (`lib/layout.lua`)**: `<global halign=
+   valign= margin=0 color= size=>` に整列/色/サイズを集約。旧 ESC カラー hack
+   (`\27(c@...)`) を廃止。text は adapter の `hypertext_escape` 経由、`]` も追加
+   エスケープ。`attrs.markup` があれば整形済み markup をそのまま流す (2 色タイトル)。
+2. **幅戦略 (hypertext は自然幅を持たないため必須)**:
+   - title-bar を「左ブロック (title, flex:1) + 右ブロック (subtitle, flex:1
+     text-align:right)」の 2 flex ブロックに再構造化。space-between + 自然幅推定への
+     依存をやめ、右端をブロック右端 (= content 右端) に一致させた (#8 の subtitle 分)。
+   - pack-card を align:stretch にし name/meta をカード全幅へ広げ halign=center。
+     thumb は `.thumb-row` (justify center) で中央配置。折返し + スクロールバーを解消。
+   - 残余の shrink-wrap 幅推定は `n*0.18` 固定から font_px 連動へ。
+3. **ラベル帯を全幅 Label halign=center に (`LabeledIconButton`)**: 旧 Spacer サンド
+   イッチを廃し、ボタン全幅ブロック + halign=center でラベル中心をボタン中心に一致
+   (#1: offset 8~9.5px → 0.5px)。帯の色/font/transform は box (theme) から供給。
+4. **css に text-align / text-transform 追加**: cascade→box_model→hypertext halign
+   /string.upper。`font-size: *k` 倍率形式も units 換算で吸収 (未リベース画面対策)。
+5. **空状態 #7**: pack 0 個のとき grid を出さず (`when: has_packs`)、no-packs-msg を
+   flex:1 + text-align:center で content 全域中央に。汚染のない目視で縦横中央を確認。
+
+検証: `busted spec/` 240 green、`make check-design SUBTAB=library` 5/5 PASS
+(#1 offset 0.5px / #2 gap 5px / #3 margin 4px / #6 divider 2px×2)。three/empty
+fixture の目視も正 (2 色タイトル 28px・右寄せ subtitle・カード中央寄せ・ラベル中央)。
+
+**主な変更ファイル**:
+- mainmenu/lib/layout.lua (Label→hypertext emit、LabeledIconButton 帯全幅化、ht_escape)
+- mainmenu/lib/pmui/layout.lua (LABEL/status/icon-button 分岐で color/font_px/halign/transform 配線)
+- mainmenu/lib/pmui/box_model.lua (text_transform 追加)
+- mainmenu/lib/pmui/paint.lua (hypertext 経路調整)
+- mainmenu/library.lua (title_markup 2 色化、has_packs/no_packs ctx)
+- mainmenu/ui/library.html.yml (title-bar 2 ブロック化、thumb-row、has_packs で grid 出し分け)
+- mainmenu/ui/themes/synthwave.css.yml (text-align、align:stretch、flex ブロック化)
+- spec/{layout,pmui_layout,pmui_paint}_spec.lua (hypertext 期待値へ更新)
+
+**次のTODO**: Phase 4 (composite button の box model 一致: full-frame image_button +
+content_offset + image[] icon + box[] divider、帯意匠の theme 供給、#2/#5/#8 完結)
+
+## 2026-07-16 13:20 (main)
+
+**変更概要**:
+#24 Phase 1: デザイン問題を数値で落とす再現テスト基盤を整備し、崩壊級 (#1/#2/#3)
++ divider (#6) を red 化した。再現テスト先行 (プロジェクトルール) の red 側。
+
+1. **measure_ui.py に `--assert` モード追加**: 期待値 spec (JSON) の各 check を
+   測定値と突き合わせ、1 つでも fail すれば exit 1。閾値は px (品質バー) か 'Nu'
+   (unit_px 倍、解像度非依存) で書け、`only` で issue を絞れる。構造 (ラベル枠内/外)
+   が変わっても「性質」の表明は不変にする設計。
+2. **divider 検出を追加**: dim な cyan 罫線 (#6: 1px #059189, 輝度 57%) も拾えるよう
+   広めの hue mask で検出し、thickness と brightness(g) を分けて測る。
+3. **spec/design/library.json**: #24 の #1 (ラベル中心 ±2px)・#2 (gap ≥4px)・
+   #3 (背景外周 ≤4px)・#6 (divider ≥2px & g≥210) を表明。現状 5/5 FAIL (red 確認)。
+4. **screenshot_mainmenu.sh**: SCREEN_W/H・GUI_SCALING を conf 注入 (autosave 無効化
+   込み。Phase 0 で判明したドリフト対策) し、解像度マトリクスを振れるように。
+   FIXTURE=<name> で決定論的な pack 集合を差せる (Mod security 回避のため
+   書き込み可能な ~/.minetest 下へステージング)。
+5. **fixture 追加**: `empty` (0 packs, empty state 用) と `three` (3 packs, grid 用)。
+6. **init.lua に fixture_root hook**: `packermod_fixture_root` で user_path を差し替え。
+7. **make check-design SUBTAB=library**: 指定解像度で撮って spec を評価するターゲット。
+
+検証: `make check-design SUBTAB=library` で 5/5 FAIL (exit 1)、three/empty fixture
+とも撮影成功、既存 busted 241 tests は全 green を維持。
+
+**主な変更ファイル**:
+- scripts/measure_ui.py (--assert モード + divider 検出)
+- scripts/screenshot_mainmenu.sh (解像度/gui_scaling/fixture 注入)
+- spec/design/library.json (新規、アサーション spec)
+- spec/design/fixtures/{empty,three}/ (新規、pack fixture)
+- mainmenu/init.lua (packermod_fixture_root hook)
+- Makefile (check-design ターゲット)
+
+**次のTODO**: Phase 2 (host adapter + units + props + responsive size + auto-fit grid)
+
+## 2026-07-16 14:30 (main)
+
+**変更概要**:
+#24 Phase 2: pmui にレスポンシブ基盤 (host adapter + px 単位系 + auto-fit grid) を
+入れ、library を全画面レスポンシブ化。#3 (背景全面) と #6 (divider) を green にした。
+
+新機構:
+1. **host adapter (`pmui/host_mainmenu.lua`)**: engine API (get_window_info /
+   set_background / hypertext_escape / log) を adapter 経由に。core 不在 (busted) は
+   REF 値 (1024x600) を返す headless fallback。将来 in-game 版を別 adapter で差せる。
+2. **単位系 (`pmui/units.lua`)**: theme の px = design px (mockup 1024x600 基準)。
+   REF_UNIT_PX=53.328 (Phase 0 実測)。寸法 px→unit は px/REF (unit_px 非依存 = vh 的)、
+   font は unit_px 依存。effective_unit_px は emit する size[] から engine 式で逆算。
+3. **px 単位対応**: box_model の length resolver が "Npx" を unit へ換算 (数値はレガシー
+   formspec unit のまま = 段階リベース共存)。calc()/media query も px 可に。
+4. **responsive**: `pmui.responsive_page()` が window から page サイズ + unit_px を算出。
+   library は max_formspec_size (min clamp 15.5x10) + `padding[0,0]` で全窓を覆う。
+5. **auto-fit grid**: `grid-columns: auto` で列数 = 利用可能幅 ÷ (カード幅+gap)。
+   placeholder は grid が最終行の空きセルへテンプレをクローン生成 (library.lua の
+   grid_cols=3 二重管理 + ctx.placeholders を廃止)。
+6. **device-pixel snapping**: border box を整数 px グリッドへスナップ (paint.lua)。
+
+エンジン制約 (Phase 2 で判明、コメントに記録):
+- `padding[0,0]` は size 直後に置く必要 (bgcolor が間に挟まると効かない)。
+- box[] は色を ~57% 輝度でしか描けない (#00ffe5→(7,147,137))。9-slice PNG のみ full
+  bright。box[] 罫線は AA で上下 1px 失うので、見かけ 2px の divider には 3px 指定。
+
+library CSS を mockup px へリベース (`#pack-library` selector を新設し modal 共通の
+`page` から分離)。detail/modal はまだ formspec unit のまま (Phase 6 でリベース)。
+
+検証:
+- `make check-design SUBTAB=library`: #3/#6/#2 green (残 #1 は Phase 3/4)。旧スクショで
+  #6 thickness が red のまま = 再現維持。
+- 1024x600 / 1600x900 / 2560x1440 で背景全面カバー・divider・auto-fit 列数を確認
+  (2560 では 4 列 = 3 実カード + placeholder 1)。
+- busted 241 tests green (library_spec を responsive size 前提に更新)。
+
+**主な変更ファイル**:
+- mainmenu/lib/pmui/host_mainmenu.lua, units.lua (新規)
+- mainmenu/lib/pmui/{init,box_model,cascade,parser_css,layout,paint}.lua
+- mainmenu/ui/themes/synthwave.css.yml (library 分を px リベース + #pack-library)
+- mainmenu/ui/library.html.yml (placeholder を単一テンプレ化)
+- mainmenu/library.lua (responsive_page 使用、grid_cols 撤去)
+- spec/library_spec.lua, scripts/measure_ui.py, spec/design/library.json
+
+**次のTODO**: props.lua + no-op 警告 (Phase 2 残)、Phase 3 (hypertext 化で #1/#4/#7)
+
+## 2026-07-16 13:00 (main)
+
+**変更概要**:
+#24 (library 画面デザイン問題 9 件) を機構的に根治するための Phase 0 エンジン実測。
+個別数値ハードコードでなく HTML/CSS 的な自動調整で直す方針が承認され (plan:
+`.claude/plans/24-htlm-css-abstract-map.md`)、将来 pmui を汎用レスポンシブ UI
+ライブラリ + in-game MOD へ昇華する構想も込みで、まず Luanti 5.16.1 の実挙動を
+使い捨てハーネス (scratchpad/phase0/) で実測した。結果を以下に記録する
+(以降の Phase 2〜5 の設計はこの数値に依存する)。
+
+**実測結果 (Xvfb, gui_scaling=1, density=1)**:
+
+1. **unit_px 実式が確定**: 1024x600 で `max_formspec_size = 19.2019 × 11.2511`、
+   unit_px = 1024/19.2019 = **53.328px**。固定 size[10,5] でも responsive size でも
+   1u 箱 = 53px で一定 → 短辺 floor (`0.5555×96 = 53.33`) が効く (600/15=40 < 53.33)。
+   → REF_UNIT_PX = 53.33 の設計仮定は実測一致。
+2. **responsive full-window カバー確認**: `size = max_formspec_size` + `padding[0,0]` で
+   四隅の 1u 箱が window の (0,0)/(右上)/(右下) にピタリ (1024x600 全面)。
+   → #3 (背景全面化) は size 可変化だけで大部分 green になる裏付け。
+3. **hypertext の癖**:
+   - `size=` は **px 単位** (12→cap 12px, 24→22px, 48→43px、ほぼ線形)。
+   - デフォルト左マージン **3px**、`margin=0` で 0px に消える (label と同 x)。
+   - `halign=center` はブロック中心一致 (±1.5px)、`halign=right` は右端 -5px、
+     `valign=middle` は帯中央 (±3.5px)。→ エンジン整列が効くので幅推定を精度から外せる。
+   - **幅不足時は折り返し + 高さ超過で縦スクロールバー出現** → 幅戦略必須の裏付け。
+4. **クリック透過** (image_button 上に overlay を重ねてクリック到達を計測):
+   - `image[]` / `label[]` / `box[]` overlay → **透過する** (下のボタンに届く)。
+   - `hypertext[]` overlay → **透過しない** (クリックを食う)。
+   - → composite button は「image_button(9-slice bgimg) を枠全域に敷き、icon=image[]・
+     divider=box[] を重ね、**ラベルは image_button 自身の label** (content_offset で下帯へ)」
+     で全域クリック可能。ラベルに hypertext は使えない。
+5. **content_offset は px 単位** (0,48 でラベルが下帯へ、0,0.9 はほぼ不動)。
+6. **resize 追従**: window リサイズで `WindowInfoChange` イベントが発火し、
+   eventhandler で `ui.update()` すると get_formspec が新 window 情報で再実行される
+   (2 回リサイズで n=2→3 と再構築を確認)。→ **responsive はライブ追従可能**。
+   注意: Luanti は `autosave_screensize` により screen_w/h を conf に保存する。
+   Phase 1 の解像度マトリクスでは conf に screen_w/h を明示注入 + autosave 無効化が要る。
+
+**主な変更ファイル**:
+- mainmenu/init.lua (`packermod_dev_screen` dev hook 追加。実験用画面を差し込む)
+
+**次のTODO**: Phase 1 (再現テスト整備、#24 の 9 症状 + field 被りを red 化)
+
+## 2026-07-16 10:35 (main)
+
+**変更概要**:
+デザインチェック手段を確立した。背景: 目視 (LLM 画像認識) のレビューはラベルの
++8px ズレ・gap=0 の密着を見逃した実績があり、幾何は測って判定する必要がある。
+
+1. **`scripts/measure_ui.py`**: スクショのピクセル解析で幾何を数値化。bg 単色との
+   差分から背景テクスチャのカバレッジ、accent 色の連結成分からアイコンボタン枠、
+   枠下の白文字を単語クラスタリングしてラベルの中心 offset / gap を測る。
+   `make measure SUBTAB=<画面>` でスクショ取得込みで実行できる。
+2. **`.claude/agents/design-review.md`**: デザインレビュー用サブエージェント定義。
+   スクショ取得 → measure_ui.py → 拡大クロップ目視 → mockup (docs/mockup/) 突き合わせ
+   の手順で、崩壊 / ダサさ / mockup 差異をレポートする (修正はしない)。
+3. **CLAUDE.md**: デザインチェック時は design-review のレポートを読んでから判断する
+   運用ルールを追記。目視のみの合否判定を禁止。
+
+検証: 定義と同内容の指示で library 画面をレビュー実行させ、崩壊 3 件 (ラベル中心
+ズレ +8〜9.5px / gap=0 密着 / 背景が formspec 矩形にクリップされ全面を覆わない)、
+中 2 件 (label 系 font-size が style[] no-op で全滅 → タイトル階層消失、ボタンラベル
+の枠外・白・非 uppercase)、低 4 件を数値証拠つきで検出できることを確認した。
+
+**主な変更ファイル**:
+- scripts/measure_ui.py (新規)
+- Makefile (`make measure` 追加)
+- .claude/agents/design-review.md (新規)
+- CLAUDE.md (デザインチェック節)
+- .gitignore (.claude/settings.local.json を除外)
+
+**コミット**: 83068be
+
+**次のTODO**:
+- レビュー検出済みの崩壊 3 件の修正: paint.lua の background 枠外ブリード /
+  layout.lua の Label 幅推定 (0.18u/字 → 実測 0.24u/字) と LabeledIconButton 構造 /
+  style_type[label] 経由の font-size 発行
+- design-review エージェントは次セッションから subagent_type として起動可能
 
 ## 2026-07-15 22:20 (main)
 

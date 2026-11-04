@@ -98,14 +98,32 @@ local function rect_of(el, opts)
     return x, y, w, h
 end
 
--- 浮動小数点誤差で「ピッタリ接している」widget 同士(LabeledIconButton の
--- image_button + 下の Label など)が誤って overlap 判定されないよう
--- 微小 epsilon を引いて余裕を持たせる。
+-- 浮動小数点誤差で「ピッタリ接している」widget 同士 (隣接するカード/ボタンなど) が
+-- 誤って overlap 判定されないよう微小 epsilon を引いて余裕を持たせる。
 local EPSILON = 1e-3
 local function overlaps_rect(ax, ay, aw, ah, bx, by, bw, bh)
     if aw <= EPSILON or ah <= EPSILON or bw <= EPSILON or bh <= EPSILON then return false end
     return ax + EPSILON < bx + bw and bx + EPSILON < ax + aw and
            ay + EPSILON < by + bh and by + EPSILON < ay + ah
+end
+
+-- inner の AABB が outer の AABB に (誤差込みで) 完全に収まるか。
+local function contains_rect(ox, oy, ow, oh, ix, iy, iw, ih)
+    return ix + EPSILON >= ox and iy + EPSILON >= oy and
+           ix + iw <= ox + ow + EPSILON and iy + ih <= oy + oh + EPSILON
+end
+
+-- composite icon-button (Phase 4) はボタン枠 (image_button, fg=blank) の中に
+-- アイコン image[] を意図的に重ねる。ボタンに完全内包された image は overlay なので
+-- overlap 扱いしない (別ボタンにはみ出す image は内包されないので依然検知される)。
+local function is_composite_icon_overlay(a, b, opts)
+    local btn, img
+    if a.kind == "button" and b.kind == "image" then btn, img = a, b
+    elseif b.kind == "button" and a.kind == "image" then btn, img = b, a
+    else return false end
+    local bx, by, bw, bh = rect_of(btn, opts)
+    local ix, iy, iw, ih = rect_of(img, opts)
+    return contains_rect(bx, by, bw, bh, ix, iy, iw, ih)
 end
 
 function M.find_overlaps(elements, opts)
@@ -116,7 +134,8 @@ function M.find_overlaps(elements, opts)
             local a, b = elements[i], elements[j]
             local ax, ay, aw, ah = rect_of(a, opts)
             local bx, by, bw, bh = rect_of(b, opts)
-            if overlaps_rect(ax, ay, aw, ah, bx, by, bw, bh) then
+            if overlaps_rect(ax, ay, aw, ah, bx, by, bw, bh)
+                and not is_composite_icon_overlay(a, b, opts) then
                 table.insert(out, { a = a, b = b })
             end
         end

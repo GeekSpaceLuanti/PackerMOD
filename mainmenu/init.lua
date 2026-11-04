@@ -58,7 +58,14 @@ local engine_settings_mod = dofile(self_path .. "engine_settings.lua")
 local settings_catalog = dofile(self_path .. "settings_catalog.lua")
 local world_settings_mod = dofile(self_path .. "world_settings.lua")
 
+-- Dev/test hook: packermod_fixture_root = <dir> で user_path を差し替え、
+-- 決定論的な pack 集合 (0 個の empty state / N 個の grid) でデザイン検証する。
+-- fixture は <dir>/PackerMOD/packs/<id>/manifest.yaml を持つ。通常起動では未設定。
 local user_path = core.get_user_path()
+local fixture_root = core.settings and core.settings:get("packermod_fixture_root")
+if fixture_root and fixture_root ~= "" then
+    user_path = fixture_root
+end
 local fs = world_builder._default_fs()
 local world_session = world_settings_mod.session({ settings = core.settings,
     journal_path = user_path .. "/PackerMOD/world-session.json" })
@@ -171,10 +178,15 @@ local function init()
     -- ln -s / mklink /J で作っているのでリンク先(本物の world)は無事。
     pack_launcher.cleanup_symlinks(packermod.user_path)
 
-    library.show()
-    if core.settings:get_bool("packermod_initial_native_settings", false) then
-        local settings = packermod.dialogs.dlg_settings.show(library.dlg())
-        packermod.dialogs.dlg_settings.open_native(settings)
+    local dev_screen = core.settings and core.settings:get("packermod_dev_screen")
+    if dev_screen and dev_screen ~= "" then
+        dofile(dev_screen).show()
+    else
+        library.show()
+        if core.settings:get_bool("packermod_initial_native_settings", false) then
+            local settings = packermod.dialogs.dlg_settings.show(library.dlg())
+            packermod.dialogs.dlg_settings.open_native(settings)
+        end
     end
     ui.update()
     core.log("action", "PackerMOD: menu ready")

@@ -11,6 +11,7 @@
 local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 local stylesheet = dofile(SELF_DIR .. "stylesheet.lua")
 local dom        = dofile(SELF_DIR .. "dom.lua")
+local units      = dofile(SELF_DIR .. "units.lua")
 
 local M = {}
 
@@ -97,7 +98,14 @@ local function eval_calc_expr(expr, vars, opts)
             local j = i
             while j <= #expr and expr:sub(j, j):match("[%d%.]") do j = j + 1 end
             if j == i then error("calc: unexpected char '" .. c .. "' in '" .. expr .. "'") end
-            tokens[#tokens + 1] = tonumber(expr:sub(i, j - 1))
+            local num = tonumber(expr:sub(i, j - 1))
+            -- px suffix: design px を formspec unit へ換算してから計算に載せる。
+            -- calc(32px / 2) のような混在式を許す (単位の非対称を残さない)。
+            if expr:sub(j, j + 1) == "px" then
+                num = units.px_to_units(num)
+                j = j + 2
+            end
+            tokens[#tokens + 1] = num
             i = j
         end
     end
