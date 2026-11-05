@@ -35,6 +35,7 @@ show_developer=false
 main_script="$repo_root/mainmenu/init.lua"
 ready_marker="PackerMOD: menu ready"
 case "$view" in
+    operations_test) main_script="$repo_root/scripts/operations_smoke_mainmenu.lua"; ready_marker="PackerMOD: operation matrix verified" ;;
     library) ;;
     contentdb_live) main_script="$repo_root/scripts/contentdb_smoke_mainmenu.lua"; ready_marker="PackerMOD: live ContentDB verified" ;;
     contentdb_catalog) main_script="$repo_root/scripts/contentdb_catalog_mainmenu.lua"; ready_marker="PackerMOD: ContentDB catalog ready" ;;
@@ -147,12 +148,30 @@ packermod_initial_modal = $modal
 packermod_initial_page = $page
 packermod_initial_create_step = $step
 CONF
+if [[ "$view" == operations_test ]]; then
+    python3 - "$user_dir" <<'PY'
+import sys, zipfile
+from pathlib import Path
+root = Path(sys.argv[1])
+for name, prefix in [("nested.zip", "matrixmod-main/"), ("flat.zip", "")]:
+    with zipfile.ZipFile(root / name, "w") as z:
+        if prefix:
+            z.writestr(prefix, "")
+        z.writestr(prefix + "mod.conf", "name = matrixmod\n")
+        z.writestr(prefix + "init.lua", "core.matrix_mod_loaded = true\n")
+with zipfile.ZipFile(root / "import.zip", "w") as z:
+    z.writestr("manifest.yaml", "schema_version: 1\nid: zip_import\nname: ZIP import\nversion: '1'\nbase_game:\n  id: matrix\n  installed_id: matrix\n  version: installed\n")
+    z.writestr("thumbnail.png", "fixture")
+PY
+fi
 LUANTI_USER_PATH="$user_dir" LIBGL_ALWAYS_SOFTWARE=1 "$runner" \
     --config "$run_dir/minetest.conf" --logfile "$run_dir/engine.log" \
     > "$run_dir/console.log" 2>&1 &
 engine_pid=$!
 window=""
-for ((i=0; i<600; i++)); do
+max_wait=600
+[[ "$view" != operations_test ]] || max_wait=6000
+for ((i=0; i<max_wait; i++)); do
     kill -0 "$engine_pid" 2>/dev/null || { cat "$run_dir/console.log" >&2; exit 1; }
     window="$(xdotool search --onlyvisible --pid "$engine_pid" 2>/dev/null | head -1 || true)"
     if grep -q 'ERROR\[' "$run_dir/console.log"; then cat "$run_dir/console.log" >&2; exit 1; fi

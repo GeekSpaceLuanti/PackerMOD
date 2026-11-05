@@ -43,6 +43,18 @@ local function fs_iface(t)
 end
 
 describe("world_builder.gameid_for", function()
+    it("normalizes portable extraction paths on both operating systems", function()
+        assert.equal("/tmp/user/mods/m", wb.normalize_path("/tmp/user/bin/../mods/m"))
+        assert.equal("C:/Luanti/mods/m", wb.normalize_path("C:\\Luanti\\bin\\..\\mods\\m"))
+        assert.equal("//server/share/m", wb.normalize_path("\\\\server\\share\\bin\\..\\m"))
+        local saved_core = core
+        local captured
+        _G.core = { extract_zip = function(zip, dst) captured = { zip, dst }; return true end }
+        local ok = wb._default_fs().extract_zip("/tmp/user/bin/../cache/mod.zip", "/tmp/user/bin/../mods/m")
+        _G.core = saved_core
+        assert.is_true(ok)
+        assert.same({ "/tmp/user/cache/mod.zip", "/tmp/user/mods/m" }, captured)
+    end)
     it("encodes version safely", function()
         assert.are.equal("packerbase_0_91", wb.gameid_for({ id = "packerbase", version = "0.91" }))
         assert.are.equal("packerbase_1_2_3", wb.gameid_for({ id = "packerbase", version = "1.2.3" }))
@@ -130,15 +142,25 @@ describe("world_builder.sanitize_world_name", function()
         assert.is_nil(wb.sanitize_world_name("///"))
         assert.is_nil(wb.sanitize_world_name(nil))
     end)
-    it("preserves multi-byte input by replacing each non-ascii byte", function()
-        -- 日本語などは _ に潰れる(ascii safe)
-        local out = wb.sanitize_world_name("テスト_world")
-        assert.is_truthy(out)
-        assert.is_truthy(out:find("world", 1, true))
+    it("preserves Japanese-only names and avoids Windows reserved names", function()
+        assert.equal("テスト", wb.sanitize_world_name("テスト"))
+        assert.equal("_CON", wb.sanitize_world_name("CON"))
+        assert.equal("_com1", wb.sanitize_world_name("com1"))
+        assert.is_nil(wb.sanitize_world_name("name\ngameid = other"))
     end)
 end)
 
 describe("world_builder.create_world (subdir layout)", function()
+    it("allows retry after world.mt cannot be saved", function()
+        local _, m = manifest_mod.parse(read_fixture("sample_pack.yaml"))
+        local t = fake_fs({ "/user/games/packerbase_0_91" })
+        local fs = fs_iface(t)
+        fs.write_file = function() return false, "disk full" end
+        fs.delete_dir = function(path) t.existing[path] = nil; return true end
+        assert.is_false(wb.create_world(m, "/user", { fs = fs, world_name = "Retry" }))
+        fs.write_file = function() return true end
+        assert.is_true(wb.create_world(m, "/user", { fs = fs, world_name = "Retry" }))
+    end)
     it("creates world under PackerMOD/packs/<pack>/worlds/<name>/ when base game exists", function()
         local _, m = manifest_mod.parse(read_fixture("sample_pack.yaml"))
         local t = fake_fs({ "/user/games/packerbase_0_91" })

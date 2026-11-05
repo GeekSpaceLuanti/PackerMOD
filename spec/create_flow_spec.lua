@@ -105,6 +105,81 @@ describe("ContentDB Pack creation flow", function()
         assert.is_truthy(dialog.data.status:find("network error", 1, true))
     end)
 
+    it("creates from an installed normalized engine ID without a release download", function()
+        core.get_games = function() return { { id = "minetest", title = "Minetest Game", path = "/games/minetest_game" } } end
+        dialog = create.show()
+        dialog.handler(dialog, { pack_name = "Installed", next_step = true })
+        assert.equal("minetest", dialog.data.base_game.installed_id)
+        dialog.handler(dialog, { next_step = true })
+        dialog.handler(dialog, { export = true })
+        assert.equal(0, #requests)
+        saved.callback(true)
+        local ok, pack = manifest.parse(saved.text)
+        assert.is_true(ok)
+        assert.equal("minetest", pack.base_game.installed_id)
+    end)
+
+    it("requires a name and game, and keeps values when navigating backwards", function()
+        dialog.handler(dialog, { pack_name = "  ", next_step = true })
+        assert.equal("details", dialog.data.step)
+        dialog.handler(dialog, { pack_name = "Named", pack_description = "説明", next_step = true })
+        assert.equal("game", dialog.data.step)
+        dialog.handler(dialog, { next_step = true })
+        assert.equal("game", dialog.data.step)
+        select_game(dialog, requests)
+        dialog.handler(dialog, { next_step = true })
+        assert.equal("mods", dialog.data.step)
+        dialog.handler(dialog, { previous_step = true })
+        assert.equal(10, dialog.data.base_game.release)
+        dialog.handler(dialog, { previous_step = true })
+        assert.equal("説明", dialog.data.pack_description)
+    end)
+
+    it("handles MOD search, compatible release, duplicate, remove and empty selection", function()
+        select_game(dialog, requests)
+        dialog.handler(dialog, { next_step = true })
+        dialog.handler(dialog, { add_search = true })
+        assert.equal(0, #dialog.data.mods)
+        dialog.handler(dialog, { search_query = "probe", search = true })
+        requests[#requests].callback({ { name = "probe", author = "Fixture" } })
+        dialog.handler(dialog, { search_results = "CHG:1" })
+        for _ = 1, 2 do
+            dialog.handler(dialog, { add_search = true })
+            requests[#requests].callback({ { id = 99, min_minetest_version = { name = "9.0" } }, { id = 10 } })
+        end
+        assert.equal(1, #dialog.data.mods)
+        assert.equal(10, dialog.data.mods[1].release)
+        dialog.handler(dialog, { mod_list = "CHG:1" })
+        dialog.handler(dialog, { remove_mod = true })
+        assert.equal(0, #dialog.data.mods)
+        dialog.handler(dialog, { remove_mod = true })
+        assert.equal(0, #dialog.data.mods)
+    end)
+
+    for _, failure in ipairs({ "search", "releases", "worker", "save" }) do
+        it("retains the open dialog after " .. failure .. " failure", function()
+            if failure == "search" then
+                dialog.handler(dialog, { game_search = true })
+                requests[#requests].callback(nil, "offline")
+            elseif failure == "worker" then
+                packermod.client.search_async = function() return false end
+                dialog.handler(dialog, { game_search = true })
+            elseif failure == "releases" then
+                dialog.data.games = { { author = "Fixture", name = "game" } }
+                dialog.handler(dialog, { game_list = "CHG:1" })
+                requests[#requests].callback(nil, "offline")
+            else
+                select_game(dialog, requests)
+                dialog.handler(dialog, { next_step = true })
+                packermod.importer.import_from_yaml_text = function() return false, "disk full" end
+                dialog.handler(dialog, { export = true }); saved.callback(true)
+            end
+            assert.is_false(dialog.data.busy)
+            assert.is_nil(dialog.deleted)
+            assert.is_truthy(dialog.data.status:find("failed", 1, true))
+        end)
+    end
+
     it("ignores a search response after the dialog was closed", function()
         dialog.handler(dialog, { game_search = true })
         dialog.handler(dialog, { dlg_close = true })

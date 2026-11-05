@@ -44,6 +44,18 @@ local function fake_installer(behavior, log)
 end
 
 describe("pack_launcher.launch / new_world", function()
+    for _, failure in ipairs({ "install", "snapshot" }) do
+        it("removes only the newly created incomplete world after " .. failure .. " failure", function()
+            local builder = fake_world_builder("ok")
+            local removed
+            builder.delete_world = function(id, name, root) removed = { id, name, root }; return true end
+            local pl = pack_launcher.new({ user_path = "/user", world_builder = builder,
+                mod_installer = fake_installer(failure == "install" and "fail" or "ok", {}),
+                world_sync = { record = function() return false, "disk full" end } })
+            assert.is_false(pl.new_world({ path = "/p", manifest = { id = "p" } }, { world_name = "retry" }))
+            assert.same({ "p", "retry", "/user" }, removed)
+        end)
+    end
     it("creates world then installs mods (default world_name=main)", function()
         local log = {}
         local pl = pack_launcher.new({

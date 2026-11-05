@@ -11,6 +11,23 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-11-05 11:01 (main)
+
+**変更概要**:
+Minetest GameのエンジンIDとフォルダー名の違いによりPack作成・ワールド作成が失敗する問題を修正。インストール済みゲームの実パスを利用する。
+日本語ワールド名、MOD ZIPの階層とパス正規化、URL別キャッシュ、作成失敗時の再試行、不正Importとポートの検証も改善した。テスト時のLuanti終了をエージェント判断で行えるようAGENTS.mdを更新した。
+
+**主な変更ファイル**:
+- mainmenu/game_store.lua, world_builder.lua, mod_installer.lua, pack_launcher.lua, manifest.lua, library.lua, dialogs/dlg_create.lua
+- spec/game_store_spec.luaおよび作成・起動・Import関連の回帰テスト
+- scripts/operations_smoke_mainmenu.lua, windows_game_smoke_mainmenu.lua, windows_game_test.ps1, screenshot_mainmenu.sh
+- docs/operation-test-report.md, docs/visual-tests.md, AGENTS.md
+
+**検証**:
+325件のLuaテスト成功。45画面の撮影、24条件・72回の実ゲーム起動、ZIP取り込み、ContentDB実通信を確認。Windows版へバックアップ・保護データ確認・ハッシュ検証付きで反映し、実Minetest GameでPack作成・日本語ワールド作成・2回の起動と復元に成功した。公開MOD・外部サーバーの全組み合わせは未検証。
+
+**コミット**: 本エントリを含む修正コミット。
+
 ## 2026-11-04 19:35 (main)
 
 **変更概要**:

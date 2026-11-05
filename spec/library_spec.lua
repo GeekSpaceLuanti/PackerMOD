@@ -81,6 +81,14 @@ describe("library._internal helpers", function()
     end)
 
     describe("build_server_from_form", function()
+        it("rejects zero, negative, fractional and out-of-range ports", function()
+            for _, port in ipairs({ "0", "-1", "1.5", "65536", "inf" }) do
+                assert.is_nil(lib._internal.build_server_from_form({ address = "localhost", port = port }))
+            end
+            for _, port in ipairs({ "1", "65535" }) do
+                assert.equal(tonumber(port), lib._internal.build_server_from_form({ address = "localhost", port = port }).port)
+            end
+        end)
         local f
         setup(function() f = lib._internal.build_server_from_form end)
         it("rejects empty address", function()

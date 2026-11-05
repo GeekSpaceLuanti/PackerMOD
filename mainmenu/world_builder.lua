@@ -1,5 +1,17 @@
 local M = {}
 
+function M.normalize_path(path)
+    path = path:gsub("\\", "/")
+    local prefix = path:sub(1, 2) == "//" and "//" or (path:sub(1, 1) == "/" and "/" or "")
+    local parts = {}
+    for part in path:gmatch("[^/]+") do
+        if part == ".." and #parts > 0 and parts[#parts] ~= ".." and not parts[#parts]:match("^%a:$") then
+            table.remove(parts)
+        elseif part ~= "." then parts[#parts + 1] = part end
+    end
+    return prefix .. table.concat(parts, "/")
+end
+
 local function fmt_setting_value(v)
     if v == nil then return "" end
     if v == true then return "true" end
@@ -16,17 +28,37 @@ function M.gameid_for(base_game)
     return id .. "_" .. (ver:gsub("[^%w]", "_"))
 end
 
+-- Engine IDs are not directory names: minetest_game is exposed as minetest,
+-- and installed games may also live in a shared/system game directory.
+function M.gamepath_for(base_game, user_data_path)
+    local id = M.gameid_for(base_game)
+    if base_game.installed_id and rawget(_G, "core") and core.get_games then
+        for _, game in ipairs(core.get_games() or {}) do
+            if game.id == id and type(game.path) == "string" then return game.path end
+        end
+        return nil
+    end
+    return user_data_path .. "/games/" .. id
+end
+
 -- ユーザー入力をディレクトリ名として安全な文字列に正規化する。
 -- 戻り値: 1文字以上の sanitized 文字列、または nil(空 / 不正)
 function M.sanitize_world_name(name)
     if type(name) ~= "string" then return nil end
-    -- ASCII の英数字・アンダースコア・ハイフン以外を全部 _ に
-    local s = name:gsub("[^%w_%-]", "_")
+    -- Retain UTF-8 names; replace ASCII path separators and punctuation.
+    if name:find("[%c]") then return nil end
+    local s = name:gsub("[^%w_%-\128-\255]", "_")
     -- 連続 _ を 1個に潰す
     s = s:gsub("_+", "_")
     -- 先頭末尾の _- を削る
     s = s:gsub("^[_%-]+", ""):gsub("[_%-]+$", "")
     if s == "" then return nil end
+    -- These names cannot be created as directories on Windows.
+    if s:upper():match("^(CON)$") or s:upper():match("^(PRN)$")
+            or s:upper():match("^(AUX)$") or s:upper():match("^(NUL)$")
+            or s:upper():match("^COM[1-9]$") or s:upper():match("^LPT[1-9]$") then
+        s = "_" .. s
+    end
     return s
 end
 
@@ -120,9 +152,14 @@ function M._default_fs()
             os.execute(('cp -r "%s" "%s"'):format(src, dst))
             return true
         end,
+        list_dir = function(path)
+            return core.get_dir_list(path, true) or {}
+        end,
         extract_zip = function(zip, dst)
             if rawget(_G, "core") and core.extract_zip then
-                return core.extract_zip(zip, dst)
+                -- Portable engines return user paths ending in bin/.. . The
+                -- extractor compares a normalized entry to its destination.
+                return core.extract_zip(M.normalize_path(zip), M.normalize_path(dst))
             end
             return false
         end,
@@ -147,9 +184,9 @@ function M.create_world(manifest, user_data_path, opts)
     local world_path = pack_worlds .. "/" .. sanitized
 
     local gameid = M.gameid_for(manifest.base_game)
-    local game_path = user_data_path .. "/games/" .. gameid
-    if not fs.exists(game_path) then
-        return false, ("base game not installed: %s (expected at %s)"):format(gameid, game_path)
+    local game_path = M.gamepath_for(manifest.base_game, user_data_path)
+    if not game_path or not fs.exists(game_path) then
+        return false, ("base game not installed: %s"):format(gameid)
     end
 
     if fs.exists(world_path) then
@@ -167,7 +204,11 @@ function M.create_world(manifest, user_data_path, opts)
     -- world.mt の world_name は raw 入力(display)。サニタイズ済みはディレクトリ名のみで使う。
     local mt_text = M.build_world_mt(manifest, { world_name = raw })
     local ok2, err2 = fs.write_file(world_path .. "/world.mt", mt_text)
-    if not ok2 then return false, "write world.mt failed: " .. tostring(err2) end
+    if not ok2 then
+        local removed = fs.delete_dir(world_path)
+        return false, "write world.mt failed: " .. tostring(err2)
+            .. (removed and "" or "; cannot remove incomplete world")
+    end
 
     return true, {
         world_path = world_path,

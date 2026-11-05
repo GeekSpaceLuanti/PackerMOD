@@ -332,6 +332,9 @@ local function build_server_from_form(form)
     if form.port and form.port ~= "" and not port then
         return nil, "Port must be a number"
     end
+    if port and (port < 1 or port > 65535 or port % 1 ~= 0) then
+        return nil, "Port must be an integer between 1 and 65535"
+    end
     return {
         name = (form.name or ""):match("^%s*(.-)%s*$"),
         address = addr,

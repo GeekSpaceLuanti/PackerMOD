@@ -48,12 +48,12 @@ function M.new(opts)
     local self = {}
     function self.ensure(base, release, callback)
         if type(base.id) ~= "string" or not base.id:match("^[%w_%-]+$")
-                or (base.installed_id and not base.installed_id:match("^[%w_%-]+$"))
+                or (base.installed_id and (type(base.installed_id) ~= "string" or not base.installed_id:match("^[%w_%-]+$")))
                 or (not base.installed_id and (type(base.release) ~= "number" or base.release < 1 or base.release % 1 ~= 0)) then
             callback(false, "Invalid game identifier"); return true
         end
-        local destination = opts.user_path .. "/games/" .. builder.gameid_for(base)
-        if fs.exists(destination .. "/game.conf") and fs.exists(destination .. "/mods") then
+        local destination = builder.gamepath_for(base, opts.user_path)
+        if destination and fs.exists(destination .. "/game.conf") and fs.exists(destination .. "/mods") then
             callback(true); return true
         end
         if base.installed_id then callback(false, "Installed game is missing"); return true end

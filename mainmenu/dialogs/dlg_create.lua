@@ -189,7 +189,7 @@ function M.show(parent)
     local data = dlg.data
     data.step = core.settings:get("packermod_initial_create_step") or "details"
     data.pack_id, data.pack_version = packermod.pack_builder.uuid(), "1.0.0"
-    data.games, data.releases, data.mods = {}, {}, {}
+    data.games, data.releases, data.mods, data.search_results = {}, {}, {}, {}
     for _, game in ipairs(core.get_games() or {}) do
         data.games[#data.games + 1] = { name = game.id, title = game.title or game.name,
             installed_id = game.id }

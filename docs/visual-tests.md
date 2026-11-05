@@ -78,6 +78,19 @@ Linux描画の検証です。Windows固有のフォント、パス処理、Junct
 
 Luantiを通常終了してから実行します。更新前のメニュー・テクスチャ・設定を保存し、Pack・キャッシュ・ワールドが変わっていないことと配置ファイルのハッシュを確認します。
 
+## Pack・MOD・ワールド操作の組み合わせ
+
+```powershell
+.\scripts\visual_tests.ps1 -View operations_test
+.\scripts\windows_game_test.ps1
+```
+
+`operations_test` はゲーム3配置（`_game`接尾辞、通常のインストール済みID、ContentDB版別配置）×MOD4構成（なし、同梱、ContentDBキャッシュ、URLキャッシュ）×英数字／日本語名の24条件で、新規起動・再起動・MOD削除後の起動を計72回実行します。ゲーム内の検証MODが、MODの実ロード／削除と各起動の完了を確認します。ZIP取り込み、同IDの拒否、メタ情報保存、サーバー一覧の保存・削除、ワールド削除、起動後の復元も一時領域で検証します。ゲームとMODは検証用の最小フィクスチャであり、任意の公開MOD間の互換性を保証する試験ではありません。
+
+`windows_game_test.ps1` は配置済みメニューとこのPCの実Minetest Gameを使います。ユーザーデータは `LUANTI_USER_PATH` で一時領域へ分離し、実ゲームは追加検索パスから読み取ります。作成ウィザードでのPack保存、日本語名ワールドの作成、2回のゲーム起動と復元を検証して正常終了します。ログを `.screenshots/` に、調査用の一時プロファイルをTempに残します。別の実行ファイルは `-LuantiExe` で指定できます。
+
+今回の検証範囲と結果は [操作テスト結果](operation-test-report.md) を参照してください。
+
 ## ワールド設定の隔離と実ゲーム起動
 
 ```powershell

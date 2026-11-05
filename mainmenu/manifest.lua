@@ -68,11 +68,14 @@ function M.validate(data)
     local r1, e1 = check_string(data.base_game, "id", "base_game"); if r1 == false then return r1, e1 end
     local r2, e2 = check_string(data.base_game, "version", "base_game"); if r2 == false then return r2, e2 end
     if not data.base_game.id:match("^[%w_%-]+$") then return err("invalid base game id") end
-    if data.base_game.installed_id and not data.base_game.installed_id:match("^[%w_%-]+$") then
+    if data.base_game.installed_id ~= nil and (type(data.base_game.installed_id) ~= "string"
+            or not data.base_game.installed_id:match("^[%w_%-]+$")) then
         return err("invalid installed game id")
     end
     if data.base_game.package then
-        if not data.base_game.package:match("^[%w_%-]+/[%w_%-]+$") then return err("invalid game package") end
+        if type(data.base_game.package) ~= "string" or not data.base_game.package:match("^[%w_%-]+/[%w_%-]+$") then
+            return err("invalid game package")
+        end
         if type(data.base_game.release) ~= "number" or data.base_game.release < 1
                 or data.base_game.release % 1 ~= 0 then return err("invalid game release") end
     end

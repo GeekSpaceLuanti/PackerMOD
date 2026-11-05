@@ -5,7 +5,13 @@ local function pkg_cache_name(package, release)
 end
 
 local function url_cache_name(mod_spec)
-    return "url__" .. (mod_spec.sha256 or "nohash") .. ".zip"
+    -- Different URL-only MODs must never share the same cached archive.
+    local key = mod_spec.sha256
+    if not key then
+        if rawget(_G, "core") and core.sha256 then key = core.sha256(mod_spec.url)
+        else key = mod_spec.url:gsub(".", function(c) return ("%02x"):format(c:byte()) end) end
+    end
+    return "url__" .. key .. ".zip"
 end
 
 function M.new(opts)
@@ -15,6 +21,32 @@ function M.new(opts)
     assert(fs and client and cache_dir, "mod_installer.new: fs, contentdb_client, cache_dir required")
 
     local self = {}
+
+    local function extract(zip, target)
+        -- ContentDB/GitHub archives normally contain one enclosing directory.
+        -- Extract beside the destination, then publish the actual MOD root.
+        if not fs.list_dir then return fs.extract_zip(zip, target) end
+        local stage = target .. ".installing"
+        if fs.exists(stage) then return false, "MOD installation already in progress" end
+        if not fs.mkdir(stage) then return false, "Cannot stage MOD" end
+        if not fs.extract_zip(zip, stage) then
+            fs.delete_dir(stage); return false, "extract failed"
+        end
+        local root = stage
+        local function is_mod(path)
+            return fs.exists(path .. "/init.lua") or fs.exists(path .. "/modpack.conf")
+                or fs.exists(path .. "/modpack.txt")
+        end
+        if not is_mod(root) then
+            local dirs = fs.list_dir(root)
+            if #dirs == 1 then root = root .. "/" .. dirs[1] end
+        end
+        if not is_mod(root) then fs.delete_dir(stage); return false, "Invalid MOD archive" end
+        if fs.exists(target) then fs.delete_dir(stage); return false, "MOD destination already exists" end
+        local ok, err = fs.rename(root, target)
+        if root ~= stage or not ok then fs.delete_dir(stage) end
+        return ok and true or false, err
+    end
 
     function self.cache_path_for(mod_spec)
         if mod_spec.source == "contentdb" then
@@ -43,8 +75,7 @@ function M.new(opts)
                 local ok, derr = client.download(url, zip)
                 if not ok then return false, "download: " .. tostring(derr) end
             end
-            if not fs.extract_zip(zip, target) then return false, "extract failed" end
-            return true
+            return extract(zip, target)
         end
 
         if mod_spec.source == "url" then
@@ -53,8 +84,7 @@ function M.new(opts)
                 local ok, derr = client.download(mod_spec.url, zip)
                 if not ok then return false, "download: " .. tostring(derr) end
             end
-            if not fs.extract_zip(zip, target) then return false, "extract failed" end
-            return true
+            return extract(zip, target)
         end
 
         return false, "unknown source: " .. tostring(mod_spec.source)

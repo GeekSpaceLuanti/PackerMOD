@@ -10,6 +10,15 @@ local function read_fixture(name)
 end
 
 describe("manifest.parse", function()
+    it("rejects non-string installed IDs and game packages without throwing", function()
+        for _, key in ipairs({ "installed_id", "package" }) do
+            for _, value in ipairs({ 7, true, {} }) do
+                local _, m = manifest.parse(read_fixture("sample_pack.yaml"))
+                m.base_game[key] = value
+                assert.is_false(manifest.validate(m))
+            end
+        end
+    end)
     it("parses the sample fixture", function()
         local ok, m = manifest.parse(read_fixture("sample_pack.yaml"))
         assert.is_true(ok)

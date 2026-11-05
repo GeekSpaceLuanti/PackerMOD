@@ -115,6 +115,13 @@ describe("mod_installer.install_mod contentdb", function()
 end)
 
 describe("mod_installer.install_mod url", function()
+    it("keeps different URL-only archives separate and reuses the same URL", function()
+        local mi = new_installer(fake_fs(), fake_client())
+        local first = { source = "url", url = "https://example.test/a.zip" }
+        local second = { source = "url", url = "https://example.test/b.zip" }
+        assert.are_not.equal(mi.cache_path_for(first), mi.cache_path_for(second))
+        assert.equal(mi.cache_path_for(first), mi.cache_path_for(first))
+    end)
     it("downloads URL to cache when missing then extracts", function()
         local fs_t = fake_fs()
         local cl = fake_client()

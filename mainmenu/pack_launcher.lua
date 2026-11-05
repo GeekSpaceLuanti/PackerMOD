@@ -121,11 +121,15 @@ function M.new(opts)
             world_name = world_opts.world_name,
         })
         if not ok then return false, info end
+        local function rollback(reason)
+            local removed, err = world_builder.delete_world(pack.manifest.id, info.world_name, user_path)
+            return false, tostring(reason) .. (removed and "" or ("; cannot remove incomplete world: " .. tostring(err)))
+        end
         local mok, merr = mod_installer.install_all(pack.manifest, info.world_path, pack.path)
-        if not mok then return false, merr end
+        if not mok then return rollback(merr) end
         if opts.world_sync then
             local saved, err = opts.world_sync.record(pack, info.world_path)
-            if not saved then return false, "cannot save Pack state: " .. tostring(err) end
+            if not saved then return rollback("cannot save Pack state: " .. tostring(err)) end
         end
         return true, info
     end
