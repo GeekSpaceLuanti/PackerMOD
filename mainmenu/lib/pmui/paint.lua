@@ -222,12 +222,28 @@ function M.render(root, opts)
     end
 
     -- background9 と border は widget の _x, _y が確定してから出すので append で末尾に。
-    local append = emit_container_decor(root, L, page_w, page_h, widget_tree, opts.texture_dir)
+    local auto_flow = root.attrs and root.attrs.layout == "flow"
+    if auto_flow then
+        dom.walk(root, function(el)
+            if not el._widget or not is_container_tag(el.tag) then return end
+            local box = el.box
+            el._widget.flow_border = function(w)
+                local out = side_border_boxes(w._x, w._y, w.w, w.h, box)
+                if box.border_width > 0 and box.border_color then
+                    for _, line in ipairs(border_boxes(w._x, w._y, w.w, w.h, box.border_width, box.border_color)) do out[#out + 1] = line end
+                end
+                return out
+            end
+        end)
+    end
+    local append = not auto_flow and emit_container_decor(root, L, page_w, page_h, widget_tree, opts.texture_dir) or {}
 
     return L.build_formspec(widget_tree, {
         w = page_w, h = page_h,
         prepend = prepend,
         append = append,
+        auto_flow = auto_flow,
+        scroll_value = opts.ctx and opts.ctx.layout_scroll,
     })
 end
 

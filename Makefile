@@ -1,4 +1,10 @@
-.PHONY: test e2e all screenshot screenshot-all measure check-design icons vendor-icons bgimg thumb
+.PHONY: test e2e all screenshot screenshot-all measure check-design icons vendor-icons bgimg thumb gui-test gui-assets
+
+gui-test:
+	bash scripts/test_modern_gui.sh
+
+gui-assets:
+	python3 scripts/build_modern_gui.py
 
 ICON_NAMES := play reload download search plus trash save settings-2 folder cloud package box
 THEMES ?= synthwave

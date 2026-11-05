@@ -335,6 +335,9 @@ local function render(w, out, theme)
                 fnum(w._x), fnum(w._y), fnum(w.w), fnum(w.h), w.bgcolor)
         end
         for _, child in ipairs(w) do render(child, out, theme) end
+        if w._flow_decor and w.flow_border then
+            for _, rect in ipairs(w.flow_border(w)) do out[#out + 1] = rect end
+        end
     elseif k == "Label" then
         maybe_emit_style(w, out, theme)
         local text = w.text
@@ -434,15 +437,20 @@ end
 -- ---- public API ----
 
 local function compute(root, opts)
+    if opts.auto_flow then
+        local path = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
+        root = dofile(path .. "flow.lua").fit(root, opts.w, opts.h, measure, M, opts.scroll_value)
+    end
     measure(root)
     if opts.w then root.w = opts.w end
     if opts.h then root.h = opts.h end
     layout(root, opts.x or 0, opts.y or 0, root.w, root.h)
+    return root
 end
 
 function M.build_formspec(root, opts)
     opts = opts or {}
-    compute(root, opts)
+    root = compute(root, opts)
     local parts = {
         ("formspec_version[%s]"):format(opts.version or 6),
         ("size[%s,%s]"):format(fnum(root.w), fnum(root.h)),
@@ -459,7 +467,7 @@ function M.build_formspec(root, opts)
 end
 
 function M.iter_elements(root, opts)
-    compute(root, opts or {})
+    root = compute(root, opts or {})
     local list = {}
     local function walk(w)
         local k = w._kind

@@ -43,6 +43,13 @@ case "$view" in
     library_many) count=7 ;;
     library_page2) count=7; page=2 ;;
     worlds|multi|mods|info) subtab="$view" ;;
+    worlds_empty) subtab=worlds ;;
+    modal_world_create|modal_world_delete) subtab=worlds; modal="${view#modal_}" ;;
+    gui_controls_test|settings_interaction|settings_scale_interaction) view=gui_controls_test; main_script="$repo_root/scripts/gui_probe_mainmenu.lua"; modal=settings; settings_tab=audio ;;
+    info_scroll_end) subtab=info ;;
+    detail_resize) subtab=worlds ;;
+    modal_pack_delete) subtab=worlds; modal=pack_delete ;;
+    pack_delete_test) main_script="$repo_root/scripts/gui_probe_mainmenu.lua"; subtab=info; modal=pack_delete ;;
     modal_create_mods) modal=create; step=mods ;;
     modal_create_game) modal=create; step=game ;;
     native_settings) native_settings=true ;;
@@ -50,7 +57,7 @@ case "$view" in
     modal_create_scale_large) modal=create; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
     worlds_scale_large) subtab=worlds; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
     settings_resize) modal=settings; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
-    settings_size_dropdown|settings_scale_dropdown|settings_scale_interaction) modal=settings; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
+    settings_size_dropdown|settings_scale_dropdown) main_script="$repo_root/scripts/gui_probe_mainmenu.lua"; modal=settings; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
     settings_scale_large) modal=settings; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
     library_scale_large) count=7; gui_size=large; gui_scale=1.5; button_scale=1.5; font_size=24 ;;
     settings_keymap) modal=settings; settings_tab=keymap ;;
@@ -58,7 +65,7 @@ case "$view" in
     settings_expert) modal=settings; settings_tab=graphics; show_expert=true ;;
     settings_controls) modal=settings; settings_tab=controls ;;
     settings_graphics) modal=settings; settings_tab=graphics ;;
-    settings_audio|settings_interaction) modal=settings; settings_tab=audio ;;
+    settings_audio) modal=settings; settings_tab=audio ;;
     settings_interface) modal=settings; settings_tab=interface ;;
     settings_world) modal=settings; settings_tab=world ;;
     settings_advanced) modal=settings; settings_tab=advanced; show_developer=true ;;
@@ -120,10 +127,14 @@ base_game:
 YAML
     printf 'gameid = packerbase_0_91\nworld_name = Demo world\n' > "$pack/worlds/demo/world.mt"
 done
+if [[ "$view" == worlds_empty || "$view" == detail_resize ]]; then
+    rm -f "$user_dir/PackerMOD/packs/sample_1/worlds/demo/world.mt"
+fi
 cat > "$run_dir/minetest.conf" <<CONF
 main_menu_script = $main_script
 packermod_source_path = $repo_root
 packermod_smoke_config = $run_dir/minetest.conf
+packermod_gui_probe = $run_dir/probe.tsv
 packermod_initial_engine_setting = $engine_setting
 packermod_initial_settings_tab = $settings_tab
 packermod_initial_settings_group = $settings_group
@@ -180,6 +191,49 @@ for ((i=0; i<max_wait; i++)); do
 done
 [[ -n "$window" ]] && grep -q "$ready_marker" "$run_dir/engine.log" || { echo "Luanti menu did not become ready" >&2; cat "$run_dir/console.log" >&2; exit 1; }
 sleep 0.5
+point() { awk -F '\t' -v name="$1" '$1==name {print $2,$3,$4,$5;exit}' "$run_dir/probe.tsv"; }
+click_control() { read -r px py pw ph < <(point "$1"); xdotool mousemove --window "$window" "$px" "$py" click 1; sleep 0.3; }
+if [[ "$view" == detail_resize ]]; then
+    xdotool windowsize --sync "$window" 800 600
+    sleep 0.5
+fi
+if [[ "$view" == gui_controls_test ]]; then
+    read -r px py pw ph < <(point settings_row_1)
+    xdotool mousemove --window "$window" "$((px-pw/4))" "$py" mousedown 1
+    for delta in 0 4 8 12 16; do xdotool mousemove --sync --window "$window" "$((px+pw/4+delta))" "$py"; sleep 0.02; done
+    xdotool mouseup 1
+    sleep 0.7
+    awk -F ' = ' '$1=="sound_volume" {found=1; if ($2 < 0.6) exit 1} END {if(!found)exit 1}' "$run_dir/minetest.conf"
+    click_control settings_row_3
+    grep -q '^mute_sound = true' "$run_dir/minetest.conf"
+    click_control settings_tab_keymap
+    click_control settings_row_1
+    xdotool key Up
+    sleep 0.3
+    if ! grep -Eq '^keymap_forward = (KEY_UP|SYSTEM_SCANCODE_82)$' "$run_dir/minetest.conf"; then
+        import -window "$window" "$out.key.png"
+        cp "$run_dir/minetest.conf" "$out.key.conf"
+        cp "$run_dir/probe.tsv" "$out.key.tsv"
+        cp "$run_dir/engine.log" "$out.log"
+        echo 'Native key capture failed' >&2;exit 1
+    fi
+    click_control settings_reset_1
+    if grep -q '^keymap_forward =' "$run_dir/minetest.conf"; then echo 'Key reset failed' >&2;exit 1;fi
+    click_control settings_tab_general
+    click_control settings_row_1
+    xdotool key Down Return
+    sleep 0.3
+    grep -q '^packermod_language = en' "$run_dir/minetest.conf"
+    if [[ -z "$(point dlg_close)" && -n "$(point pm_flow_scroll)" ]]; then
+        read -r px py pw ph < <(point pm_flow_scroll)
+        xdotool mousemove --window "$window" "$px" "$py" mousedown 1
+        xdotool mousemove --sync --window "$window" "$px" "$((py+ph/2-20))"
+        xdotool mouseup 1;sleep 0.3
+    fi
+    click_control dlg_close
+    [[ -n "$(point btn_settings)" ]] || { echo 'Done did not return to the library' >&2;exit 1; }
+    echo 'Verified automatic-layout drag, toggle, navigation, key capture, reset, language dropdown and Done.'
+fi
 if grep -E 'ERROR\[|Mod security' "$run_dir/console.log" "$run_dir/engine.log"; then
     cp "$run_dir/console.log" "$out.log"
     exit 1
@@ -192,61 +246,13 @@ if [[ "$view" == settings_resize ]]; then
     awk -v gui="$gui" -v font="$font" 'BEGIN { exit !(gui <= 1 && font <= 20) }' || { echo "Resize safety failed: GUI=$gui font=$font" >&2; exit 1; }
     echo "Verified automatic safe scaling after a live window resize to 800x600."
 fi
-if [[ "$view" == settings_size_dropdown || "$view" == settings_scale_dropdown || "$view" == settings_scale_interaction ]]; then
-    [[ "$width" == 800 && "$height" == 600 ]] || { echo "Scale interaction fixture requires 800x600" >&2; exit 1; }
-    if [[ "$view" == settings_size_dropdown ]]; then
-        xdotool mousemove --window "$window" 623 232 click 1
-    else
-        xdotool mousemove --window "$window" 623 197 click 1
-    fi
-    sleep 0.3
-    if [[ "$view" == settings_scale_interaction ]]; then
-        xdotool windowfocus --sync "$window"
-        xdotool key Down Return
-        sleep 0.3
-        grep -q '^packermod_language = en' "$run_dir/minetest.conf" || { echo "Scaled language dropdown failed" >&2; exit 1; }
-        # The next slider remains reachable after a native dropdown selection.
-        xdotool mousemove --window "$window" 515 266 mousedown 1
-        xdotool mousemove --sync --window "$window" 565 266
-        xdotool mouseup 1
-        sleep 0.4
-        fov="$(sed -n 's/^fov = //p' "$run_dir/minetest.conf")"
-        awk -v value="$fov" 'BEGIN { exit !(value != "" && value > 90) }' || { echo "Scaled slider failed: $fov" >&2; exit 1; }
-        # Done is fixed outside the scrolling item list at every size.
-        xdotool mousemove --window "$window" 687 480 click 1
-        sleep 0.3
-        echo "Verified maximum-size native dropdown, slider drag and Done at 800x600."
-    fi
+if [[ "$view" == settings_size_dropdown || "$view" == settings_scale_dropdown ]]; then
+    if [[ "$view" == settings_size_dropdown ]]; then click_control settings_row_2
+    else click_control settings_row_1; fi
 fi
-if [[ "$view" == settings_interaction ]]; then
-    [[ "$width" == 1280 && "$height" == 800 ]] || { echo "Interaction fixture requires 1280x800" >&2; exit 1; }
-    # Real pointer input: drag volume, toggle mute, switch tabs and bind a key.
-    xdotool mousemove --window "$window" 888 255 mousedown 1
-    for x in 875 860 845 830 815 800; do
-        xdotool mousemove --sync --window "$window" "$x" 255
-        sleep 0.05
-    done
-    xdotool mouseup 1
-    sleep 0.3
-    volume="$(sed -n 's/^sound_volume = //p' "$run_dir/minetest.conf")"
-    awk -v volume="$volume" 'BEGIN { exit !(volume != "" && volume < 0.3) }' || { echo "Volume drag failed: $volume" >&2; exit 1; }
-    xdotool mousemove --window "$window" 900 364 click 1
-    sleep 0.3
-    grep -q '^mute_sound = true' "$run_dir/minetest.conf" || { echo "Mute button failed" >&2; exit 1; }
-    xdotool mousemove --window "$window" 205 260 click 1
-    sleep 0.3
-    xdotool mousemove --window "$window" 425 247 click 1
-    sleep 0.3
-    xdotool mousemove --window "$window" 900 343 click 1
-    xdotool windowfocus --sync "$window"
-    sleep 0.15
-    xdotool key Up
-    sleep 0.3
-    grep -Eq '^keymap_forward = (KEY_UP|SYSTEM_SCANCODE_82)$' "$run_dir/minetest.conf" || { echo "Key button failed" >&2; import -window "$window" "$out.failed.png"; grep "^keymap_" "$run_dir/minetest.conf" >&2 || true; exit 1; }
-    xdotool mousemove --window "$window" 1095 343 click 1
-    sleep 0.3
-    if grep -q '^keymap_forward =' "$run_dir/minetest.conf"; then echo "Per-item reset failed" >&2; exit 1; fi
-    echo "Verified real UI drag, toggle, Keymap tab, key capture and per-item reset."
+if [[ "$view" == info_scroll_end ]]; then
+    xdotool mousemove --window "$window" "$((width / 2))" "$((height / 2))" click --repeat 90 --delay 10 5
+    sleep 0.4
 fi
 if [[ "$view" == settings_keymap_end ]]; then
     xdotool mousemove --window "$window" "$((width * 3 / 4))" "$((height / 2))" click --repeat 220 --delay 5 5
@@ -256,7 +262,25 @@ if [[ "$view" == engine_settings_noise_end ]]; then
     xdotool mousemove --window "$window" "$((width * 3 / 4))" "$((height / 2))" click --repeat 20 --delay 20 5
     sleep 0.3
 fi
+if [[ "$view" == pack_delete_test ]]; then
+    [[ "$width" == 1280 && "$height" == 800 ]] || { echo "Pack deletion fixture requires 1280x800" >&2; exit 1; }
+    # Cancel first, then reopen through the real detail button and confirm.
+    click_control dlg_close
+    [[ -f "$user_dir/PackerMOD/packs/sample_1/worlds/demo/world.mt" ]] || { echo "Cancel deleted data" >&2; exit 1; }
+    if [[ -n "$(point pm_flow_scroll)" ]]; then
+        read -r px py pw ph < <(point pm_flow_scroll)
+        xdotool mousemove --window "$window" "$px" "$py" mousedown 1
+        xdotool mousemove --sync --window "$window" "$px" "$((py+ph/2-20))"
+        xdotool mouseup 1;sleep 0.3
+    fi
+    click_control delete_pack
+    click_control confirm_delete
+    [[ ! -e "$user_dir/PackerMOD/packs/sample_1" ]] || { echo "Pack deletion failed" >&2; exit 1; }
+    [[ -f "$user_dir/PackerMOD/packs/sample_2/worlds/demo/world.mt" && -f "$user_dir/PackerMOD/packs/sample_3/manifest.yaml" ]] || { echo "Other pack data changed" >&2; exit 1; }
+    echo "Verified cancellation, confirmed pack/world deletion and preservation of other packs."
+fi
 # Capture only the engine window. No foreground focus, desktop input or F12 needed.
+if grep -E 'ERROR\[|Could not open file of image|Invalid use|invalid use' "$run_dir/engine.log"; then cp "$run_dir/engine.log" "$out.log";exit 1;fi
 import -window "$window" "$out"
 cp "$run_dir/engine.log" "$out.log"
 printf '%s\n' "$out"

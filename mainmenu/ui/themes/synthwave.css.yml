@@ -408,3 +408,149 @@ rules:
   - selector: ".engine-query"
     style:
       flex: 0
+
+  # Pack detail: compact horizontal navigation and a clear primary action.
+  - selector: "#pack-detail"
+    style:
+      gap: 0.35
+  - selector: ".pack-detail-top"
+    style:
+      flex-direction: row
+      align: center
+      h: 0.85
+  - selector: ".detail-back"
+    style:
+      w: 5.0
+      h: 0.8
+      bg: "#13171D"
+      color: "#A5B4AF"
+      font-size: "*0.9"
+  - selector: ".detail-brand"
+    style:
+      w: 3.0
+      h: 0.6
+      color: "#A5B4AF"
+      font-size: "*0.9"
+  - selector: ".pack-detail-hero"
+    style:
+      flex-direction: row
+      align: center
+      gap: 0.55
+      h: 2.2
+  - selector: ".detail-pack-icon"
+    style:
+      w: 1.45
+      h: 1.45
+  - selector: ".detail-heading"
+    style:
+      flex: 1
+      min-w: 4
+      flex-direction: column
+      gap: 0.15
+  - selector: "#pack-detail .detail-title"
+    style:
+      h: 0.85
+      font-size: "*1.65"
+  - selector: "#pack-detail .detail-meta"
+    style:
+      h: 0.55
+      w: 12
+      color: "#A5B4AF"
+      font-size: "*0.85"
+  - selector: ".detail-new-world"
+    style:
+      w: 5.4
+      h: 0.9
+      bg: "#59D9AD"
+      color: "#10251D"
+  - selector: "#pack-detail .subtab-bar"
+    style:
+      h: 0.95
+      gap: 0.18
+      border-bottom-width: 0.025
+      border-bottom-color: "#34413E"
+  - selector: "#pack-detail .subtab-btn"
+    style:
+      flex: 1
+      min-w: 2.6
+      w: 4.8
+      h: 0.9
+      bg: "#13171D"
+      color: "#A5B4AF"
+      font-size: "*0.9"
+  - selector: "#pack-detail .subtab-btn-active"
+    style:
+      bg: "#263E35"
+      color: "#8CE0B7"
+  - selector: "#pack-detail .subtab-pane"
+    style:
+      bg: "#13171D"
+      padding: 0
+      gap: 0.3
+  - selector: ".detail-section-title"
+    style:
+      h: 0.65
+      color: "#EDF2F7"
+      font-size: "*1.2"
+  - selector: ".detail-section-help"
+    style:
+      h: 0.55
+      color: "#A5B4AF"
+      font-size: "*0.85"
+  - selector: ".detail-world-empty"
+    style:
+      flex: 1
+      flex-direction: column
+      justify: center
+      align: center
+      gap: 0.35
+      padding: 0.5
+      bg: "#1B232A"
+      border-width: 0.025
+      border-color: "#34413E"
+  - selector: ".detail-empty-icon"
+    style:
+      w: 0.9
+      h: 0.9
+  - selector: ".detail-empty-title"
+    style:
+      h: 0.75
+      color: "#EDF2F7"
+      font-size: "*1.25"
+  - selector: ".detail-empty-help"
+    style:
+      h: 0.6
+      color: "#A5B4AF"
+      font-size: "*0.9"
+  - selector: ".detail-danger-row"
+    style:
+      flex-direction: row
+      align: center
+      gap: 0.3
+      h: 1.25
+      border-top-width: 0.025
+      border-top-color: "#34413E"
+  - selector: ".detail-danger-help"
+    style:
+      w: 16
+      h: 0.6
+      color: "#A5B4AF"
+      font-size: "*0.85"
+  - selector: ".detail-danger-btn"
+    style:
+      w: 5.4
+      h: 0.9
+      bg: "#39292E"
+      color: "#FFB8BD"
+  - selector: ".detail-description"
+    style:
+      h: 1.8
+  - selector: ".detail-world-list"
+    style:
+      flex: 0
+      h: 3.2
+  - selector: ".detail-empty-mods"
+    style:
+      h: 1.4
+      color: "#A5B4AF"
+      font-size: "*0.9"

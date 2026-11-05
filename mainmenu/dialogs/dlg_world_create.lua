@@ -12,16 +12,19 @@ local function get_formspec(data)
     }
     local DD = DIR_DELIM or "/"
     local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
-    return packermod.pmui.build_formspec {
+    local fs = packermod.pmui.build_formspec {
+        renderer = "modern", state = data,
         html_path = mm .. "ui" .. DD .. "modal_world_create.html.yml",
         css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
         ctx       = ctx,
         page_w = 30.0, page_h = 16.0,
         texture_dir = packermod.textures_dir,
     }
+    return fs
 end
 
 local function handler(self, fields)
+    if packermod.pmui and packermod.pmui.handle_fields and packermod.pmui.handle_fields(self.data, fields) then return false end
     local data = self.data
     if fields.dlg_close or fields.quit then
         self:delete()

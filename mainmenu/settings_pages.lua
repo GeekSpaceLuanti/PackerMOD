@@ -117,24 +117,18 @@ function M.build(data, translate)
     local L = packermod.layout
     local width, height = geometry()
     local card_h = math.min(height - 1.6, 17.4)
-    local compact = width < 25
+    local gui = packermod.pmui or dofile((debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./") .. "lib/pmui/init.lua")
+    local compact = gui.viewport_width() < 760
     local entries, title = M.collect(data, translate)
     data.home_entries = entries
-    local styles = {
-        "bgcolor[#13171D;both;#13171D]",
-        "style_type[button,button_key;border=false;bgcolor=#2B333E;textcolor=#EDF2F7;font_size=*1]",
-        "style_type[field;textcolor=#EDF2F7;font_size=*1]",
-        "style_type[button:hovered;bgcolor=#3B4857]",
-        "style[dlg_close;bgcolor=#408F7A;textcolor=#FFFFFF]",
-    }
     local tooltips = {}
     local function label(text, opts)
         opts = opts or {}; opts.text = "\27(c@" .. (opts.color or "#EDF2F7") .. ")" .. text
         return L.Label(opts)
     end
     local function button(name, text, w, color)
-        if color then styles[#styles + 1] = "style[" .. name .. ";bgcolor=" .. color .. "]" end
-        return L.Button { name = name, label = text, w = w, h = 0.9, bgcolor = color or "#303B48" }
+        return L.Button { name = name, label = text, w = w,
+            variant = (color=="#357B6B" or color=="#408F7A") and "primary" or "normal" }
     end
     local nav = L.VBox { w = not compact and 4.6 or nil, spacing = 0.22 }
     data.visible_tabs = M.tabs_for(data)
@@ -154,6 +148,7 @@ function M.build(data, translate)
     for _, gate in ipairs({ { "advanced", "Expert" }, { "developer", "Developer options" } }) do
         gates[#gates + 1] = button("settings_show_" .. gate[1], T(gate[2]) .. " " .. T(data["show_" .. gate[1]] and "ON" or "OFF"), compact and nil or 4.6,
             data["show_" .. gate[1]] and "#357B6B" or "#303B48")
+        gates[#gates].gui_type,gates[#gates].checked="toggle",data["show_"..gate[1]]
         if compact then gates[#gates].flex = 1 end
     end
     nav[#nav + 1] = gates
@@ -211,6 +206,7 @@ function M.build(data, translate)
         elseif entry.type == "bool" then
             control = button(name, value == "true" and T("ON") or T("OFF"), 6.1,
                 value == "true" and "#357B6B" or "#303B48")
+            control.gui_type,control.checked="toggle",value=="true"
         elseif entry.type == "enum" then
             control = button(name, (value == "" and T("Automatic") or T(tostring(value))) .. "  >", 6.1)
         elseif entry.type == "key" then
@@ -266,7 +262,7 @@ function M.build(data, translate)
     }
     local root = L.VBox { spacing = 0, L.Spacer { flex = 1 },
         L.HBox { L.Spacer { flex = 1 }, card, L.Spacer { flex = 1 } }, L.Spacer { flex = 1 } }
-    return L.build_formspec(root, { w = width, h = height, prepend = styles, append = tooltips })
+    return gui.render_widgets(root, { state = data, append = tooltips })
 end
 function M.handle(data, fields, translate)
     if tostring(fields.settings_nav_scroll):match("^CHG:") then

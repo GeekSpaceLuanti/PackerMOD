@@ -58,7 +58,7 @@ local function capture(data, fields)
 end
 
 local function get_formspec(data)
-    if not data.detail then return pages.build(data, engine_text) end
+    if not data.detail then return (pages.build(data, engine_text)) end
     local entry = selected(data)
     local value = entry and draft(data, entry) or ""
     local kind = entry and entry.type or ""
@@ -133,14 +133,17 @@ local function get_formspec(data)
         value = type(value) == "string" and value or "", show_browse = entry and not entry.readonly and (kind == "path" or kind == "filepath"),
         scroll_value = data.scroll or 0,
     }
-    return packermod.pmui.build_formspec {
+    local fs = packermod.pmui.build_formspec {
+        renderer = "modern", state = data,
         html_path = packermod.mainmenu_path .. "ui" .. DIR_DELIM .. "modal_settings.html.yml",
         css_path = packermod.mainmenu_path .. "ui" .. DIR_DELIM .. "themes" .. DIR_DELIM .. "synthwave.css.yml",
         ctx = ctx, page_w = 30, page_h = 16, texture_dir = packermod.textures_dir,
     }
+    return fs
 end
 
 local function handler(self, fields)
+    if packermod.pmui and packermod.pmui.handle_fields and packermod.pmui.handle_fields(self.data, fields) then return false end
     local data = self.data
     if fields.settings_back or (fields.quit and data.detail) then data.detail = false; data.status = ""; return true end
     if fields.dlg_close or fields.quit then data.closed = true; self:delete(); return true end
@@ -148,7 +151,7 @@ local function handler(self, fields)
     capture(data, fields)
     if fields.engine_scroll then
         data.scroll = core.explode_scrollbar_event(fields.engine_scroll).value or data.scroll
-        return true
+        if tostring(fields.engine_scroll):match("^CHG:") then return false end
     end
     if fields.ui_language then
         local language = tonumber(fields.ui_language) == 2 and "en" or "ja"

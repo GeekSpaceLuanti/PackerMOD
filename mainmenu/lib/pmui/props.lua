@@ -27,6 +27,7 @@ function M.is_button(tag)    return M.BUTTON_TAGS[tag] == true end
 -- 指定してもサイレントに落ちるので警告対象にする。--var 定義や display 値ではなく
 -- プロパティ名の集合。
 M.KNOWN_PROPS = {
+    ["min-w"] = true,
     ["padding"] = true, ["margin"] = true, ["gap"] = true,
     ["padding-top"] = true, ["padding-right"] = true,
     ["padding-bottom"] = true, ["padding-left"] = true,

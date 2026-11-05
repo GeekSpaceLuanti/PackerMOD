@@ -1,35 +1,56 @@
-# PackerMOD 画面2 (Pack Detail) の HTML 風 DSL。
-# 対応する style は mainmenu/ui/themes/<theme>.css.yml。
-# library.lua の build_detail_formspec_pmui がこのファイルを読み込む。
+# Legacy PMUI 1 compatibility fixture.
+# Current Pack Detail is composed by pack_detail.lua + pack_detail.css (PMUI 2).
 #
 # 4 subtab (Worlds / Multiplayer / Mods / Info) を when: で出し分ける。
 
 root:
   tag: page
   id: pack-detail
+  attrs:
+    layout: flow
   children:
 
     # ヘッダ: Back / Pack タイトル / メタ情報
     - tag: header
-      class: detail-header
+      class: pack-detail-top
       children:
         - tag: icon-button
           id: btn-back
-          class: back-btn
+          class: detail-back
           attrs:
             name: btn_back
             icon: folder
-            label: Back
-        - tag: h1
-          id: detail-title
-          class: detail-title
-          text: "${pack_name}"
+            label: "Back to Library"
         - tag: spacer
           class: detail-spacer
         - tag: span
-          id: detail-meta
-          class: detail-meta
-          text: "v${pack_version}   ${pack_base}   ${pack_mods_count} mods"
+          class: detail-brand
+          text: PackerMOD
+
+    - tag: header
+      class: pack-detail-hero
+      children:
+        - tag: img
+          class: detail-pack-icon
+          attrs:
+            src: "${pack_icon}"
+        - tag: div
+          class: detail-heading
+          children:
+            - tag: h1
+              id: detail-title
+              class: detail-title
+              text: "${pack_name}"
+            - tag: span
+              id: detail-meta
+              class: detail-meta
+              text: "v${pack_version}   ${pack_base}   ${pack_mods_count} mods"
+        - tag: icon-button
+          class: detail-new-world
+          when: "${has_world}"
+          attrs:
+            name: new_world
+            label: "New World"
 
     # subtab buttons (active 状態は ${subtab_class_*} で動的にクラスを付与)
     - tag: nav
@@ -65,26 +86,44 @@ root:
       class: subtab-pane
       when: "${show_worlds}"
       children:
+        - tag: h2
+          class: detail-section-title
+          text: Worlds
+        - tag: span
+          class: detail-section-help
+          text: "Manage the worlds in this pack"
         - tag: list
-          class: detail-list
+          class: "detail-list detail-world-list"
+          when: "${has_world}"
           attrs:
             name: worldlist
             items: "${worlds | format_world_label}"
             selected: "${selected_world}"
-        - tag: status
-          class: empty-status
+            transparent: true
+        - tag: div
+          class: detail-world-empty
           when: "${no_world}"
-          text: "No worlds yet. Press New World to create one."
-        - tag: footer
-          class: subtab-actions
           children:
-            - tag: icon-button
+            - tag: img
+              class: detail-empty-icon
+              attrs:
+                src: "${pack_icon}"
+            - tag: h2
+              class: detail-empty-title
+              text: "Create your first world"
+            - tag: span
+              class: detail-empty-help
+              text: "Create a new world to start playing."
+            - tag: button
               id: btn-new-world
-              class: action-btn
+              class: detail-new-world
               attrs:
                 name: new_world
-                icon: plus
                 label: "New World"
+        - tag: footer
+          class: subtab-actions
+          when: "${has_world}"
+          children:
             - tag: icon-button
               id: btn-edit-world
               class: "action-btn"
@@ -108,14 +147,21 @@ root:
                 name: play_world
                 icon: play
                 label: Play
+        - tag: span
+          class: detail-section-help
+          text: "Worlds are saved separately for each pack."
 
     # ===== Multiplayer subtab =====
     - tag: section
       class: subtab-pane
       when: "${show_multi}"
       children:
+        - tag: h2
+          class: detail-section-title
+          text: Multiplayer
         - tag: list
           class: detail-list
+          when: "${has_server}"
           attrs:
             name: serverlist
             items: "${servers | format_server_label}"
@@ -177,6 +223,9 @@ root:
       class: subtab-pane
       when: "${show_mods}"
       children:
+        - tag: h2
+          class: detail-section-title
+          text: Mods
         - tag: div
           class: form-row
           children:
@@ -213,10 +262,15 @@ root:
                   text: "Current"
                 - tag: list
                   class: detail-list
+                  when: "${has_pack_mods}"
                   attrs:
                     name: mod_list
                     items: "${pack_mods | format_mod_entry}"
                     selected: "${selected_mod}"
+                - tag: paragraph
+                  class: detail-empty-mods
+                  when: "${no_pack_mods}"
+                  text: "No additional mods in this pack."
                 - tag: icon-button
                   id: btn-mod-remove
                   class: action-btn
@@ -233,10 +287,15 @@ root:
                   text: "Search results"
                 - tag: list
                   class: detail-list
+                  when: "${has_search_results}"
                   attrs:
                     name: search_results
                     items: "${search_results | format_search_result}"
                     selected: "${selected_search}"
+                - tag: paragraph
+                  class: detail-empty-mods
+                  when: "${no_search_results}"
+                  text: "Search ContentDB to find mods."
                 - tag: icon-button
                   id: btn-mod-add
                   class: action-btn
@@ -251,6 +310,9 @@ root:
       class: subtab-pane
       when: "${show_info}"
       children:
+        - tag: h2
+          class: detail-section-title
+          text: Info
         - tag: field
           class: "form-field info-name"
           attrs:
@@ -261,13 +323,14 @@ root:
           class: modal-dim
           text: "Pack revision: ${pack_version} (automatic)"
         - tag: textarea
-          class: form-textarea
+          class: "form-textarea detail-description"
           attrs:
             name: info_description
             label: Description
             default: "${pack_description}"
         - tag: status
           class: empty-status
+          when: "${has_info_status}"
           text: "${info_status}"
         - tag: footer
           class: subtab-actions
@@ -279,3 +342,14 @@ root:
                 name: info_save
                 icon: save
                 label: "Save Changes"
+        - tag: div
+          class: detail-danger-row
+          children:
+            - tag: span
+              class: detail-danger-help
+              text: "Deleting this pack also deletes its worlds."
+            - tag: button
+              class: detail-danger-btn
+              attrs:
+                name: delete_pack
+                label: "Delete Pack"

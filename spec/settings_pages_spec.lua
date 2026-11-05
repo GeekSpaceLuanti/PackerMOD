@@ -197,8 +197,7 @@ describe("Player settings pages", function()
                 data.tab, data.home_query, data.home_category, data.show_advanced, data.show_developer = tab.id, "", 1, true, true
                 local size, elements = helpers.parse_formspec(build())
                 assert.is_true(helpers.fits_in_size(elements, size))
-                local overlaps = helpers.find_overlaps(elements)
-                assert.equal(0, #overlaps, helpers.format_overlaps(overlaps))
+                assert.same({},dofile("mainmenu/lib/pmui/modern/layout.lua").validate(data.gui_layout.tree))
             end
         end
         end

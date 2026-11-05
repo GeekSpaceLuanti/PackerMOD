@@ -5,6 +5,8 @@
 -- 詳細画面は ui/library.yml を使う。
 
 local M = {}
+local module_dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "mainmenu/"
+local detail_ui = dofile(module_dir .. "ui/pack_detail.lua")
 
 local function get_packs()
     return packermod.pack_manager.list_packs(packermod.user_path, packermod.manifest)
@@ -98,9 +100,9 @@ local function build_grid_formspec(tabdata)
     tabdata.packs = packs
 
     local prefs = dofile(packermod.mainmenu_path .. "ui_preferences.lua")
-    local viewport_w, viewport_h = prefs.viewport(30, 16)
-    local grid_cols = math.max(1, math.min(3, math.floor((viewport_w - 1.6 + 0.45) / 8.5)))
-    local grid_rows = math.max(1, math.min(2, math.floor((viewport_h - 5.5) / 4.95)))
+    prefs.ensure_safe()
+    local grid_cols = math.max(1, math.min(3, math.floor((pmui.viewport_width() - 36) / 260)))
+    local grid_rows = math.max(1, math.min(2, math.floor((pmui.viewport_height() - 230) / 220)))
     local page_size = grid_cols * grid_rows
     local pages = math.max(1, math.ceil(#packs / page_size))
     tabdata.page = math.max(1, math.min(tabdata.page or 1, pages))
@@ -148,6 +150,7 @@ local function build_grid_formspec(tabdata)
     local DD = DIR_DELIM or "/"
     local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
     return pmui.build_formspec {
+        renderer = "modern", state = tabdata,
         html_path = mm .. "ui" .. DD .. "library.html.yml",
         css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
         ctx       = ctx,
@@ -160,7 +163,6 @@ end
 -- ----- detail 画面 (画面2 を pack_detail.html.yml + synthwave.css.yml で描画) -----
 
 local function build_detail_formspec(tabdata)
-    local pmui = packermod.pmui
     local packs = tabdata.packs or get_packs()
     local pack
     for _, p in ipairs(packs) do
@@ -168,7 +170,7 @@ local function build_detail_formspec(tabdata)
     end
     if not pack then
         tabdata.view = "grid"
-        return build_grid_formspec(tabdata)
+        return (build_grid_formspec(tabdata))
     end
 
     local subdir_worlds = packermod.launcher.list_worlds(pack)
@@ -197,22 +199,16 @@ local function build_detail_formspec(tabdata)
     local search_results = mods_state.results or {}
     tabdata.selected_search = clamp_selection(tabdata.selected_search, #search_results)
 
-    local function subtab_class(name)
-        return subtab == name and "subtab-btn-active" or "subtab-btn-inactive"
-    end
 
     local ctx = {
         pack_name = pack.manifest.name or "",
+        layout_scroll = tabdata.detail_scroll or 0,
+        pack_icon = packermod.icons.path("box", "md"),
         pack_version = pack.manifest.version or "",
         pack_base = (pack.manifest.base_game.id or "?") .. "/" ..
                     (pack.manifest.base_game.version or "?"),
         pack_mods_count = #pack_mods,
         pack_description = pack.manifest.description or "",
-
-        subtab_class_worlds = subtab_class("worlds"),
-        subtab_class_multi  = subtab_class("multi"),
-        subtab_class_mods   = subtab_class("mods"),
-        subtab_class_info   = subtab_class("info"),
 
         show_worlds = (subtab == "worlds"),
         show_multi  = (subtab == "multi"),
@@ -233,6 +229,10 @@ local function build_detail_formspec(tabdata)
         form_server_port = form.port or "",
 
         pack_mods = pack_mods,
+        has_pack_mods = #pack_mods > 0,
+        no_pack_mods = #pack_mods == 0,
+        no_search_results = #search_results == 0,
+        has_search_results = #search_results > 0,
         has_mod = #pack_mods > 0 and (tabdata.selected_mod or 0) > 0,
         selected_mod = tabdata.selected_mod,
         search_query = mods_state.query or "",
@@ -243,6 +243,7 @@ local function build_detail_formspec(tabdata)
         mod_status = mods_state.status or "",
 
         info_status = info_state.status or "",
+        has_info_status = (info_state.status or "") ~= "",
 
         format_world_label = format_world_label,
         format_server_label = format_server_label,
@@ -251,15 +252,9 @@ local function build_detail_formspec(tabdata)
         icon_path = function(n) return packermod.icons.path(n, "md") end,
     }
 
-    local DD = DIR_DELIM or "/"
-    local mm = packermod.mainmenu_path or ("mainmenu" .. DD)
-    return pmui.build_formspec {
-        html_path = mm .. "ui" .. DD .. "pack_detail.html.yml",
-        css_path  = mm .. "ui" .. DD .. "themes" .. DD .. "synthwave.css.yml",
-        ctx       = ctx,
-        page_w = 30.0, page_h = 16.0,
-        texture_dir = packermod.textures_dir,
-    }
+    local result, meta = detail_ui.render(ctx, packermod.pmui.host(), packermod.i18n and packermod.i18n.t)
+    tabdata.gui_layout=meta
+    return result, meta
 end
 
 -- ----- formspec ディスパッチ -----
@@ -267,9 +262,9 @@ end
 local function get_formspec(tabdata)
     tabdata.view = tabdata.view or "grid"
     if tabdata.view == "detail" then
-        return build_detail_formspec(tabdata)
+        return (build_detail_formspec(tabdata))
     end
-    return build_grid_formspec(tabdata)
+    return (build_grid_formspec(tabdata))
 end
 
 -- ----- launch ヘルパ(symlink trick 経由) -----
@@ -358,6 +353,13 @@ end
 
 local function button_handler(self, fields)
     local tabdata = self.data
+    if fields.pm_flow_scroll then
+        local value = tostring(fields.pm_flow_scroll):match("%a+:(%d+)")
+        if value then tabdata.detail_scroll = tonumber(value); tabdata.gui_scroll = tonumber(value) end
+        if tostring(fields.pm_flow_scroll):match("^CHG:") then
+            return false -- retain native scrollbar capture during dragging
+        end
+    end
     tabdata.view = tabdata.view or "grid"
 
     -- ---- グリッド画面 ----
@@ -371,6 +373,7 @@ local function button_handler(self, fields)
         local picked = find_pack_by_button(fields, tabdata.packs)
         if picked then
             tabdata.view = "detail"
+            tabdata.gui_scroll,tabdata.detail_scroll=0,0
             tabdata.selected_pack_id = picked.id
             tabdata.subtab = "worlds"
             tabdata.selected_world = 1
@@ -392,9 +395,20 @@ local function button_handler(self, fields)
     end
 
     -- ---- 詳細画面 ----
+    for name in pairs(fields) do
+        local chosen = name:match("^world_choose_(%d+)$")
+        local playing = name:match("^world_play_(%d+)$")
+        local index = tonumber(chosen or playing)
+        if index and tabdata.worlds and tabdata.worlds[index] then
+            tabdata.selected_world = index
+            if chosen then return true end
+            fields.play_world = true
+        end
+    end
 
     if fields.btn_back then
         tabdata.view = "grid"
+        tabdata.gui_scroll=0
         tabdata.selected_pack_id = nil
         return true
     end
@@ -402,6 +416,8 @@ local function button_handler(self, fields)
     for _, sub in ipairs(SUBTABS) do
         if fields["subtab_" .. sub] then
             tabdata.subtab = sub
+            tabdata.detail_scroll = 0
+            tabdata.gui_scroll = 0
             return true
         end
     end
@@ -418,6 +434,11 @@ local function button_handler(self, fields)
     local pack
     for _, p in ipairs(packs) do
         if p.id == tabdata.selected_pack_id then pack = p; break end
+    end
+
+    if fields.delete_pack and pack then
+        packermod.dialogs.dlg_pack_delete.show(M._dlg, pack)
+        return true
     end
 
     if fields.play_world and pack then
@@ -592,7 +613,17 @@ function M.show()
     local modal = core.settings and core.settings:get("packermod_initial_modal")
     if modal and modal ~= "" and packermod.dialogs then
         local d = packermod.dialogs["dlg_" .. modal]
-        if d then d.show(dlg) end
+        if d then
+            if modal == "pack_delete" or modal=="world_create" then
+                d.show(dlg, (dlg.data.packs or get_packs())[1])
+            elseif modal=="world_delete" then
+                local pack=(dlg.data.packs or get_packs())[1]
+                local world=pack and packermod.launcher.list_worlds(pack)[1]
+                if world then d.show(dlg,pack,world) end
+            else
+                d.show(dlg)
+            end
+        end
     end
 end
 

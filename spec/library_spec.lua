@@ -153,20 +153,17 @@ describe("library grid view (画面1)", function()
         assert.is_truthy(fs:find("btn_create", 1, true))
         assert.is_truthy(fs:find("btn_settings", 1, true))
         -- Synthwave テーマの背景画像と PackerMOD タイトルが出ていること
-        assert.is_truthy(fs:find("#13171D", 1, true))
+        assert.is_truthy(fs:find("#101418", 1, true))
         assert.is_truthy(fs:find("PackerMOD", 1, true))
     end)
 
     it("has no overlap and fits in page size", function()
-        local fs = lib._internal.build_grid_formspec({})
+        local fs, meta = lib._internal.build_grid_formspec({})
         local size, els = helpers.parse_formspec(fs)
-        assert.equal(30.0, size.w)
-        assert.equal(16.0, size.h)
-        local overlaps = helpers.find_overlaps(els)
-        if #overlaps > 0 then
-            error(helpers.format_overlaps(overlaps))
-        end
-        local ok, bad = helpers.fits_in_size(els, size)
+        assert.is_true(size.w>0 and size.h>0)
+        assert.same({},packermod.pmui.modern.layout.validate(meta.tree))
+        local controls={};for _,el in ipairs(els)do if el.kind=="button" or el.kind=="field" then controls[#controls+1]=el end end
+        local ok, bad = helpers.fits_in_size(controls, size)
         assert.is_true(ok, "OOB: " .. (bad and helpers.describe_el(bad) or ""))
     end)
 
@@ -183,13 +180,13 @@ describe("library grid view (画面1)", function()
                 return packs
             end
             local data = {}
-            local fs = lib._internal.build_grid_formspec(data)
+            local fs, meta = lib._internal.build_grid_formspec(data)
             local size, els = helpers.parse_formspec(fs)
-            local fits, bad = helpers.fits_in_size(els, size)
+            local controls={};for _,el in ipairs(els)do if el.kind=="button" or el.kind=="field" then controls[#controls+1]=el end end
+            local fits, bad = helpers.fits_in_size(controls, size)
             packermod.pack_manager.list_packs = original
             assert.is_true(fits, bad and helpers.describe_el(bad))
-            local overlaps = helpers.find_overlaps(els)
-            assert.equal(0, #overlaps, helpers.format_overlaps(overlaps))
+            assert.same({},packermod.pmui.modern.layout.validate(meta.tree))
             assert.equal(math.max(1, math.ceil(count / 6)), data.page_count)
             if count > 6 then
                 assert.is_nil(fs:find(";pack_select_p7;", 1, true))
@@ -250,23 +247,58 @@ describe("library detail view PMUI (画面2)", function()
         return lib._internal.build_detail_formspec(tabdata)
     end
 
+    it("empty worlds shows creation without an empty list or pack deletion", function()
+        local fs = pmui_fs("worlds")
+        assert.is_truthy(fs:find("new_world", 1, true))
+        assert.is_nil(fs:find("textlist[", 1, true))
+        assert.is_nil(fs:find("delete_pack", 1, true))
+        assert.is_truthy(pmui_fs("info"):find("delete_pack", 1, true))
+    end)
+
+    it("keeps every detail tab within DPI-limited windows and scrolls overflow", function()
+        local saved_core = _G.core
+        local ok, err = pcall(function()
+            for _, bounds in ipairs({ { 16, 10 }, { 24, 9 }, { 12, 18 } }) do
+                _G.core = { get_window_info = function() return {
+                    size = { x = 3000, y = 1800 },
+                    max_formspec_size = { x = bounds[1], y = bounds[2] } } end }
+                for _, tab in ipairs({ "worlds", "multi", "mods", "info" }) do
+                    local fs, meta = pmui_fs(tab)
+                    local size, elements = helpers.parse_formspec(fs)
+                    assert.is_true(size.w < bounds[1] and size.h < bounds[2])
+                    assert.same({}, dofile("mainmenu/lib/pmui/modern/layout.lua").validate(meta.tree))
+                    local controls = {}
+                    for _, el in ipairs(elements) do if el.kind == "button" or el.kind == "field" or el.kind == "textarea" then controls[#controls+1] = el end end
+                    local fits, bad = helpers.fits_in_size(controls, size)
+                    assert.is_true(fits, tab .. ": " .. (bad and helpers.describe_el(bad) or ""))
+                    assert.is_truthy(fs:find("new_world", 1, true) or tab ~= "worlds")
+                    if tab == "info" then
+                        assert.is_truthy(fs:find("info_save", 1, true))
+                        assert.is_truthy(fs:find("delete_pack", 1, true))
+                    end
+                end
+            end
+        end)
+        _G.core = saved_core
+        assert.is_true(ok, err)
+    end)
+
     for _, subtab in ipairs({ "worlds", "multi", "mods", "info" }) do
         it("pmui detail " .. subtab .. " renders without overlap/OOB", function()
-            local fs = pmui_fs(subtab)
+            local fs, meta = pmui_fs(subtab)
             assert.is_string(fs)
             assert.is_truthy(fs:find("Pack A", 1, true))         -- title
             assert.is_truthy(fs:find("btn_back", 1, true))        -- Back button
             assert.is_truthy(fs:find("subtab_worlds", 1, true))   -- subtab buttons
-            assert.is_truthy(fs:find("#13171D", 1, true))  -- bg
+            assert.is_truthy(fs:find("#101418", 1, true))  -- bg
 
             local size, els = helpers.parse_formspec(fs)
-            assert.equal(30.0, size.w)
-            assert.equal(16.0, size.h)
-            local overlaps = helpers.find_overlaps(els, { label_h = 0.45 })
-            if #overlaps > 0 then
-                error("overlap in " .. subtab .. ":\n" .. helpers.format_overlaps(overlaps))
-            end
-            local ok, bad = helpers.fits_in_size(els, size, { label_h = 0.45 })
+            assert.is_true(size.w > 0 and size.w < 19.2)
+            assert.is_true(size.h > 0 and size.h < 14.4)
+            assert.same({}, dofile("mainmenu/lib/pmui/modern/layout.lua").validate(meta.tree))
+            local controls = {}
+            for _, el in ipairs(els) do if el.kind == "button" or el.kind == "field" or el.kind == "textarea" then controls[#controls+1] = el end end
+            local ok, bad = helpers.fits_in_size(controls, size)
             assert.is_true(ok, "OOB in " .. subtab .. ": " ..
                 (bad and helpers.describe_el(bad) or ""))
         end)

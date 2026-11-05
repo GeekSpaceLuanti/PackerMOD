@@ -12,6 +12,7 @@ describe("pmui.paint (end-to-end formspec)", function()
 
     local function fs(html, css, opts)
         return pmui.build_formspec {
+            renderer = "legacy", -- compatibility backend is intentionally tested here
             html = html, css = css,
             ctx = (opts or {}).ctx,
             page_w = (opts or {}).page_w or 13.0,

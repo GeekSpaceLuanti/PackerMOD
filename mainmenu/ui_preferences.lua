@@ -76,7 +76,15 @@ function M.viewport(w, h, fixed)
         local size = window_size()
         if size and size.x > 0 then h = math.max(h, math.min(24, w * size.y / size.x)) end
     end
-    return math.max(math.min(w, 24), w / scale), math.max(math.min(h, 14), h / scale)
+    w, h = math.max(math.min(w, 24), w / scale), math.max(math.min(h, 14), h / scale)
+    -- max_formspec_size already includes DPI and the engine GUI scale.
+    -- Clamp both axes independently; a nominal logical size can be offscreen.
+    local info = not fixed and core and core.get_window_info and core.get_window_info()
+    local limit = info and info.max_formspec_size
+    if limit and limit.x > 0 and limit.y > 0 then
+        w, h = math.min(w, math.max(1, limit.x - 0.5)), math.min(h, math.max(1, limit.y - 0.5))
+    end
+    return w, h
 end
 M.entries = {
     { name = "pm_gui_scale", type = "appearance", readable_name = "GUI size", default = "auto", native = "gui_scaling" },

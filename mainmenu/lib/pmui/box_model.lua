@@ -34,6 +34,7 @@ function M.compute(el)
         border_right_width  = tonumber(nz(c["border-right-width"],  0)) or 0,
         flex           = tonumber(c.flex),
         w              = tonumber(c.w),
+        min_w          = tonumber(c["min-w"]),
         h              = tonumber(c.h),
         flex_direction = c["flex-direction"] or "column",
         justify        = c.justify or "start",

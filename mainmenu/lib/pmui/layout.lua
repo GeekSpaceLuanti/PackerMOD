@@ -82,6 +82,7 @@ local function build_container(L, el, ctx)
         align = box.align,
         w = box.w, h = box.h, flex = box.flex,
         max_h = el._max_h,
+        min_w = box.min_w,
         bgcolor = bgcolor_for_widget,
     }
     if box.justify == "space-between" then
@@ -147,6 +148,7 @@ build = function(el, ctx)
             name  = el.attrs.name or el.id,
             label = el.attrs.label or el.text or "",
             bgcolor = box.bg or "#2B333E",
+            min_w = box.min_w,
             w = box.w, h = box.h, flex = box.flex,
         }
     end

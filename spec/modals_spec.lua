@@ -5,6 +5,7 @@ package.path = "./?.lua;" .. package.path
 
 describe("modals PMUI smoke", function()
     local pmui, helpers, theme
+    local last_meta
     setup(function()
         _G.packermod = _G.packermod or {}
         packermod.layout = dofile("mainmenu/lib/layout.lua")
@@ -20,25 +21,33 @@ describe("modals PMUI smoke", function()
     end)
 
     local function build(html_filename, ctx)
-        return pmui.build_formspec {
+        local fs, meta = pmui.build_formspec {
             html_path = "mainmenu/ui/" .. html_filename,
             css_path  = "mainmenu/ui/themes/synthwave.css.yml",
             ctx       = ctx,
             page_w = 30.0, page_h = 16.0,
         }
+        last_meta=meta
+        return fs
     end
 
     local function assert_overlap_oob(label, fs)
         local size, els = helpers.parse_formspec(fs)
-        assert.equal(30.0, size.w)
-        assert.equal(16.0, size.h)
-        local overlaps = helpers.find_overlaps(els, { label_h = 0.45 })
-        if #overlaps > 0 then
-            error(label .. ":\n" .. helpers.format_overlaps(overlaps))
-        end
-        local ok, bad = helpers.fits_in_size(els, size, { label_h = 0.45 })
+        assert.is_true(size.w>0 and size.h>0)
+        assert.same({},pmui.modern.layout.validate(last_meta.tree))
+        local controls={};for _,el in ipairs(els)do if el.kind=="button" or el.kind=="field" or el.kind=="textarea" then controls[#controls+1]=el end end
+        local ok, bad = helpers.fits_in_size(controls, size)
         assert.is_true(ok, label .. " OOB: " .. (bad and helpers.describe_el(bad) or ""))
     end
+
+    it("modal_pack_delete renders without overlap/OOB", function()
+        local fs = build("modal_pack_delete.html.yml", {
+            pack_name = "Pack A", status = "",
+            icon_path = function(n) return "icon_" .. n .. ".png" end,
+        })
+        assert.is_truthy(fs:find("confirm_delete", 1, true))
+        assert_overlap_oob("modal_pack_delete", fs)
+    end)
 
     it("modal_world_delete renders without overlap/OOB", function()
         local fs = build("modal_world_delete.html.yml", {

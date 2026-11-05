@@ -22,7 +22,40 @@
 local SELF_DIR = (debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./")
 
 local M = {}
+-- The portable backend is the default; renderer="legacy" is opt-in.
+M.modern = dofile(SELF_DIR .. "modern/init.lua")
+M.new = M.modern.new
+M.el = M.modern.el
+M.parse_html = M.modern.parse_html
 local ui_preferences = dofile(SELF_DIR .. "../../ui_preferences.lua")
+local mainmenu_host=dofile(SELF_DIR.."modern/mainmenu.lua")
+local bridge=dofile(SELF_DIR.."modern/bridge.lua")
+M.control_defaults=dofile(SELF_DIR.."../../ui/controls.lua")
+function M.host()return mainmenu_host.host(M.control_defaults)end
+function M.configure_control(tag,properties)
+    M.modern.new():configure(tag,properties)
+    M.control_defaults[tag]=properties
+end
+function M.viewport_width()
+    local wi=mainmenu_host.host().get_window_info()
+    return math.min(1040,wi.size.x/(wi.real_gui_scaling or 1)-32)
+end
+function M.viewport_height()
+    local wi=mainmenu_host.host().get_window_info()
+    return wi.size.y/(wi.real_gui_scaling or 1)-32
+end
+function M.handle_fields(state,fields)
+    if not state or not fields.pm_flow_scroll then return false end
+    state.gui_scroll=tonumber(tostring(fields.pm_flow_scroll):match("%a+:(%d+)")) or state.gui_scroll
+    return tostring(fields.pm_flow_scroll):match("^CHG:")~=nil
+end
+function M.render_widgets(root,opts)
+    opts=opts or {}
+    local fs,meta=M.modern.new(mainmenu_host.host(M.control_defaults)):render{
+        tree=bridge.widgets(root),max_width=1040,scroll=opts.state and opts.state.gui_scroll}
+    if opts.state then opts.state.gui_layout=meta end
+    return fs..table.concat(opts.append or {}),meta
+end
 
 M.dom         = dofile(SELF_DIR .. "dom.lua")
 M.stylesheet  = dofile(SELF_DIR .. "stylesheet.lua")
@@ -59,6 +92,16 @@ function M.build_formspec(opts)
     page_w, page_h = ui_preferences.viewport(page_w, page_h, opts.fixed_viewport)
 
     local root  = M.parser_html.parse(html_text, opts.ctx or {})
+    if opts.renderer~="legacy" then
+        local sheet=M.parser_css.parse(css_text)
+        M.cascade.compute(root,sheet,{page_w=page_w,page_h=page_h})
+        M.box_model.compute_all(root)
+        local tree=bridge.dom(root)
+        local fs,meta=M.modern.new(mainmenu_host.host(M.control_defaults)):render{
+            tree=tree,max_width=tree.preferred_width or 1040,scroll=opts.state and opts.state.gui_scroll}
+        if opts.state then opts.state.gui_layout=meta end
+        return fs,meta
+    end
     local sheet = M.parser_css.parse(css_text)
     M.cascade.compute(root, sheet, {
         page_w = page_w, page_h = page_h,
@@ -73,7 +116,7 @@ function M.build_formspec(opts)
         if el.tag == "page" then el.box.padding = gap * 1.6 end
         for _, class in ipairs(el.classes or {}) do
             if page_w < 25 then
-                if class == "subtab-actions" or class == "modal-actions" then
+                if root.attrs.layout ~= "flow" and (class == "subtab-actions" or class == "modal-actions") then
                     el.box.display, el.box.grid_columns, el.box.h = "grid", 2, nil
                 elseif class == "subtab-btn" then
                     el.box.font_size = "*0.8"

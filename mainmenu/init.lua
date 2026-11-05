@@ -164,6 +164,7 @@ packermod.dialogs = {
     dlg_settings      = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_settings.lua"),
     dlg_world_create  = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_world_create.lua"),
     dlg_world_delete  = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_world_delete.lua"),
+    dlg_pack_delete   = dofile(self_path .. "dialogs" .. DIR_DELIM .. "dlg_pack_delete.lua"),
 }
 
 local function init()

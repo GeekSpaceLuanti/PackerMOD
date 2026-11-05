@@ -67,7 +67,8 @@ local function get_formspec(data)
     end
     if #version_items == 0 then version_items[1] = T("Choose a game to see its releases.") end
     local selected_game = data.games[data.game_selected or 0]
-    return packermod.pmui.build_formspec {
+    local fs = packermod.pmui.build_formspec {
+        renderer = "modern", state = data,
         html_path = packermod.mainmenu_path .. "ui" .. DIR_DELIM .. "modal_create.html.yml",
         css_path = packermod.mainmenu_path .. "ui" .. DIR_DELIM .. "themes" .. DIR_DELIM .. "synthwave.css.yml",
         ctx = {
@@ -87,6 +88,7 @@ local function get_formspec(data)
             format_mod_entry = function(m) return m.name end,
         }, page_w = 30, page_h = 16, texture_dir = packermod.textures_dir,
     }
+    return fs
 end
 
 local function search_games(data)
@@ -139,6 +141,7 @@ local function save(self)
 end
 
 local function handler(self, fields)
+    if packermod.pmui and packermod.pmui.handle_fields and packermod.pmui.handle_fields(self.data, fields) then return false end
     local data = self.data
     if fields.dlg_close or fields.quit then data.closed = true; self:delete(); return true end
     for _, key in ipairs({ "pack_name", "pack_author", "pack_description", "game_query", "search_query" }) do

@@ -60,6 +60,10 @@ function M.get_pack(user_path, pack_id, manifest_mod)
 end
 
 function M.delete_pack(user_path, pack_id)
+    -- Accept only a single directory name; never let a UI value escape packs/.
+    if type(pack_id) ~= "string" or not pack_id:match("^[%w_%-]+$") then
+        return false, "Invalid pack ID"
+    end
     local path = join(packs_root(user_path), pack_id)
     if core and core.delete_dir then
         return core.delete_dir(path)

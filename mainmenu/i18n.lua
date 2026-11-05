@@ -1,5 +1,17 @@
 local M = {}
 local ja = {
+    ["Library"] = "ライブラリ",
+    ["No worlds yet."] = "まだワールドがありません。",
+    ["No additional mods in this pack."] = "追加のMODはありません。",
+    ["Search ContentDB to find mods."] = "ContentDBでMODを検索できます。",
+    ["Back to Library"] = "ライブラリに戻る",
+    ["Manage the worlds in this pack"] = "このパックで遊ぶ世界を管理",
+    ["Create your first world"] = "最初のワールドをつくろう",
+    ["Create a new world to start playing."] = "新しい世界を作成して、冒険をはじめましょう。",
+    ["Worlds are saved separately for each pack."] = "ワールドはこのパックごとに保存されます。",
+    ["Deleting this pack also deletes its worlds."] = "パック内のワールドも削除されます。",
+    ["Delete Pack"] = "パックを削除",
+    ["The pack and all worlds inside it will be deleted."] = "パックと、その中の全ワールドを削除します。",
     ["GUI size"] = "GUIの大きさ",
     ["Changes are saved automatically."] = "変更は自動保存されます。",
     ["Small"] = "小", ["Standard"] = "標準", ["Large"] = "大", ["Extra large"] = "特大",
