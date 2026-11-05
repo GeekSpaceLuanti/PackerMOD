@@ -1,0 +1,28 @@
+PackerMOD licensing
+==================
+
+Project-authored source code, scripts and documentation, unless a file states
+otherwise, are licensed under the GNU Lesser General Public License,
+version 2.1 or (at your option) any later version (LGPL-2.1-or-later).
+Copyright remains with the respective authors; see the version-control history.
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Lesser General Public License as published by the Free
+Software Foundation, either version 2.1 of the License, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See COPYING.LESSER and COPYING for the license texts.
+
+Project-authored media generated from scripts/build_bgimg.sh,
+scripts/build_thumb.sh and scripts/build_modern_gui.py are provided under the
+same LGPL-2.1-or-later terms. This statement does not cover third-party media.
+
+Third-party materials retain their own licenses. In particular:
+- vendor/pixelarticons/svg and textures/packermod_icon_*.png: MIT;
+- games/packerbase: see its LICENSE.txt and the notices inside each mod;
+- externally installed games and mods: their individual licenses apply.
+
+See THIRD_PARTY_NOTICES.md and docs/license-audit.md for attribution and scope.
+This file does not relicense third-party material or claim ownership of it.

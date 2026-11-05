@@ -11,6 +11,32 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-11-05 16:57 (main)
+
+**変更概要**:
+Minetest Gameのcommit `9e895af6e9feb98332fa1a778001442f5669bc20`を固定し、独立ゲームPackerMOD Base 0.1.0を追加。
+ライセンスを明示し上流と素材の通知を保持。9枠hotbar・36枠inventory、イベント・schema移行・任意計測のAPIを実装。
+インストーラーをゲーム同梱・バックアップ・全配置ハッシュ検証へ拡張。新規worldのMOD保存はSQLite3を指定。
+作業リスト・既知制約・検証記録と、サンプルMOD入りstarter/ソースZIPの生成を整備。
+
+**主な変更ファイル**:
+- games/packerbase、examples/packerbase
+- LICENSE.txt、COPYING.LESSER、COPYING、THIRD_PARTY_NOTICES.md
+- install/*、scripts/deploy_local.ps1、scripts/test_base_game*.sh、scripts/test_installation.*、scripts/build_release.ps1
+- mainmenu/world_builder.lua、spec/world_builder_spec.lua、scripts/windows_game_test.ps1とsmoke
+- docs/development-roadmap.md、docs/base-integration-report.md、docs/license-audit.md、docs/packermod-base.md、README.md
+
+**検証**:
+347件のLuaテスト成功。Base専用APIテスト・headless保存2起動・サンプルMOD・Windows/Linux隔離導入を確認。
+WSL＋Xvfbの実ゲーム画像をdesign-reviewが測定し36枠全表示とHUD9枠を確認。
+実Windows版へ保護データhashを維持して反映、新Baseと従来MTGのPack作成/2起動、およびstarter ZIP Importを確認。
+実ユーザープロファイルを再起動しメニューreadyを確認。
+
+**コミット**: 本エントリを含む修正コミット。
+
+**次のTODO**:
+Java挙動の厳密再現、箱等のplayer欄36枠化、Pack単位の厳密なゲーム版固定、再現可能な性能比較と実測に基づく最適化。
+
 ## 2026-11-05 11:01 (main)
 
 **変更概要**:

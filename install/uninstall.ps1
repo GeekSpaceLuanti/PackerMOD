@@ -44,3 +44,4 @@ if (Test-Path $conf) {
 
 Write-Host "Uninstalled. packs\ and cache\ left in place under $userData\PackerMOD."
 Write-Host "(They contain your Packs and downloaded ContentDB cache. Delete manually if unwanted.)"
+Write-Host 'PackerMOD Base under games\packerbase and install-backups are retained so existing worlds remain playable.'

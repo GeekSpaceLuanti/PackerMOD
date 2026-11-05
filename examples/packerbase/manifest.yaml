@@ -1,0 +1,17 @@
+schema_version: 1
+id: packerbase_starter
+name: PackerMOD Base
+version: "1.0.0"
+description: Minetest Game based foundation with packer_core. Uses the locally installed game; this is not an immutable game-version lock.
+base_game:
+  id: packerbase
+  installed_id: packerbase
+  version: "installed"
+mods:
+  - name: packerbase_example
+    source: bundle
+    path: bundled_mods/packerbase_example
+settings:
+  enable_damage: true
+  creative_mode: false
+  mg_name: v7

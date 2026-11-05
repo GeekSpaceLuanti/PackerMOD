@@ -1,8 +1,14 @@
 [CmdletBinding()]
 param(
-    [string]$LuantiExe = 'C:\Users\bacon\AppData\Local\luanti\5.16.1\bin\luanti.exe'
+    [string]$LuantiExe = 'C:\Users\bacon\AppData\Local\luanti\5.16.1\bin\luanti.exe',
+    [ValidatePattern('^[a-z0-9_]+$')][string]$GameId = 'minetest',
+    [string]$StarterZip
 )
 $ErrorActionPreference = 'Stop'
+if ($StarterZip) {
+    $StarterZip = (Resolve-Path -LiteralPath $StarterZip -ErrorAction Stop).Path
+    if ($GameId -ne 'packerbase') { throw 'Starter ZIP requires -GameId packerbase' }
+}
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $userDir = Join-Path $env:APPDATA 'Luanti'
 if (-not (Test-Path -LiteralPath $userDir)) { $userDir = Join-Path $env:APPDATA 'Minetest' }
@@ -17,7 +23,7 @@ $logPath = Join-Path $outputDir ('windows-game-' + (Get-Date -Format 'yyyyMMdd-H
 $config = Join-Path $testRoot 'minetest.conf'
 $mainScript = Join-Path $PSScriptRoot 'windows_game_smoke_mainmenu.lua'
 @("main_menu_script = $mainScript", "packermod_source_path = $deployed",
-    'packermod_disposable_test = true', 'enable_sound = false', 'menu_clouds = false',
+    "packermod_test_game = $GameId", "packermod_test_starter_zip = $StarterZip", 'packermod_disposable_test = true', 'enable_sound = false', 'menu_clouds = false',
     'screen_w = 1280', 'screen_h = 800', 'fullscreen = false', 'language = ja') |
     Set-Content -LiteralPath $config -Encoding utf8
 $startInfo = [Diagnostics.ProcessStartInfo]::new($LuantiExe)
@@ -31,10 +37,10 @@ try {
     if (-not $testProcess.WaitForExit(120000)) { throw 'Windows game test timed out' }
     $log = Get-Content -LiteralPath $logPath -Raw
     if ($testProcess.ExitCode -ne 0 -or $log -match 'ERROR\[' -or
-        $log -notmatch 'Windows Minetest Game create and two launches verified') {
+        $log -notmatch ('Windows game ' + [regex]::Escape($GameId) + ' create and two launches verified')) {
         throw "Windows game test failed. Log: $logPath"
     }
-    Write-Host "Verified Windows Minetest Game Pack creation, Japanese world, two launches and recovery. Log: $logPath"
+    Write-Host "Verified Windows game $GameId Pack creation, Japanese world, two launches and recovery. Log: $logPath"
     Write-Host "Disposable profile retained: $testRoot"
 } finally {
     if (-not $testProcess.HasExited) {

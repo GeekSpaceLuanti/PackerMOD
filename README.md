@@ -1,8 +1,10 @@
 # PackerMOD
 
-Luanti(旧 Minetest)のメインメニューを置き換える Modpack 管理ツール。CurseForge / Modrinth / Minecraft 公式ランチャー風の UI で、Pack(= Mod とサーバー設定をまとめた単位)を切り替えながら遊ぶ運用を想定している。
+Luanti(旧 Minetest)向けのゲーム・Modpack管理環境。メインメニューを置き換える管理画面と、Minetest Gameから分岐した独立ゲーム **PackerMOD Base** (`games/packerbase`) を同梱する。Pack(= Mod とサーバー設定をまとめた単位)を切り替えながら遊ぶ運用を想定している。
 
 > **注意**: PackerMOD は通常の MOD(world で読み込まれるアドオン)ではなく、**Luanti のメインメニュー UI そのものを差し替える**スクリプト。`minetest.conf` の `main_menu_script` を書き換えてインストールし、組み込みの「Singleplayer / Join Game / Settings」タブの代わりに Pack グリッド画面を出す。
+
+Baseゲームの構成・導入は [PackerMOD Base](docs/packermod-base.md)、完了条件と継続項目は [開発作業リスト](docs/development-roadmap.md) を参照。Java版の操作感と拡張性を目標とする開発初期段階であり、Java版MODの直接実行には対応しない。
 
 ## できること
 
@@ -261,19 +263,26 @@ make icons          # vendor/pixelarticons の SVG → textures/*.png 再生成
 make vendor-icons   # vendor/pixelarticons の SVG を vendoring
 ```
 
-spec は 190 件(+1 pending = #15)、回帰検出に `spec/library_spec.lua` の overlap+OOB 検査も使う。
+spec は347件（2026-11-05検証）、回帰検出に `spec/library_spec.lua` の overlap+OOB 検査も使う。
+Base専用検証は `bash scripts/test_base_game.sh`、実ゲーム画像は `bash scripts/test_base_game_visual.sh`。
+導入の隔離検証は `scripts/test_installation.ps1` / `bash scripts/test_installation.sh`。
+ソースとサンプルPackのZIP生成は `scripts/build_release.ps1 -OutputDirectory dist/final`。
+結果と制約は [Base統合の検証記録](docs/base-integration-report.md) を参照。
 
 ## ライセンス / クレジット
 
-- 本体: 未定(検討中)
-- アイコン: [Pixelarticons](https://github.com/halfmage/pixelarticons) MIT License(Copyright Gerrit Halfmann)
-- Luanti / Minetest: LGPL-2.1+(本ツールが拡張する対象)
+- 独自コード・スクリプト・文書・独自生成素材: [LGPL-2.1-or-later](LICENSE.txt)。本文は [COPYING.LESSER](COPYING.LESSER) と [COPYING](COPYING)。
+- アイコン: [Pixelarticons](https://github.com/halfmage/pixelarticons) MIT License(Copyright Gerrit Halfmann)。PNG変換を含む通知は [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+- Baseゲーム: Minetest Game由来コードは原則LGPL-2.1-or-later。画像・音声等は各MODの個別ライセンスを保持する。
+- Luantiエンジン: 別途導入するLGPL-2.1-or-laterの実行基盤。同梱配布する場合はエンジン・依存ライブラリ・素材の条件も確認する。
+
+確認範囲と配布時のチェックは [ライセンス確認記録](docs/license-audit.md) を参照。
 
 ## ロードマップ
 
 進行中・未着手は GitHub Issue で管理:
 
-- #8 Fork VoxeLibre 0.91 content into PackerMOD-Base
+- BaseゲームはMinetest Gameベースへ方針変更。旧VoxeLibre案のIssue #8は現方針と異なるため、実装・継続項目は [開発作業リスト](docs/development-roadmap.md) を参照。
 - #15 layout: 子の natural h が parent inner h を超えると OOB(shrink-to-fit 無し)
 - #16 アイコン PNG を accent 色で再生成(#10 のフォロー)
 - #17 Settings dialog の Luanti core 設定を実装

@@ -73,6 +73,7 @@ function M.build_world_mt(manifest, opts)
     table.insert(lines, "backend = sqlite3")
     table.insert(lines, "player_backend = sqlite3")
     table.insert(lines, "auth_backend = sqlite3")
+    table.insert(lines, "mod_storage_backend = sqlite3")
     table.insert(lines, "world_name = " .. (opts.world_name or manifest.name))
     -- PackerMOD 専用フィールド: Pack 一覧 → World 一覧フィルタに使う
     table.insert(lines, "packermod_pack_id = " .. manifest.id)

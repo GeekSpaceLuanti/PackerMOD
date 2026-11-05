@@ -1,59 +1,55 @@
-# PackerMOD-Base
+# PackerMOD Base
 
-PackerMOD の Pack manifest が指す既定のベース Game。Pack 作者は
-`base_game.id = packerbase` を指定して特定バージョンの Base に依存する。
+Minetest Gameを土台にした、PackerMOD用の独立ゲーム。ゲームの実体は
+`games/packerbase`、初期独自バージョンは `0.1.0`、ゲームIDは `packerbase`。
+VoxeLibreを土台とする以前の案は採用しない。
 
-## リポジトリ
+## 構成と境界
 
-別管理: https://github.com/GeekSpaceLuanti/PackerMOD-Base
+| 層 | 役割 | 配置 |
+|---|---|---|
+| PackerMOD | 起動メニュー、Pack・ゲーム・ワールド・MOD管理 | `mainmenu/` |
+| PackerMOD Base | 操作・ゲームルール・拡張API・保存形式 | `games/packerbase/` |
+| Luanti | 描画、入力、通信、ワールド基盤 | 別途インストールするエンジン |
 
-本リポジトリ(`PackerMOD`)は mainmenu / Pack 管理のみを扱い、ゲーム
-コンテンツは PackerMOD-Base 側で完結させる。複数バージョンの併存と
-release pin を可能にするため、Game ID にバージョンを含める。
+利用者には一体として導入できる形にし、コード上はこの境界を維持する。
+Java版の既存MODバイナリとの互換性は対象に含めず、Luanti用MODの拡張性を育てる。
 
-## Game ID 命名規約
+## 上流の固定と互換性
 
+Minetest Gameの特定コミットを取り込み、ゲーム内の上流記録を基準に管理する。
+既存のMOD名・アイテム名を保持し、独自の基盤MOD `packer_core` を追加する。
+上流更新は差分を確認して手動で取り込み、ゲーム版とエンジン版を分けて記録する。
+
+現在の `packerbase` は開発用の安定したID。既存ワールドを新しいゲームIDへ
+自動変更しない。複数ゲーム版の併存・Packごとの厳密なゲーム版固定は、既存の
+ContentDBリリース管理と整合させる追加課題であり、このIDだけでは実現しない。
+
+## 導入と選択
+
+Windowsでは `scripts/deploy_local.ps1` を使用し、バックアップ・保護対象確認・
+配置ハッシュ確認を行う。ゲームはLuantiユーザーデータの `games/packerbase` に配置する。
+メニューの新規Pack作成からインストール済みゲームとして選択する。
+既存Pack・ワールドは新しいゲームへ自動移行しない。
+
+インストール済みゲーム指定のmanifest例:
+
+```yaml
+base_game:
+  id: packerbase
+  installed_id: packerbase
+  title: PackerMOD Base
+  version: installed
 ```
-packerbase_<major>_<minor>
-```
 
-例:
-- `packerbase_0_91` ← VoxeLibre 0.91 から fork した世代
-- `packerbase_0_92` ← VoxeLibre 0.92 取り込み
-
-Pack manifest 側の表現は `base_game.id = packerbase` + `base_game.version = "0.91"`
-で、`world_builder.gameid_for` がドット → アンダーバー変換で `packerbase_0_91`
-に解決する(`mainmenu/world_builder.lua:gameid_for`)。
-
-## 起源と上流追従
-
-- 初期コンテンツ: [VoxeLibre](https://content.luanti.org/packages/Wuzzy/mineclone5/) の特定 release から fork
-- 上流追従: 手動マージ(自動同期はしない)。VoxeLibre の新リリースが出たら、
-  新しい `packerbase_<X>_<Y>` を増やす方針
+`version: installed` は版固定ではなく、現在配置されたゲームを使う指定。
+同じIDの更新はそのIDを使うPackすべてに影響するため、正式配布前に版管理を整備する。
 
 ## ライセンス
 
-VoxeLibre は GPL v3 → PackerMOD-Base も GPL v3 を継承する。
+ゲームコードはMinetest GameのLGPL-2.1-or-laterを維持する。
+素材は各MODの通知を優先し、CC BY-SA、CC BY、CC0等を一括で再許諾しない。
+独自メニューとゲームの同梱によって、第三者素材の条件が消えることはない。
+詳細は [ライセンス確認記録](license-audit.md) とゲーム内の通知を参照。
 
-PackerMOD 本体(mainmenu Lua)は Luanti 本体 builtin と合わせて LGPL 系
-の可能性があるが、Base game の取り込み境界はランタイム動的ロードであり、
-別ライセンスでの配布も許される(Luanti の Game/Mod 配布慣行に従う)。
-
-## インストール
-
-エンドユーザー向けには PackerMOD-Base のリリース zip を:
-
-```
-<luanti-user-data>/games/packerbase_<X>_<Y>/
-```
-
-に展開する。`install/install.sh` には Base のセットアップは含まれない
-(本リポは menu と Pack 管理のみ)。
-
-## 開発手順(fork メンテナ向け)
-
-1. `git clone https://github.com/GeekSpaceLuanti/PackerMOD-Base`
-2. VoxeLibre の release archive を取得し、`games/packerbase_<X>_<Y>/` 配下に展開
-3. `game.conf` の `name` / `title` を PackerMOD 流に書き換え
-4. 動作確認: `~/.minetest/games/` に symlink → Luanti で world 作成 → 起動
-5. リリース zip を作って GitHub Releases に置く
+開発項目・完了条件は [作業リスト](development-roadmap.md) に記録する。

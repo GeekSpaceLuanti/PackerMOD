@@ -1,59 +1,41 @@
 [CmdletBinding()]
-param()
-$ErrorActionPreference = "Stop"
+param([string]$UserData)
+$ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path -Parent $PSScriptRoot
-if (Get-Process -Name luanti -ErrorAction SilentlyContinue) {
-    throw "Luanti is running. Close it normally before deploying."
+if (Get-Process -Name luanti, minetest -ErrorAction SilentlyContinue) { throw 'Luanti is running. Close it normally before deploying.' }
+if (-not $UserData) {
+    $UserData = Join-Path $env:APPDATA 'Luanti'
+    if (-not (Test-Path -LiteralPath $UserData)) { $UserData = Join-Path $env:APPDATA 'Minetest' }
 }
-$userDir = Join-Path $env:APPDATA "Luanti"
-if (-not (Test-Path -LiteralPath $userDir)) { $userDir = Join-Path $env:APPDATA "Minetest" }
-if (-not (Test-Path -LiteralPath $userDir)) { throw "Luanti user data not found" }
-$userDir = [IO.Path]::GetFullPath($userDir)
-$installRoot = [IO.Path]::GetFullPath((Join-Path $userDir 'PackerMOD'))
-if ((Test-Path -LiteralPath $installRoot) -and ((Get-Item -LiteralPath $installRoot).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
-    throw "Installation root is a link; inspect it before deployment"
-}
-# Validate the exact replacement targets before the installer removes anything.
-foreach ($leaf in @('mainmenu', 'textures')) {
-    $target = [IO.Path]::GetFullPath((Join-Path $installRoot $leaf))
-    if (-not $target.StartsWith($installRoot + '\', [StringComparison]::OrdinalIgnoreCase)) {
-        throw "Invalid deployment target"
-    }
-    if (Test-Path -LiteralPath $target) {
-        $item = Get-Item -LiteralPath $target
-        if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-            throw "Deployment target is a link; inspect it before replacing"
-        }
-    }
-}
-$protectedRoots = @((Join-Path $installRoot 'packs'), (Join-Path $installRoot 'cache'), (Join-Path $userDir 'worlds'))
+if (-not (Test-Path -LiteralPath $UserData -PathType Container)) { throw 'Luanti user data not found' }
+$UserData = [IO.Path]::GetFullPath($UserData)
+$installRoot = Join-Path $UserData 'PackerMOD'
+$protectedRoots = @((Join-Path $installRoot 'packs'), (Join-Path $installRoot 'cache'), (Join-Path $UserData 'worlds'))
 function Get-ProtectedState {
     @($protectedRoots | ForEach-Object {
         if (Test-Path -LiteralPath $_) {
-            Get-ChildItem -LiteralPath $_ -Recurse -Force -File |
-                Select-Object FullName, Length, LastWriteTimeUtc
+            Get-ChildItem -LiteralPath $_ -Recurse -Force -File | ForEach-Object {
+                [pscustomobject]@{ Path=$_.FullName; Length=$_.Length; Hash=(Get-FileHash -LiteralPath $_.FullName).Hash }
+            }
         }
-    } | Sort-Object FullName) | ConvertTo-Json -Depth 3 -Compress
+    } | Sort-Object Path) | ConvertTo-Json -Depth 3 -Compress
 }
 $before = Get-ProtectedState
-$backup = Join-Path $installRoot ('install-backups\' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))
-New-Item -ItemType Directory -Path $backup -Force | Out-Null
-foreach ($leaf in @('mainmenu', 'textures')) {
-    $path = Join-Path $installRoot $leaf
-    if (Test-Path -LiteralPath $path) { Copy-Item -LiteralPath $path -Destination (Join-Path $backup $leaf) -Recurse }
-}
-$config = Join-Path $userDir 'minetest.conf'
-if (Test-Path -LiteralPath $config) { Copy-Item -LiteralPath $config -Destination (Join-Path $backup 'minetest.conf') }
-& (Join-Path $repoRoot 'install\install.ps1') -Mode copy
-if ((Get-ProtectedState) -cne $before) { throw "Protected data changed during deployment" }
-foreach ($leaf in @('mainmenu', 'textures')) {
-    $source = Join-Path $repoRoot $leaf
-    Get-ChildItem -LiteralPath $source -Recurse -File | ForEach-Object {
-        $relative = $_.FullName.Substring($source.Length).TrimStart('\')
-        $target = Join-Path (Join-Path $installRoot $leaf) $relative
-        if ((Get-FileHash -LiteralPath $_.FullName).Hash -ne (Get-FileHash -LiteralPath $target).Hash) {
-            throw "Deployment hash mismatch: $relative"
-        }
+& (Join-Path $repoRoot 'install\install.ps1') -Mode copy -UserData $UserData
+if ((Get-ProtectedState) -cne $before) { throw 'Protected Pack, world or cache data changed during deployment' }
+foreach ($part in @(
+    @{ Source=(Join-Path $repoRoot 'mainmenu'); Target=(Join-Path $installRoot 'mainmenu') },
+    @{ Source=(Join-Path $repoRoot 'textures'); Target=(Join-Path $installRoot 'textures') },
+    @{ Source=(Join-Path $repoRoot 'games\packerbase'); Target=(Join-Path $UserData 'games\packerbase') }
+)) {
+    foreach ($file in Get-ChildItem -LiteralPath $part.Source -Recurse -File -Force) {
+        $relative = $file.FullName.Substring($part.Source.Length).TrimStart('\', '/')
+        if ((Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath (Join-Path $part.Target $relative)).Hash) { throw "Deployment hash mismatch: $relative" }
     }
 }
-Write-Host "Verified deployment. Protected data unchanged. Backup: $backup"
+$config = Join-Path $UserData 'minetest.conf'
+$expected = 'main_menu_script = ' + (Join-Path $installRoot 'mainmenu\init.lua')
+$actual = @(Get-Content -LiteralPath $config | Where-Object { $_ -match '^main_menu_script\s*=' })
+if ($actual.Count -ne 1 -or $actual[0] -cne $expected) { throw 'main_menu_script verification failed' }
+Write-Host "Verified menu, textures, PackerMOD Base and configuration: $UserData"
+Write-Host 'Protected Pack, world and cache hashes unchanged.'

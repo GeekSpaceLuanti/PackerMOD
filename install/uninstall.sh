@@ -34,3 +34,4 @@ fi
 
 echo "Uninstalled. packs/ and cache/ left in place under $user_data/PackerMOD."
 echo "(They contain your Packs and downloaded ContentDB cache. Delete manually if unwanted.)"
+echo 'PackerMOD Base under games/packerbase and install-backups are retained so existing worlds remain playable.'
