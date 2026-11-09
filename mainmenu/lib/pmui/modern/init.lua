@@ -71,6 +71,9 @@ function M.new(host)
         local height=math.min(natural_h,available_h)
         local out={"formspec_version[6]","size["..f((width+(scroll and 16 or 0))*u)..","..f(height*u).."]","padding[0,0]",
             "bgcolor["..(options.backdrop or "#101418")..";both;"..(options.backdrop or "#101418").."]"}
+        if options.inventory_colors then
+            out[#out+1]="listcolors["..table.concat(options.inventory_colors,";").."]"
+        end
         local asset=host.texture or function(name,color) return "pmui_"..name..".png"..(color and "^[multiply:"..color or "") end
         local function tex(name,color) return asset(name,color) end
         local function rect(kind,x,y,w,h,tail)
@@ -128,6 +131,13 @@ function M.new(host)
                 return
             end
             if tag=="image" then rect("image",x,y,b.w-l-r,b.h-t-bottom,esc(node.src));return end
+            if tag=="inventory" then
+                local slot, gap = f(node.slot * u), f(node.gap * u)
+                out[#out+1]="style_type[list;size="..slot..","..slot..";spacing="..gap..","..gap.."]"
+                out[#out+1]="list[current_player;"..esc(node.list)..";"..f(x*u)..","..f(y*u)..";"
+                    ..node.cols..","..node.rows..";"..(node.start or 0).."]"
+                return
+            end
             if tag=="item-button" then
                 out[#out+1]="style["..esc(name)..";border=false;bgimg="..esc(asset("transparent"))..";padding=2]"
                 out[#out+1]="style["..esc(name)..":hovered;bgimg="..esc(tex("round_8",node.hover or "#64826F"))..";bgimg_middle=0]"

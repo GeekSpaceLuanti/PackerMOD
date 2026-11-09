@@ -59,6 +59,23 @@ if not pack then
             core.after(0, function()
                 assert(player:get_inventory():get_size("main") == 36, "Expected 36 inventory slots")
                 assert(player:hud_get_hotbar_itemcount() == 9, "Expected 9 hotbar slots")
+                local context = sfinv.get_or_create_context(player)
+                local craft = assert(sfinv.pages["sfinv:crafting"])
+                local function check_crafting()
+                    local formspec = player:get_inventory_formspec()
+                    assert(formspec:find("list[current_player;craft;", 1, true), "Crafting slots missing")
+                    assert(formspec:find("list[current_player;craftpreview;", 1, true), "Craft result missing")
+                    assert(formspec:find("list[current_player;main;", 1, true), "Inventory slots missing")
+                    return formspec
+                end
+                local initial = check_crafting()
+                assert(initial:find("packer_book_toggle", 1, true), "Recipe book toggle missing")
+                if not initial:find(";filter;", 1, true) then
+                    craft:on_player_receive_fields(player, context, {packer_book_toggle = true})
+                end
+                craft:on_player_receive_fields(player, context, {search = true, filter = "default:torch"})
+                assert(check_crafting():find(";default:torch;packer_item_1;", 1, true),
+                    "Recipe result and crafting slots were not visible together")
                 local path = core.get_worldpath()
                 local pass = Settings(path .. "/world.mt"):get("windows_pass")
                 assert(core.safe_file_write(path .. "/windows-inventory-" .. pass, "yes"))

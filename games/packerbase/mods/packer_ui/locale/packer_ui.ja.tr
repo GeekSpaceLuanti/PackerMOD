@@ -1,6 +1,9 @@
 # textdomain: packer_ui
 Recipes=レシピ
 Recipe book=レシピブック
+Open recipe book=レシピブックを開く
+Close recipe book=レシピブックを閉じる
+Inventory=持ち物
 Search=検索
 Reset=リセット
 No matching items.=該当するアイテムがありません。
@@ -9,6 +12,7 @@ Select an item to see its ingredients and uses.=アイテムを選ぶと材料�
 Show recipes=作り方を表示
 Show uses=使い道を表示
 Crafting=クラフト
+Crafting grid=クラフト欄
 Smelting time: @1 s=精錬時間：@1 秒
 Shapeless=形の指定なし
 This recipe is too large to display.=このレシピは大きすぎて表示できません。

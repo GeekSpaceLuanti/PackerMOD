@@ -48,6 +48,7 @@ core.show_formspec(player_name, "my_mod:settings", formspec)
 - `ui.components.text/button/panel/row/tabs/empty`：標準コンポーネント。PackerMODのパック詳細も同じ部品を使用します。
 - `ui.components.field/dropdown/slider/key_button/toggle`：種類だけで標準の寸法・描画が適用される入力部品。
 - `ui.el("item-button", {name = "recipe_result", item = "default:torch 4", tooltip = "Torch"})`：ゲーム内のアイテムボタン。Luaツリーで指定し、CSSで幅と高さを設定します。
+- `ui.el("inventory", {list = "main", cols = 9, rows = 1, slot = 34, gap = 4, inline = {width = 338, height = 34}})`：ゲーム内の操作可能なプレイヤーインベントリ。寸法はCSS px相当で、開始位置は任意の `start`（0始まり）で指定します。
 - `ui.default_css`：同梱テーマ。描画時に自動適用し、利用側CSSで上書きできます。完全に置き換えるときは`theme = false`。
 - `ui.parse_html(source, context)`：静的マークアップをツリーへ変換。`${key}`は解析後に文字列として埋め込みます。
 - `ui.new(host):render(options)`：`formspec, result`を返します。入力ツリーを書き換えないため、再描画・リサイズで再利用できます。

@@ -40,8 +40,11 @@ Luanti's `profiler.load` and `/profiler` for broader server diagnostics.
 ## Java Edition direction
 
 The default player inventory has 36 slots: three rows of nine above
-a nine-slot hotbar, including on the built-in creative page. Set
-`packer_java_inventory = false` to keep the upstream layout for new worlds.
+a nine-slot hotbar, including on the built-in creative page. The book
+button opens the recipe list to the left of the crafting grid and inventory.
+Recipes show ingredients and output while the crafting slots stay accessible.
+The on-screen hotbar uses the engine's slot geometry for its selection frame.
+Set `packer_java_inventory = false` to keep the upstream layout for new worlds.
 Existing inventories are never shrunk; already-expanded saves keep the
 nine-column display so items are not hidden by reverting the setting.
 Third-party inventory replacement mods control their own UI. Original

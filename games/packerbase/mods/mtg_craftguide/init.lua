@@ -1,4 +1,4 @@
--- PackerMOD Base, 2026-11-09: optionally render the existing guide through PMUI.
+-- PackerMOD Base: optionally render the guide inside the PMUI crafting screen.
 local S = minetest.get_translator("mtg_craftguide")
 local esc = minetest.formspec_escape
 
@@ -428,16 +428,22 @@ local function on_receive_fields(player, fields)
 	end
 end
 
-minetest.register_on_joinplayer(function(player)
+local function get_player_data(player)
 	local name = player:get_player_name()
+	if player_data[name] then return player_data[name] end
 	local info = minetest.get_player_information(name)
 
 	player_data[name] = {
 		filter = "",
 		pagenum = 1,
 		items = init_items,
-		lang_code = info.lang_code
+		lang_code = info and info.lang_code or "en"
 	}
+	return player_data[name]
+end
+
+minetest.register_on_joinplayer(function(player)
+	get_player_data(player)
 end)
 
 minetest.register_on_leaveplayer(function(player)
@@ -449,9 +455,10 @@ sfinv.register_page("mtg_craftguide:craftguide", {
 	title = esc(S("Recipes")),
 	get = function(self, player, context)
 		local ui = rawget(_G, "packer_ui")
-		if ui then
-			local data = player_data[player:get_player_name()]
-			data.pagemax = math.max(1, math.ceil(#data.items / 32))
+		if ui and ui.combined_crafting then
+			local data = get_player_data(player)
+			data.packer_page_size = 21
+			data.pagemax = math.max(1, math.ceil(#data.items / data.packer_page_size))
 			return ui.recipe(player, context, data, describe_item)
 		end
 		return sfinv.make_formspec(player, context, get_formspec(player))
@@ -459,6 +466,20 @@ sfinv.register_page("mtg_craftguide:craftguide", {
 	on_player_receive_fields = function(self, player, context, fields)
 		local ui = rawget(_G, "packer_ui")
 		if ui and ui.receive(player, context, fields) then return true end
+		if ui and ui.combined_crafting and fields.packer_book_toggle then
+			get_player_data(player).packer_scroll = nil
+			if context.page == "mtg_craftguide:craftguide" then
+				context.packer_book_open = false
+				sfinv.set_page(player, "sfinv:crafting")
+			else
+				context.packer_book_open = not context.packer_book_open
+				sfinv.set_player_inventory_formspec(player, context)
+			end
+			return true
+		end
+		if ui and ui.combined_crafting and context.page == "sfinv:crafting" and not context.packer_book_open then
+			return
+		end
 		if on_receive_fields(player, fields) then
 			sfinv.set_player_inventory_formspec(player)
 		end
