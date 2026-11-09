@@ -348,6 +348,13 @@ rules:
     style:
       color: "#98A5B3"
       h: 1.0
+  - selector: ".catalog-result-row"
+    style:
+      flex-direction: row
+  - selector: ".catalog-result-col"
+    style:
+      flex: 1
+      flex-direction: column
 
   - selector: ".settings-header"
     style:

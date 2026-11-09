@@ -7,6 +7,7 @@
 local M = {}
 local module_dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "mainmenu/"
 local detail_ui = dofile(module_dir .. "ui/pack_detail.lua")
+local catalog = (packermod and packermod.mod_catalog) or dofile(module_dir .. "mod_catalog.lua")
 
 local function get_packs()
     return packermod.pack_manager.list_packs(packermod.user_path, packermod.manifest)
@@ -198,6 +199,8 @@ local function build_detail_formspec(tabdata)
 
     local search_results = mods_state.results or {}
     tabdata.selected_search = clamp_selection(tabdata.selected_search, #search_results)
+    local search_page = mods_state.page or 1
+    local selected_result = search_results[tabdata.selected_search]
 
 
     local ctx = {
@@ -238,6 +241,10 @@ local function build_detail_formspec(tabdata)
         search_query = mods_state.query or "",
         search_release = mods_state.release or "",
         search_results = search_results,
+        mod_cards = subtab == "mods" and catalog.view(search_results, search_page, tabdata.selected_search) or {},
+        mod_page = search_page,
+        mod_pages = catalog.page_count(search_results),
+        mod_preview = selected_result,
         selected_search = tabdata.selected_search,
         has_search_result = #search_results > 0 and (tabdata.selected_search or 0) > 0,
         mod_status = mods_state.status or "",
@@ -351,6 +358,25 @@ local function find_pack_by_button(fields, packs)
     return nil
 end
 
+local function back_to_grid(tabdata)
+    tabdata.view = "grid"
+    tabdata.gui_scroll, tabdata.detail_scroll = 0, 0
+    tabdata.selected_pack_id = nil
+    tabdata.mods_state = nil
+end
+
+local function window_event(self, event)
+    if event ~= "MenuQuit" then return packermod.ui_window_event(event) end
+    -- FSTK deletes ordinary dialogs on ESC. The Library is its default root.
+    if self.data.view == "detail" then
+        back_to_grid(self.data)
+        ui.update()
+    else
+        core.close()
+    end
+    return true
+end
+
 local function button_handler(self, fields)
     local tabdata = self.data
     if fields.pm_flow_scroll then
@@ -407,9 +433,7 @@ local function button_handler(self, fields)
     end
 
     if fields.btn_back then
-        tabdata.view = "grid"
-        tabdata.gui_scroll=0
-        tabdata.selected_pack_id = nil
+        back_to_grid(tabdata)
         return true
     end
 
@@ -514,35 +538,51 @@ local function button_handler(self, fields)
 
     tabdata.mods_state = tabdata.mods_state or {}
     local mods_state = tabdata.mods_state
+    local function refresh_mods()
+        if not self.hidden and tabdata.mods_state == mods_state and tabdata.subtab == "mods" and ui then ui.update() end
+    end
 
     if fields.mod_list then
         local e = core.explode_textlist_event(fields.mod_list)
         if e.type == "CHG" or e.type == "DCL" then tabdata.selected_mod = e.index end
         return true
     end
-    if fields.search_results then
+    if fields.search_query ~= nil then mods_state.query = fields.search_query end
+    if fields.search_release ~= nil then mods_state.release = fields.search_release end
+    local selected = catalog.selection(mods_state.results or {}, fields)
+    if selected then tabdata.selected_search = selected; mods_state.status = ""; return true end
+    if fields.search_results and not fields.do_search and not fields.mod_add then
         local e = core.explode_textlist_event(fields.search_results)
         if e.type == "CHG" or e.type == "DCL" then tabdata.selected_search = e.index end
         return true
     end
-    if fields.search_query ~= nil then mods_state.query = fields.search_query end
-    if fields.search_release ~= nil then mods_state.release = fields.search_release end
+    if fields.mod_page_previous or fields.mod_page_next then
+        local results = mods_state.results or {}
+        mods_state.page = catalog.change_page(results, mods_state.page, fields)
+        tabdata.selected_search = (#results > 0 and (mods_state.page - 1) * catalog.page_size + 1) or 0
+        mods_state.status = ""
+        catalog.prefetch(results, mods_state.page, refresh_mods)
+        return true
+    end
 
-    if fields.do_search and pack then
-        local q = mods_state.query or ""
-        if q == "" then
-            mods_state.status = "Enter a query first."
-        else
-            local results, err = packermod.client.search(q)
+    if (fields.do_search or fields.key_enter_field == "search_query") and pack then
+        mods_state.generation = (mods_state.generation or 0) + 1
+        local generation = mods_state.generation
+        mods_state.status = "Loading MODs..."
+        local queued = packermod.client.search_async(mods_state.query or "", "mod", function(results, err)
+            if tabdata.mods_state ~= mods_state or mods_state.generation ~= generation then return end
             if not results then
                 mods_state.status = "Search failed: " .. tostring(err)
                 mods_state.results = {}
             else
-                mods_state.results = results
-                mods_state.status = ("Found %d results."):format(#results)
-                tabdata.selected_search = 1
+                mods_state.results, mods_state.page = results, 1
+                mods_state.status = #results == 0 and "No MODs found." or ""
+                tabdata.selected_search = #results > 0 and 1 or 0
+                catalog.prefetch(results, 1, refresh_mods)
             end
-        end
+            refresh_mods()
+        end)
+        if queued == false then mods_state.status = "Search failed: worker unavailable" end
         return true
     end
 
@@ -553,13 +593,38 @@ local function button_handler(self, fields)
             return true
         end
         local release_id = tonumber(mods_state.release)
-        if not release_id then
+        if mods_state.release and mods_state.release:match("%S") and
+                (not release_id or release_id < 1 or release_id % 1 ~= 0) then
             mods_state.status = "Enter the ContentDB release id (numeric)."
             return true
         end
-        local mod_spec = packermod.pack_editor.contentdb_result_to_mod(r, release_id)
-        local ok, err = packermod.pack_editor.add_mod(pack, mod_spec)
-        mods_state.status = ok and ("Added " .. mod_spec.name) or ("Add failed: " .. tostring(err))
+        local function add(id)
+            local mod_spec = packermod.pack_editor.contentdb_result_to_mod(r, id)
+            local ok, err = packermod.pack_editor.add_mod(pack, mod_spec)
+            mods_state.status = ok and ("Added " .. mod_spec.name) or ("Add failed: " .. tostring(err))
+        end
+        if release_id then add(release_id); return true end
+        if mods_state.adding then return true end
+        mods_state.status, mods_state.adding = "Loading releases...", true
+        local generation = mods_state.generation
+        local queued = packermod.client.releases_async(r.author .. "/" .. r.name, function(releases, err)
+            if tabdata.mods_state ~= mods_state then return end
+            mods_state.adding = false
+            if mods_state.generation ~= generation or (mods_state.results or {})[tabdata.selected_search] ~= r then return end
+            if not releases then
+                mods_state.status = "Search failed: " .. tostring(err)
+            else
+                mods_state.status = "No compatible releases."
+                for _, release in ipairs(releases) do
+                    if packermod.game_store_mod.compatible(release, core.get_version().string) then
+                        add(release.id)
+                        break
+                    end
+                end
+            end
+            refresh_mods()
+        end)
+        if queued == false then mods_state.status, mods_state.adding = "Search failed: worker unavailable", false end
         return true
     end
 
@@ -593,7 +658,8 @@ local function button_handler(self, fields)
 end
 
 function M.show()
-    local dlg = dialog_create("packermod_library", get_formspec, button_handler, packermod.ui_window_event)
+    local dlg
+    dlg = dialog_create("packermod_library", get_formspec, button_handler, function(event) return window_event(dlg, event) end)
     M._dlg = dlg
     dlg.data.page = tonumber(core.settings:get("packermod_initial_page")) or 1
     -- Dev hook: 直接 detail / subtab を開く
@@ -646,6 +712,7 @@ M._internal = {
     -- 単体テスト用に内部関数も export
     build_grid_formspec = build_grid_formspec,
     build_detail_formspec = build_detail_formspec,
+    window_event = window_event,
 }
 
 return M

@@ -159,23 +159,23 @@ root:
                           attrs:
                             name: "engine_browse"
                             label: "Browse"
-                    - tag: "div"
-                      class: "modal-actions"
-                      when: "${has_setting}"
-                      children:
-                        - tag: "button"
-                          class: "modal-btn"
-                          attrs:
-                            name: "engine_reset"
-                            label: "Restore default"
-                        - tag: "button"
-                          class: "modal-btn-primary"
-                          attrs:
-                            name: "engine_apply"
-                            label: "Apply"
             - tag: "status"
               class: "modal-status"
               text: "${status}"
+            - tag: "div"
+              class: "modal-actions"
+              when: "${has_setting}"
+              children:
+                - tag: "button"
+                  class: "modal-btn"
+                  attrs:
+                    name: "engine_reset"
+                    label: "Restore default"
+                - tag: "button"
+                  class: "modal-btn-primary"
+                  attrs:
+                    name: "engine_apply"
+                    label: "Apply"
             - tag: "footer"
               class: "settings-footer"
               children:

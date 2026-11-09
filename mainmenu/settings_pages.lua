@@ -3,6 +3,7 @@
 local M = {}
 local catalog = dofile((debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./") .. "settings_catalog.lua")
 local preferences = dofile((debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./") .. "ui_preferences.lua")
+M.style = dofile((debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "./") .. "ui/themes/block_settings.lua")
 M.tabs = {
     { id = "general", title = "General", hint = "Frequently used settings", names = {
         "fov", "viewing_range", "sound_volume", "fullscreen", "autojump" } },
@@ -262,7 +263,7 @@ function M.build(data, translate)
     }
     local root = L.VBox { spacing = 0, L.Spacer { flex = 1 },
         L.HBox { L.Spacer { flex = 1 }, card, L.Spacer { flex = 1 } }, L.Spacer { flex = 1 } }
-    return gui.render_widgets(root, { state = data, append = tooltips })
+    return gui.render_widgets(root, { state = data, append = tooltips, modern_css = M.style })
 end
 function M.handle(data, fields, translate)
     if tostring(fields.settings_nav_scroll):match("^CHG:") then

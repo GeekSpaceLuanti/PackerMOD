@@ -52,7 +52,7 @@ end
 function M.render_widgets(root,opts)
     opts=opts or {}
     local fs,meta=M.modern.new(mainmenu_host.host(M.control_defaults)):render{
-        tree=bridge.widgets(root),max_width=1040,scroll=opts.state and opts.state.gui_scroll}
+        tree=bridge.widgets(root),css=opts.modern_css,max_width=1040,scroll=opts.state and opts.state.gui_scroll}
     if opts.state then opts.state.gui_layout=meta end
     return fs..table.concat(opts.append or {}),meta
 end
@@ -98,7 +98,7 @@ function M.build_formspec(opts)
         M.box_model.compute_all(root)
         local tree=bridge.dom(root)
         local fs,meta=M.modern.new(mainmenu_host.host(M.control_defaults)):render{
-            tree=tree,max_width=tree.preferred_width or 1040,scroll=opts.state and opts.state.gui_scroll}
+            tree=tree,css=opts.modern_css,max_width=tree.preferred_width or 1040,scroll=opts.state and opts.state.gui_scroll}
         if opts.state then opts.state.gui_layout=meta end
         return fs,meta
     end

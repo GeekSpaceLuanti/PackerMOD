@@ -98,6 +98,46 @@ describe("contentdb.download", function()
     end)
 end)
 
+describe("ContentDB thumbnails", function()
+    local previous_core, previous_packermod, previous_delimiter
+    local jobs
+    before_each(function()
+        previous_core, previous_packermod, previous_delimiter = core, packermod, DIR_DELIM
+        jobs = {}
+        _G.core = {
+            settings = { get = function() return "https://mirror.example:8443" end },
+            sha1 = function(url) return url:gsub("[^%w]", "_") end,
+            create_dir = function() return true end,
+            get_us_time = function() return 1 end,
+            handle_async = function(_, params) jobs[#jobs + 1] = params end,
+        }
+        _G.packermod = { user_path = "missing-thumbnail-fixture", textures_dir = "/textures/" }
+        _G.DIR_DELIM = "/"
+    end)
+    after_each(function()
+        _G.core, _G.packermod, _G.DIR_DELIM = previous_core, previous_packermod, previous_delimiter
+    end)
+
+    it("downloads only visible thumbnails from the configured and official origins", function()
+        local catalog = dofile("mainmenu/mod_catalog.lua")
+        local results = {
+            { thumbnail = "https://content.luanti.org/thumbnails/1/target.jpg.png" },
+            { thumbnail = "https://127.0.0.1/private.jpg" },
+            { thumbnail = "/thumbnails/example.jpg" },
+            { thumbnail = "https://content.luanti.org/thumbnails/1/next.png" },
+        }
+        catalog.prefetch(results, 1, function() end)
+        catalog.prefetch(results, 1, function() end)
+        assert.equal(2, #jobs)
+        assert.equal(results[1].thumbnail, jobs[1].url)
+        assert.equal("https://mirror.example:8443/thumbnails/example.jpg", jobs[2].url)
+        assert.matches("packermod_default_pack_thumbnail.png", catalog.view(results, 1)[2].image, 1, true)
+        catalog.prefetch(results, 2, function() end)
+        assert.equal(3, #jobs)
+        assert.equal(results[4].thumbnail, jobs[3].url)
+    end)
+end)
+
 describe("contentdb release_download_url", function()
     it("returns absolute URL when release info has url field (absolute)", function()
         assert.are.equal(

@@ -2,12 +2,23 @@
 # minetest.conf
 
 # PackerMOD contributors, modified 2026-11-05: inventory/profiling settings.
+# PackerMOD contributors, modified 2026-11-09: forward sprint using Aux1.
+packer_sprint (Forward sprint) bool true
+
 #    Nine-slot hotbar and 36-slot player inventory. Turning this off does not
 #    shrink an existing inventory or discard its items.
 packer_java_inventory (Java-style player inventory) bool true
 
 #    Record only tasks explicitly wrapped by packer_core.measure.
 packer_profile (PackerMOD extension timing) bool false
+
+# PackerMOD contributors, modified 2026-11-09: automatic item pickup.
+#    Pick up nearby dropped items after a brief delay. Existing item pickup
+#    hooks and inventory capacity still apply.
+packer_auto_pickup (Automatically pick up nearby items) bool true
+
+#    Require ground contact to step onto ledges on Luanti 5.16+.
+packer_rigid_step_up (Step onto ledges only when grounded) bool true
 
 #    In creative mode players are able to dig all kind of blocks nearly
 #    instantly, and have access to unlimited resources.

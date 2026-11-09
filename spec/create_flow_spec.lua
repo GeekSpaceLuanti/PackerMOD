@@ -142,7 +142,7 @@ describe("ContentDB Pack creation flow", function()
         assert.equal(0, #dialog.data.mods)
         dialog.handler(dialog, { search_query = "probe", search = true })
         requests[#requests].callback({ { name = "probe", author = "Fixture" } })
-        dialog.handler(dialog, { search_results = "CHG:1" })
+        dialog.handler(dialog, { mod_result_1 = true })
         for _ = 1, 2 do
             dialog.handler(dialog, { add_search = true })
             requests[#requests].callback({ { id = 99, min_minetest_version = { name = "9.0" } }, { id = 10 } })

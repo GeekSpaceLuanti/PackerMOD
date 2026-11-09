@@ -1,3 +1,4 @@
+-- PackerMOD Base, 2026-11-09: optionally render the existing guide through PMUI.
 local S = minetest.get_translator("mtg_craftguide")
 local esc = minetest.formspec_escape
 
@@ -173,10 +174,7 @@ local function is_fuel(item)
 	return minetest.get_craft_result({method="fuel", items={item}}).time > 0
 end
 
-local function item_button_fs(fs, x, y, item, element_name, groups)
-	table.insert(fs, ("item_image_button[%s,%s;1.05,1.05;%s;%s;%s]")
-		:format(x, y, item, element_name, groups and "\n"..esc(S("G")) or ""))
-
+local function item_tooltip(item, groups)
 	local tooltip
 	if groups then
 		table.sort(groups)
@@ -194,9 +192,22 @@ local function item_button_fs(fs, x, y, item, element_name, groups)
 		local desc = itemdef and itemdef.description or S("Unknown Item")
 		tooltip = desc.."\n"..minetest.colorize("orange", S("Fuel"))
 	end
+	return tooltip
+end
+
+local function item_button_fs(fs, x, y, item, element_name, groups)
+	table.insert(fs, ("item_image_button[%s,%s;1.05,1.05;%s;%s;%s]")
+		:format(x, y, item, element_name, groups and "\n"..esc(S("G")) or ""))
+	local tooltip = item_tooltip(item, groups)
 	if tooltip then
 		table.insert(fs, ("tooltip[%s;%s]"):format(element_name, esc(tooltip)))
 	end
+end
+
+local function describe_item(item)
+	local groups = extract_groups(item)
+	if groups then item = groups_to_item(groups) end
+	return item, item_tooltip(item, groups), groups ~= nil
 end
 
 local function recipe_fs(fs, data)
@@ -338,6 +349,10 @@ local function on_receive_fields(player, fields)
 	local name = player:get_player_name()
 	local data = player_data[name]
 
+	if fields.pm_flow_scroll then
+		data.packer_scroll = tonumber(fields.pm_flow_scroll:match("^[A-Z]+:(%d+)$"))
+	end
+
 	if fields.clear then
 		data.filter = ""
 		data.pagenum = 1
@@ -372,6 +387,7 @@ local function on_receive_fields(player, fields)
 		return true
 
 	elseif fields.recipe_next or fields.recipe_prev then
+		if not data.recipes then return end
 		data.rnum = data.rnum + (fields.recipe_next and 1 or -1)
 		if data.rnum > #data.recipes then
 			data.rnum = 1
@@ -381,11 +397,15 @@ local function on_receive_fields(player, fields)
 		return true
 
 	else
-		local item
-		for field in pairs(fields) do
-			if field:find(":") then
-				item = field:match("[%w_:]+")
-				break
+		local item = fields.packer_recipe_mode and data.prev_item
+		if not item then
+			for field in pairs(fields) do
+				if data.packer_items then
+					item = data.packer_items[field]
+				elseif field:find(":") then
+					item = field:match("[%w_:]+")
+				end
+				if item then break end
 			end
 		end
 		if not item then
@@ -428,9 +448,17 @@ end)
 sfinv.register_page("mtg_craftguide:craftguide", {
 	title = esc(S("Recipes")),
 	get = function(self, player, context)
+		local ui = rawget(_G, "packer_ui")
+		if ui then
+			local data = player_data[player:get_player_name()]
+			data.pagemax = math.max(1, math.ceil(#data.items / 32))
+			return ui.recipe(player, context, data, describe_item)
+		end
 		return sfinv.make_formspec(player, context, get_formspec(player))
 	end,
 	on_player_receive_fields = function(self, player, context, fields)
+		local ui = rawget(_G, "packer_ui")
+		if ui and ui.receive(player, context, fields) then return true end
 		if on_receive_fields(player, fields) then
 			sfinv.set_player_inventory_formspec(player)
 		end

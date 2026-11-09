@@ -33,6 +33,7 @@ if not pack then
         local storage = core.get_mod_storage()
         local api_ready = false
         if core.get_modpath("packer_core") then
+            assert(tonumber(core.settings:get("movement_gravity")) == 14, "Game gravity default was masked")
             local state = packer_core.open_data("windowsprobe", 1, {
                 [1] = function(data) data.starts = 0; return data end,
             })

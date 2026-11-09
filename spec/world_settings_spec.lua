@@ -51,6 +51,17 @@ describe("World settings isolation", function()
         assert.equal("90", values.time_speed)
         assert.is_nil(values.gravity)
     end)
+    it("leaves inherited settings for the game to resolve", function()
+        local backend = world("120", "9.81")
+        backend.has_override = function(entry) return entry.name == "time_speed" end
+        assert.is_true(session.begin(backend))
+        assert.equal("120", values.time_speed)
+        assert.is_nil(values.gravity)
+        assert.is_true(session.recover())
+        backend.has_override = function() return false end
+        assert.is_true(session.begin(backend))
+        assert.is_nil(journal)
+    end)
     it("does not apply any override when recovery journaling fails", function()
         write_ok=false
         assert.is_false(session.begin(world("120", "4.2")))

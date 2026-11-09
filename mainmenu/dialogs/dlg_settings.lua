@@ -134,7 +134,7 @@ local function get_formspec(data)
         scroll_value = data.scroll or 0,
     }
     local fs = packermod.pmui.build_formspec {
-        renderer = "modern", state = data,
+        renderer = "modern", state = data, modern_css = pages.style,
         html_path = packermod.mainmenu_path .. "ui" .. DIR_DELIM .. "modal_settings.html.yml",
         css_path = packermod.mainmenu_path .. "ui" .. DIR_DELIM .. "themes" .. DIR_DELIM .. "synthwave.css.yml",
         ctx = ctx, page_w = 30, page_h = 16, texture_dir = packermod.textures_dir,

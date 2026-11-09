@@ -46,6 +46,12 @@
 .port { width: 120; }
 .columns { align-items: start; gap: 20; }
 .mod-column { min-width: 240; padding: 20; gap: 16; }
+.mod-card { padding: 8; gap: 10; align-items: center; }
+.mod-thumbnail { width: 88; height: 58; }
+.mod-card-text { flex-grow: 1; min-width: 95; gap: 2; }
+.mod-title { width: 100%; font-weight: bold; }
+.mod-pages { justify-content: center; }
+.mod-preview { gap: 8; }
 .list { width: 100%; min-height: 80; }
 .info-form { padding: 24; gap: 16; }
 .description { width: 100%; height: 100; }

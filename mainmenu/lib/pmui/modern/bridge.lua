@@ -49,7 +49,9 @@ function M.dom(source)
             if classes:find("narrow",1,true) then attrs.inline.width=140;attrs.inline["flex-grow"]=0 end
         elseif tag=="scroll" then
             class="ui-stack";attrs.value=tonumber(a.value) or 0
-        elseif tag=="img" then tag="image";attrs.src=a.src;class=""
+        elseif tag=="img" then
+            tag="image";attrs.src=a.src;class=""
+            attrs.inline.width=tonumber(a.width);attrs.inline.height=tonumber(a.height)
         elseif tag=="paragraph" or tag=="span" or tag=="label" then tag="p";class=""
         elseif tag=="status" then class=""
         elseif tag:match("^h%d$") then class=""
@@ -58,6 +60,7 @@ function M.dom(source)
             if box.flex_direction=="row" then class="row" end
             if box.display=="grid" then class="ui-grid" end
             if old.tag=="card" then class="panel ui-tile" end
+            if a.panel then class=class.." ui-row-panel" end
             if classes:find("actions",1,true) or classes:find("action-bar",1,true) or classes:find("pagination",1,true) then class="ui-actions" end
             if classes:find("col",1,true) or classes:find("settings-editor",1,true) then class=class.." ui-column" end
         end

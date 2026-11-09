@@ -95,6 +95,7 @@ root:
                   children:
                     - tag: div
                       class: modal-row
+                      id: mod-search-row
                       children:
                         - tag: field
                           class: modal-field-create-grow
@@ -107,20 +108,65 @@ root:
                           attrs:
                             name: search
                             label: Search
-                    - tag: list
-                      class: catalog-list
+                    - tag: span
+                      when: "${mod_empty}"
+                      text: "Search ContentDB to find mods."
+                    - tag: div
+                      class: catalog-result-row
+                      for:
+                        each: card
+                        in: mod_cards
                       attrs:
-                        name: search_results
-                        items: "${search_results | format_search_result}"
-                        selected: "${search_selected}"
-                    - tag: button
-                      class: modal-btn
-                      attrs:
-                        name: add_search
-                        label: "Add to pack"
+                        name: "${card.button}"
+                        panel: true
+                      children:
+                        - tag: img
+                          attrs:
+                            src: "${card.image}"
+                            width: 88
+                            height: 58
+                        - tag: div
+                          class: catalog-result-col
+                          children:
+                            - tag: span
+                              text: "${card.label}"
+                            - tag: span
+                              class: catalog-result-meta
+                              text: "${card.author}"
+                    - tag: div
+                      class: modal-row
+                      children:
+                        - tag: button
+                          when: "${mod_previous}"
+                          attrs:
+                            name: mod_page_previous
+                            label: Previous
+                        - tag: span
+                          text: "${mod_page_label}"
+                        - tag: button
+                          when: "${mod_next}"
+                          attrs:
+                            name: mod_page_next
+                            label: Next
                 - tag: div
                   class: modal-create-col
                   children:
+                    - tag: div
+                      class: catalog-mod-preview
+                      when: "${mod_preview}"
+                      children:
+                        - tag: h2
+                          text: "${mod_preview_title}"
+                        - tag: span
+                          class: catalog-result-meta
+                          text: "${mod_preview_author}"
+                        - tag: paragraph
+                          text: "${mod_preview_description}"
+                        - tag: button
+                          class: modal-btn-primary
+                          attrs:
+                            name: add_search
+                            label: "Add to pack"
                     - tag: span
                       class: modal-section-label
                       text: "MODs in this pack"
@@ -132,6 +178,7 @@ root:
                         selected: "${mod_selected}"
                     - tag: button
                       class: modal-btn
+                      when: "${can_remove_mod}"
                       attrs:
                         name: remove_mod
                         label: Remove

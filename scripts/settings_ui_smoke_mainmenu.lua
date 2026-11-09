@@ -1,6 +1,14 @@
 local source = assert(core.settings:get("packermod_source_path"))
 local config = assert(core.settings:get("packermod_smoke_config"))
+core.settings:set("keymap_backward", "SYSTEM_SCANCODE_82")
 dofile(source .. "/mainmenu/init.lua")
+local bindings = Settings(config)
+assert(bindings:get("keymap_backward") == "SYSTEM_SCANCODE_82", "Custom binding was overwritten")
+assert(bindings:get("keymap_inventory") == "SYSTEM_SCANCODE_8", "Java inventory key was not set")
+assert(bindings:get("keymap_aux1") == "SYSTEM_SCANCODE_224", "Java auxiliary key was not set")
+assert(bindings:get("keymap_screenshot") == "SYSTEM_SCANCODE_59" and bindings:get("keymap_toggle_chat") == "")
+assert(bindings:get("keymap_toggle_debug") == "SYSTEM_SCANCODE_60" and bindings:get("keymap_toggle_fog") == "")
+assert(bindings:get("keymap_camera_mode") == "SYSTEM_SCANCODE_62")
 local controller = packermod.dialogs.dlg_settings
 local dlg = controller.show(packermod.library.dlg())
 local data, handle = dlg.data, controller._internal.handler

@@ -46,16 +46,39 @@ function M.render(c,host,t)
         content[#content+1]=row(actions,"actions")
     elseif c.show_mods then
         content[#content+1]=text(t("Mods"),"section-title")
-        content[#content+1]=row({field("search_query","Search ContentDB",c.search_query,"field grow"),field("search_release","Release",c.search_release,"port"),button("do_search","Search","search")},"form-row")
+        content[#content+1]=row({field("search_query","Search ContentDB",c.search_query,"field grow"),field("search_release","Release (optional)",c.search_release,"port"),button("do_search","Search","search")},"form-row")
         if c.mod_status~="" then content[#content+1]=text(t(c.mod_status),"muted") end
-        local current={text(t("Current"),"section-title")}
+        local current={}
+        if c.has_search_result and c.mod_preview then
+            local preview=c.mod_preview
+            current[#current+1]=el("div",{class="mod-preview"},{
+                text(t("Selected MOD"),"section-title"),
+                text(preview.title or preview.name,"subheading"),
+                text((preview.author or "").." / "..(preview.name or ""),"muted"),
+                text(preview.short_description or "","muted"),
+                button("mod_add","Add","plus","primary"),
+            })
+        end
+        current[#current+1]=text(t("Current"),"section-title")
         if c.has_pack_mods then current[#current+1]=list("mod_list",labels(c.pack_mods,c.format_mod_entry),c.selected_mod)
         else current[#current+1]=text(t("No additional mods in this pack."),"muted") end
         if c.has_mod then current[#current+1]=button("mod_remove","Remove","trash","danger") end
         local results={text(t("Search results"),"section-title")}
-        if c.has_search_results then results[#results+1]=list("search_results",labels(c.search_results,c.format_search_result),c.selected_search)
+        if c.has_search_results then
+            for _,card in ipairs(c.mod_cards) do
+                local image=el("image",{src=card.image,class="mod-thumbnail"})
+                local title=text(card.title,"mod-title")
+                local meta=el("div",{class="mod-card-text"},{title,text(card.author,"muted")})
+                results[#results+1]=el("div",{name=card.button,class="row mod-card panel "..(card.selected and "world-selected" or "")},{image,meta})
+            end
+            if c.mod_pages>1 then
+                local pages={}
+                if c.mod_page>1 then pages[#pages+1]=button("mod_page_previous","Previous",nil) end
+                pages[#pages+1]=text(c.mod_page.." / "..c.mod_pages,"muted")
+                if c.mod_page<c.mod_pages then pages[#pages+1]=button("mod_page_next","Next",nil) end
+                results[#results+1]=row(pages,"mod-pages")
+            end
         else results[#results+1]=text(t("Search ContentDB to find mods."),"muted") end
-        if c.has_search_result then results[#results+1]=button("mod_add","Add","plus","primary") end
         content[#content+1]=row({el("section",{class="mod-column panel grow"},current),el("section",{class="mod-column panel grow"},results)},"columns")
     else
         content[#content+1]=text(t("Info"),"section-title")

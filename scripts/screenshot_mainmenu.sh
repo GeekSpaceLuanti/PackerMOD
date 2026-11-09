@@ -39,6 +39,11 @@ case "$view" in
     library) ;;
     contentdb_live) main_script="$repo_root/scripts/contentdb_smoke_mainmenu.lua"; ready_marker="PackerMOD: live ContentDB verified" ;;
     contentdb_catalog) main_script="$repo_root/scripts/contentdb_catalog_mainmenu.lua"; ready_marker="PackerMOD: ContentDB catalog ready" ;;
+    mods_search|modal_create_mods_search)
+        main_script="$repo_root/scripts/mod_catalog_smoke_mainmenu.lua"
+        ready_marker="PackerMOD: live MOD thumbnail verified"
+        if [[ "$view" == mods_search ]]; then subtab=mods; else step=mods; fi ;;
+    library_esc_test) subtab=worlds; main_script="$repo_root/scripts/menu_esc_smoke_mainmenu.lua" ;;
     library_empty) count=0 ;;
     library_many) count=7 ;;
     library_page2) count=7; page=2 ;;
@@ -280,6 +285,28 @@ if [[ "$view" == pack_delete_test ]]; then
     echo "Verified cancellation, confirmed pack/world deletion and preservation of other packs."
 fi
 # Capture only the engine window. No foreground focus, desktop input or F12 needed.
+if [[ "$view" == library_esc_test ]]; then
+    xdotool windowfocus "$window" key Escape
+    for _ in {1..30}; do
+        grep -q 'PackerMOD: ESC returned to Library' "$run_dir/engine.log" && break
+        sleep 0.1
+    done
+    grep -q 'PackerMOD: ESC returned to Library' "$run_dir/engine.log"
+    import -window "$window" "$out"
+    xdotool key Escape
+    for _ in {1..30}; do
+        kill -0 "$engine_pid" 2>/dev/null || break
+        sleep 0.1
+    done
+    if kill -0 "$engine_pid" 2>/dev/null; then echo 'ESC did not close Luanti' >&2; exit 1; fi
+    wait "$engine_pid"
+    engine_pid=""
+    cp "$run_dir/engine.log" "$out.log"
+    grep -q 'PackerMOD: ESC closed Library' "$out.log"
+    if grep -E 'ERROR\[|no toplevel ui element' "$out.log"; then exit 1; fi
+    printf '%s\n' "$out"
+    exit 0
+fi
 if grep -E 'ERROR\[|Could not open file of image|Invalid use|invalid use' "$run_dir/engine.log"; then cp "$run_dir/engine.log" "$out.log";exit 1;fi
 import -window "$window" "$out"
 cp "$run_dir/engine.log" "$out.log"

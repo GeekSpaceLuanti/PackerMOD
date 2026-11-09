@@ -10,6 +10,9 @@ walking-speed default, two settings in settingtypes.txt, and the new
 `packer_core` mod (including nine-slot hotbar/36-slot player inventory). See `LICENSE.txt`
 and each upstream mod's license/readme for the original terms.
 
+2026-11-09: tuned the movement defaults and added rigid step-up and
+automatic item pickup options. See `GAMEPLAY.md`.
+
 The directory/game ID is `packerbase`. Its release version is independent
 of the upstream revision. No upstream content was removed or renamed.
 Future releases must migrate saves explicitly rather than silently

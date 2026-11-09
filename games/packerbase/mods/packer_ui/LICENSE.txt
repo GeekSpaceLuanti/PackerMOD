@@ -1,0 +1,10 @@
+PackerMOD Base user interface
+Copyright (C) 2026 PackerMOD contributors
+SPDX-License-Identifier: LGPL-2.1-or-later
+
+The PMUI Lua runtime in lib/pmui and the PMUI images in textures are
+distributed under the same terms. The shared source is
+mainmenu/lib/pmui/modern in the PackerMOD repository:
+https://github.com/GeekSpaceLuanti/PackerMOD
+
+See the game's LICENSE.txt for the GNU Lesser General Public License.

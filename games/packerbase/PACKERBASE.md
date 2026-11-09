@@ -39,9 +39,7 @@ Luanti's `profiler.load` and `/profiler` for broader server diagnostics.
 
 ## Java Edition direction
 
-The walking-speed default is 4.317 blocks/second, configurable through the
-existing Luanti setting `movement_speed_walk`. This is an initial tuning
-point. The default player inventory has 36 slots: three rows of nine above
+The default player inventory has 36 slots: three rows of nine above
 a nine-slot hotbar, including on the built-in creative page. Set
 `packer_java_inventory = false` to keep the upstream layout for new worlds.
 Existing inventories are never shrunk; already-expanded saves keep the
@@ -50,10 +48,11 @@ Third-party inventory replacement mods control their own UI. Original
 chest/furnace/bones forms remain unchanged; their player section shows the
 first 32 slots, and the last four remain accessible in personal inventory.
 Bones drop overflow items normally if its 32-slot storage is full.
-Acceleration, jumping, sprinting, swimming, combat, mining timings,
-and exact client input parity are **not yet
-implemented**. Do not advertise this release as Java Edition compatible.
-No Minecraft code, textures, sounds or Java mods are bundled.
+Dry-land falling, jumping and crouching use tuned Luanti settings. On
+Luanti 5.16+, a player using the original step mode steps up only while
+grounded. Set `packer_rigid_step_up = false` to use the original step mode.
+`packer_auto_pickup = false` disables nearby item pickup. See
+`GAMEPLAY.md` for the comparison, tuning values and testing procedure.
 
 ## Development and verification
 

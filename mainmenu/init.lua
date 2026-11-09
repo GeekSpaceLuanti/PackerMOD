@@ -57,6 +57,7 @@ local game_store_mod = dofile(self_path .. "game_store.lua")
 local engine_settings_mod = dofile(self_path .. "engine_settings.lua")
 local settings_catalog = dofile(self_path .. "settings_catalog.lua")
 local world_settings_mod = dofile(self_path .. "world_settings.lua")
+local java_keymap = dofile(self_path .. "java_keymap.lua")
 
 -- Dev/test hook: packermod_fixture_root = <dir> で user_path を差し替え、
 -- 決定論的な pack 集合 (0 個の empty state / N 個の grid) でデザイン検証する。
@@ -73,9 +74,23 @@ local restored, restore_error = world_session.recover()
 assert(restored, restore_error)
 local world_restored, world_restore_error = pack_launcher.recover_launch(user_path)
 assert(world_restored, world_restore_error)
+local function apply_java_keymap()
+    if not java_keymap.apply_defaults(core.settings, core.get_key_description) then
+        core.log("warning", "PackerMOD: could not save default Java key bindings")
+    end
+end
+apply_java_keymap()
 local full_schema
 local function engine_schema()
-    if not full_schema then full_schema = engine_settings_mod.load() end
+    if not full_schema then
+        full_schema = engine_settings_mod.load()
+        local reset = full_schema.reset
+        function full_schema.reset(entry)
+            local ok, err = reset(entry)
+            if ok and entry.type == "key" then apply_java_keymap() end
+            return ok, err
+        end
+    end
     return full_schema
 end
 local client = contentdb_mod.new()
@@ -111,6 +126,7 @@ packermod = {
     world_builder = world_builder,
     pack_manager = pack_manager,
     contentdb_mod = contentdb_mod,
+    mod_catalog = dofile(self_path .. "mod_catalog.lua"),
     mod_installer_mod = mod_installer,
     pack_launcher_mod = pack_launcher,
     server_list = server_list,

@@ -11,6 +11,28 @@
   - **コミット**: コミットハッシュ(push 後に追記してよい)
   - **次のTODO**: あれば
 
+## 2026-11-09 12:48 (main)
+
+**変更概要**:
+メインメニューのESCでルート画面を削除していたエラーを修正。Pack作成・編集のMOD検索を、ContentDBの画像と説明を表示するカード選択に変更。
+未設定のキーにJava版の配置を適用し、BaseでCtrl＋前進の走行、落下・ジャンプ・縁の調整、自動拾得を実装。ワールド未設定値はゲーム側の既定値を継承する。
+レシピとゲーム内設定へ共有PMUIを適用し、メインメニューの設定も角型の枠と石色系へ更新。
+
+**主な変更ファイル**:
+- mainmenu/library.lua、mainmenu/mod_catalog.lua、mainmenu/dialogs/dlg_create.lua、mainmenu/java_keymap.lua、mainmenu/world_settings.lua
+- games/packerbase/mods/packer_core、games/packerbase/mods/packer_ui、games/packerbase/GAMEPLAY.md
+- mainmenu/ui/themes/block_settings.lua、scripts/sync_packer_ui.py、scripts/test_base_game_gameplay.sh
+
+**検証**:
+Luaテスト349件、実メニューとBaseの起動・保存、ContentDB実画像、ESC、レシピと設定の操作を確認。
+Xvfbの実クライアントで実効重力19.62→27.99ブロック/秒²、しゃがみ中の縁保持、Ctrl走行と解除、自動拾得の遅延・残数保持を確認。画面の欠け・配置・コントラストを別エージェントで測定。
+実Windows版をバックアップ付きで更新し、配置ハッシュ・保護データ・既存キーを検証。Baseの2回起動でゲームの重力設定と保存・復元を確認。
+
+**コミット**: 本エントリを含む修正コミット。
+
+**次のTODO**:
+Java版と異なる長距離落下の空気抵抗・落下ダメージ、Luanti標準のポーズ画面と固有キー操作はエンジン側で検討する。
+
 ## 2026-11-05 16:57 (main)
 
 **変更概要**:

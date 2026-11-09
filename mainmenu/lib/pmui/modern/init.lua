@@ -128,6 +128,15 @@ function M.new(host)
                 return
             end
             if tag=="image" then rect("image",x,y,b.w-l-r,b.h-t-bottom,esc(node.src));return end
+            if tag=="item-button" then
+                out[#out+1]="style["..esc(name)..";border=false;bgimg="..esc(asset("transparent"))..";padding=2]"
+                out[#out+1]="style["..esc(name)..":hovered;bgimg="..esc(tex("round_8",node.hover or "#64826F"))..";bgimg_middle=0]"
+                rect("item_image_button",x,y,b.w-l-r,b.h-t-bottom,esc(node.item)..";"..esc(name)..";"..esc(node.text))
+                if node.tooltip then
+                    out[#out+1]="tooltip["..esc(name)..";"..esc(node.tooltip).."]"
+                end
+                return
+            end
             if tag=="field" or tag=="textarea" or tag=="dropdown" then
                 local label_h=node.label and node.label~="" and 26 or 0
                 if label_h>0 then text(node.label,x,y+font*0.7,font,s.color,bold) end

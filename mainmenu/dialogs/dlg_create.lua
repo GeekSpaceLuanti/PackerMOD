@@ -1,5 +1,7 @@
 -- Three measured steps: details, ContentDB game/release, optional MODs.
 local M = {}
+local module_dir = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or "mainmenu/dialogs/"
+local catalog = (packermod and packermod.mod_catalog) or dofile(module_dir .. "../mod_catalog.lua")
 local function T(text) return packermod.i18n.t(text) end
 local function refresh() if ui and ui.update then ui.update() end end
 local function package_id(game) return game.author .. "/" .. game.name end
@@ -67,8 +69,16 @@ local function get_formspec(data)
     end
     if #version_items == 0 then version_items[1] = T("Choose a game to see its releases.") end
     local selected_game = data.games[data.game_selected or 0]
+    local mod_page = data.mod_page or 1
+    local mod_pages = catalog.page_count(data.search_results)
+    local mod_cards = step == "mods" and catalog.view(data.search_results, mod_page, data.search_selected) or {}
+    for _, card in ipairs(mod_cards) do
+        card.label = card.selected and ("● " .. card.title) or card.title
+    end
+    local preview = data.search_results[data.search_selected or 0]
     local fs = packermod.pmui.build_formspec {
         renderer = "modern", state = data,
+        modern_css = "#mod-search-row { align-items: end; }",
         html_path = packermod.mainmenu_path .. "ui" .. DIR_DELIM .. "modal_create.html.yml",
         css_path = packermod.mainmenu_path .. "ui" .. DIR_DELIM .. "themes" .. DIR_DELIM .. "synthwave.css.yml",
         ctx = {
@@ -81,10 +91,16 @@ local function get_formspec(data)
             game_items = game_items, game_selected = data.game_selected or 0,
             version_items = version_items, release_selected = data.release_selected or 1,
             selected_game_title = selected_game and (selected_game.title or selected_game.name) or T("Choose a base game first."),
-            search_query = data.search_query or "", search_results = data.search_results,
+            search_query = data.search_query or "", mod_cards = mod_cards,
+            mod_previous = mod_page > 1, mod_next = mod_page < mod_pages,
+            mod_page_label = mod_pages > 1 and (mod_page .. " / " .. mod_pages) or "",
+            mod_preview = preview ~= nil, mod_preview_title = preview and (preview.title or preview.name) or "",
+            mod_preview_author = preview and ((preview.author or "") .. " / " .. (preview.name or "")) or "",
+            mod_preview_description = preview and preview.short_description or "",
+            mod_empty = #mod_cards == 0,
+            can_remove_mod = #data.mods > 0 and (data.mod_selected or 0) > 0,
             search_selected = data.search_selected or 0, mods = data.mods, mod_selected = data.mod_selected or 0,
             status = data.status or "",
-            format_search_result = function(r) return (r.title or r.name) .. " / " .. r.author end,
             format_mod_entry = function(m) return m.name end,
         }, page_w = 30, page_h = 16, texture_dir = packermod.textures_dir,
     }
@@ -163,18 +179,32 @@ local function handler(self, fields)
         return true
     end
     if fields.game_release then choose_release(data, tonumber(fields.game_release) or 1); return true end
+    local selected = catalog.selection(data.search_results, fields)
+    if selected then data.search_selected = selected; return true end
+    local function refresh_thumbnails()
+        if not data.closed and data.step == "mods" then refresh() end
+    end
+    if fields.mod_page_previous or fields.mod_page_next then
+        data.mod_page = catalog.change_page(data.search_results, data.mod_page, fields)
+        data.search_selected = #data.search_results > 0 and (data.mod_page - 1) * catalog.page_size + 1 or 0
+        catalog.prefetch(data.search_results, data.mod_page, refresh_thumbnails)
+        return true
+    end
     for field, key in pairs({ search_results = "search_selected", mod_list = "mod_selected" }) do
         if fields[field] then
             local event = core.explode_textlist_event(fields[field])
             if event.type == "CHG" or event.type == "DCL" then data[key] = event.index end
         end
     end
-    if fields.search then
-        data.status = "Loading games..."
+    if fields.search or fields.key_enter_field == "search_query" then
+        data.status = "Loading MODs..."
         request(data, function(cb) return packermod.client.search_async(data.search_query or "", "mod", cb) end,
             function(results, err)
                 if not results then data.status = "Search failed: " .. tostring(err); return end
-                data.search_results, data.search_selected, data.status = results, 0, ""
+                data.search_results, data.mod_page = results, 1
+                data.search_selected = #results > 0 and 1 or 0
+                data.status = #results == 0 and "No MODs found." or ""
+                catalog.prefetch(results, 1, refresh_thumbnails)
             end)
         return true
     end
@@ -188,7 +218,13 @@ local function handler(self, fields)
 end
 
 function M.show(parent)
-    local dlg = dialog_create("packermod_dlg_create", get_formspec, handler, packermod.ui_window_event)
+    local dlg
+    dlg = dialog_create("packermod_dlg_create", get_formspec, handler, function(event)
+        if event ~= "MenuQuit" then return packermod.ui_window_event(event) end
+        handler(dlg, { quit = true })
+        refresh()
+        return true
+    end)
     local data = dlg.data
     data.step = core.settings:get("packermod_initial_create_step") or "details"
     data.pack_id, data.pack_version = packermod.pack_builder.uuid(), "1.0.0"

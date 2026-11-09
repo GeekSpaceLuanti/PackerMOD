@@ -17,6 +17,8 @@ $linuxArgs = @("-d", $Distribution, "--cd", $repoRoot, "--", "env", "WIN_W=$Widt
 if ($LuantiBin) { $linuxArgs += "LUANTI_BIN=$LuantiBin" }
 if ($View -eq "all") {
     $linuxArgs += @("make", "screenshot-all")
+} elseif ($View -match "^packerbase_(inventory|recipes|settings)$") {
+    $linuxArgs += @("bash", "scripts/test_base_game_visual.sh", ".screenshots/${View}_${Width}x${Height}.png", $Matches[1])
 } else {
     if ($View -notmatch "^[a-z0-9_]+$") { throw "Invalid view name" }
     $linuxArgs += @("bash", "scripts/screenshot_mainmenu.sh", $View, ".screenshots/${View}_${Width}x${Height}.png")

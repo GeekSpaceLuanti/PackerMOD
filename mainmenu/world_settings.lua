@@ -23,6 +23,15 @@ end
 function M.open(world, schema)
     assert(world.path and exists(world.path .. "/world.mt"), "World not found")
     local mt = Settings(world.path .. "/world.mt")
+    local game_defaults
+    local game_id = mt:get("gameid")
+    for _, game in ipairs(core.get_games and core.get_games() or {}) do
+        if game.id == game_id and game.path and exists(game.path .. "/minetest.conf") then
+            game_defaults = Settings(game.path .. "/minetest.conf")
+            break
+        end
+    end
+    local global_values = core.settings and core.settings.to_table and core.settings:to_table() or {}
     local terrain = Settings(world.path .. "/packermod-mapgen.conf")
     local meta = Settings(world.path .. "/map_meta.txt")
     local initialized = exists(world.path .. "/env_meta.txt") or exists(world.path .. "/map.sqlite")
@@ -52,7 +61,7 @@ function M.open(world, schema)
             if initialized then return meta:get(alias) or terrain:get(name) end
             return terrain:get(name) or meta:get(alias) or mt:get(name)
         end
-        return mt:get(name)
+        return mt:get(name) or global_values[name] or (game_defaults and game_defaults:get(name))
     end
     function store:get_np_group(name)
         if initialized then return meta:get_np_group(name) or terrain:get_np_group(name) end
@@ -73,6 +82,9 @@ function M.open(world, schema)
     function scoped.apply(e, value) if e.readonly then return false, "Terrain is locked after first play." end; return apply(e, value) end
     function scoped.reset(e) if e.readonly then return false, "Terrain is locked after first play." end; return reset(e) end
     scoped.world, scoped.initialized = world, initialized
+    function scoped.has_override(entry)
+        return mt:has(entry.name)
+    end
     function scoped.prepare_terrain()
         if initialized then return true end
         local values = meta:to_table()
@@ -119,12 +131,15 @@ function M.session(opts)
         local values, overrides = {}, {}
         local own = settings.to_table and settings:to_table()
         for _, e in ipairs(backend.entries) do
-            if not catalog.is_mapgen(e) then
+            -- Unset values must reach the game's own settings layer. Writing
+            -- the engine's defaults here masks settings in game/minetest.conf.
+            if not catalog.is_mapgen(e) and (not backend.has_override or backend.has_override(e)) then
                 local present = own and own[e.name] ~= nil or (not own and settings:has(e.name)) or false
                 values[e.name] = { present = present, value = present and settings:get(e.name) or nil }
                 overrides[e.name] = backend.read(e)
             end
         end
+        if not next(overrides) then return true end
         if not write(path, encode({ version = 1, values = values })) then return false, "Cannot save world session recovery file" end
         local applied, apply_error = pcall(function()
             for name, value in pairs(overrides) do settings:set(name, value) end
