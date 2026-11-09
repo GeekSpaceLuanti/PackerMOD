@@ -24,8 +24,11 @@ speed over long falls, while Luanti accelerates by a constant amount.
 Luanti still calculates fall damage from impact speed and steps up based
 on its own collision rules. The higher gravity affects other Luanti
 systems that read `movement_gravity`, including dropped item physics.
-World and Luanti settings can override the defaults. Use values `9.81`,
-`6.5`, and `1.35` for the old gravity, jump, and crouch settings.
+World settings can override the defaults. Use values `9.81`, `6.5`, and
+`1.35` for the old gravity, jump, and crouch settings. Launching Base through
+PackerMOD prefers the game's movement defaults over client-wide values,
+unless the world specifies its own value. Survival starts with flight and
+native fast mode off. The launcher restores the original values on return.
 The rigid step rule needs a 5.16+ client, is applied once on join to
 players with legacy mode, and can be disabled independently with
 `packer_rigid_step_up = false`.
@@ -39,6 +42,13 @@ the multiplier when the player stops sprinting. The game setting
 item-drop modifiers and debug behavior, and has no vanilla middle-click
 pick-block binding in this version.
 
+The walk target is 4.317 blocks/s in all keyboard directions, including
+diagonally. Native fast mode now targets 5.612 blocks/s instead of Luanti's
+20. Luanti 5.16 applies its block-size conversion twice to acceleration.
+The effective ground acceleration and braking use 24 blocks/s², and air
+acceleration uses 8. These are native linear ramps. Java movement uses
+per-tick friction, so the two velocity curves differ.
+
 Automatic pickup uses Luanti's item entity pickup callback, so MOD
 pickup hooks and partial inventory space are honored. The usual manual
 punch remains available, including during the automatic pickup delay.
@@ -48,6 +58,7 @@ turns off scanning.
 
 Run `bash scripts/test_base_game_gameplay.sh` under WSL. The Xvfb test
 compares old and tuned gravity with client position and velocity updates.
-It checks the 0.5-second item delay, partial pickup, manual pickup of the
+It measures the speed and coasting distance for all keyboard directions
+and checks the native fast-mode cap. It also checks the 0.5-second item delay, partial pickup, manual pickup of the
 remainder, crouching on then stepping off a one-block platform, and
 restoration of the walking speed after releasing Ctrl.

@@ -34,6 +34,14 @@ if not pack then
         local api_ready = false
         if core.get_modpath("packer_core") then
             assert(tonumber(core.settings:get("movement_gravity")) == 14, "Game gravity default was masked")
+            assert(tonumber(core.settings:get("movement_acceleration_default")) == 2.4, "Ground acceleration default was masked")
+            assert(tonumber(core.settings:get("movement_speed_fast")) == 5.6121, "Native fast cap was masked")
+            local world_config = Settings(core.get_worldpath() .. "/world.mt")
+            local walk = tonumber(world_config:get("movement_speed_walk")) or 4.317
+            assert(tonumber(core.settings:get("movement_speed_walk")) == walk,
+                "Base walk speed did not honor world and game precedence")
+            assert(not core.settings:get_bool("free_move") and not core.settings:get_bool("fast_move"),
+                "Base survival inherited flight or fast mode")
             local state = packer_core.open_data("windowsprobe", 1, {
                 [1] = function(data) data.starts = 0; return data end,
             })
@@ -84,7 +92,9 @@ local pass = not pm.fs.exists(world.path .. "/windows-ok-1") and "1"
     or (not pm.fs.exists(world.path .. "/windows-ok-2") and "2" or nil)
 if pass then
     local config = Settings(world.path .. "/world.mt")
-    config:set("windows_pass", pass); assert(config:write() ~= false)
+    config:set("windows_pass", pass)
+    if game_id == "packerbase" and pass == "2" then config:set("movement_speed_walk", "3.75") end
+    assert(config:write() ~= false)
     local link, err = pm.launcher.prepare_launch(world, pack); assert(link, err)
     assert(pm.launcher.begin_world_settings(world))
     local found
@@ -94,6 +104,10 @@ if pass then
     core.start()
 else
     if game_id == "packerbase" then
+        assert(core.settings:get_bool("free_move") and core.settings:get_bool("fast_move"),
+            "Returning to the menu did not restore the original client modes")
+        assert(tonumber(core.settings:get("movement_speed_walk")) == 499,
+            "Returning to the menu did not restore the original global walk speed")
         for i = 1, 2 do
             assert(pm.fs.exists(world.path .. "/windows-inventory-" .. i), "Base inventory was not verified")
         end

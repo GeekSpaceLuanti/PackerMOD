@@ -4,6 +4,56 @@ local player, last_sample, start_time
 local floor_y = 0.5
 local mode
 local measured_gravity
+local horizontal_trials = baseline and {"forward", "fast"}
+	or {"forward", "backward", "left", "right", "diagonal", "fast"}
+local trial_index, movement_started, release_position
+
+local function start_horizontal(index)
+	mode = nil
+	trial_index = index
+	local trial = horizontal_trials[index]
+	player:set_pos({x = 0, y = floor_y, z = trial == "fast" and -8 or 0})
+	player:set_look_horizontal(0)
+	core.after(0.35, function()
+		if not trial then
+			player:set_pos({x = 2, y = 10.5, z = 0})
+			mode = "fall"
+			return
+		end
+		movement_started, release_position = nil, nil
+		mode = "horizontal_move"
+		core.log("action", "PackerMOD horizontal " .. trial .. " ready")
+	end)
+end
+
+local function sample_horizontal(pos)
+	local trial = horizontal_trials[trial_index]
+	local controls = player:get_player_control()
+	local moving = controls.up or controls.down or controls.left or controls.right
+	local vel = player:get_velocity()
+	local speed = math.sqrt(vel.x ^ 2 + vel.z ^ 2)
+	if mode == "horizontal_move" then
+		if not moving then return end
+		local now = core.get_us_time()
+		movement_started = movement_started or now
+		local target = trial == "fast" and (baseline and 20 or 5.6121) or 4.317
+		assert(speed <= target + 0.16, trial .. " exceeded its speed limit")
+		if speed < target - 0.05 then return end
+		if not baseline then assert(now - movement_started < 450000, "slow acceleration: " .. trial) end
+		core.log("action", ("PackerMOD horizontal %s speed %.3f, ramp %.3f s")
+			:format(trial, speed, (now - movement_started) / 1e6))
+		mode = "horizontal_release"
+	elseif not moving then
+		release_position = release_position or pos
+		if trial ~= "fast" and speed > 0.05 then return end
+		local coast = math.sqrt((pos.x - release_position.x) ^ 2 + (pos.z - release_position.z) ^ 2)
+		if trial ~= "fast" and not baseline then
+			assert(coast < 0.8, "unexpected glide: " .. trial)
+		end
+		core.log("action", ("PackerMOD horizontal %s passed, coast %.3f"):format(trial, coast))
+		start_horizontal(trial_index + 1)
+	end
+end
 
 local function spawn_drop(position, stack)
 	local object = assert(core.add_item(position, stack))
@@ -57,20 +107,20 @@ end
 
 core.register_on_joinplayer(function(joined)
 	player = joined
+	local name = player:get_player_name()
+	local privileges = core.get_player_privs(name)
+	privileges.fast = true
+	core.set_player_privs(name, privileges)
 	assert(player:get_properties().step_up_mode == (baseline and "legacy" or "rigid"))
 	core.after(0.5, function()
 		player:set_armor_groups({immortal = 1})
-		for x = -3, 3 do
-			for z = -3, 3 do core.set_node({x = x, y = 0, z = z}, {name = "default:stone"}) end
+		local floor = {}
+		for x = -12, 12 do
+			for z = -21, 21 do floor[#floor + 1] = {x = x, y = 0, z = z} end
 		end
+		core.bulk_set_node(floor, {name = "default:stone"})
 		core.set_node({x = 0, y = 5, z = 0}, {name = "default:stone"})
-		-- Settle on the floor before starting at zero vertical velocity.
-		-- The drop starts away from the suspended edge-test block.
-		player:set_pos({x = 2, y = floor_y, z = 0})
-		core.after(1, function()
-			player:set_pos({x = 2, y = 10.5, z = 0})
-			mode = "fall"
-		end)
+		start_horizontal(1)
 	end)
 end)
 
@@ -81,7 +131,9 @@ end
 core.register_globalstep(function()
 	if not mode then return end
 	local pos = player:get_pos()
-	if mode == "fall" then
+	if mode == "horizontal_move" or mode == "horizontal_release" then
+		sample_horizontal(pos)
+	elseif mode == "fall" then
 		local sample = {y = pos.y, time = core.get_us_time() / 1e6, vy = player:get_velocity().y}
 		if last_sample and last_sample.y <= 10.6 then
 			if last_sample.y >= 9.5 and sample.y < 9.5 then start_time = crossing_time(sample, last_sample, 9.5) end

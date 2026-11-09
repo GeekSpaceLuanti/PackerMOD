@@ -22,10 +22,13 @@ New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 $logPath = Join-Path $outputDir ('windows-game-' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff') + '.log')
 $config = Join-Path $testRoot 'minetest.conf'
 $mainScript = Join-Path $PSScriptRoot 'windows_game_smoke_mainmenu.lua'
-@("main_menu_script = $mainScript", "packermod_source_path = $deployed",
+$configLines = @("main_menu_script = $mainScript", "packermod_source_path = $deployed",
     "packermod_test_game = $GameId", "packermod_test_starter_zip = $StarterZip", 'packermod_disposable_test = true', 'enable_sound = false', 'menu_clouds = false',
-    'screen_w = 1280', 'screen_h = 800', 'fullscreen = false', 'language = ja') |
-    Set-Content -LiteralPath $config -Encoding utf8
+    'screen_w = 1280', 'screen_h = 800', 'fullscreen = false', 'language = ja')
+if ($GameId -eq 'packerbase') {
+    $configLines += @('free_move = true', 'fast_move = true', 'movement_speed_walk = 499.0')
+}
+$configLines | Set-Content -LiteralPath $config -Encoding utf8
 $startInfo = [Diagnostics.ProcessStartInfo]::new($LuantiExe)
 $startInfo.UseShellExecute = $false
 $startInfo.WindowStyle = 'Hidden'

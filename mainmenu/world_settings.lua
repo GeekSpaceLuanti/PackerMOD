@@ -31,6 +31,14 @@ function M.open(world, schema)
             break
         end
     end
+    -- Base owns its movement defaults. A client-wide value from another game
+    -- must not silently replace them when a Base world has no override.
+    local base_movement = {}
+    if game_id == "packerbase" and game_defaults then
+        for name, value in pairs(game_defaults:to_table()) do
+            if name:match("^movement_") then base_movement[name] = value end
+        end
+    end
     local global_values = core.settings and core.settings.to_table and core.settings:to_table() or {}
     local terrain = Settings(world.path .. "/packermod-mapgen.conf")
     local meta = Settings(world.path .. "/map_meta.txt")
@@ -61,7 +69,8 @@ function M.open(world, schema)
             if initialized then return meta:get(alias) or terrain:get(name) end
             return terrain:get(name) or meta:get(alias) or mt:get(name)
         end
-        return mt:get(name) or global_values[name] or (game_defaults and game_defaults:get(name))
+        return mt:get(name) or base_movement[name] or global_values[name]
+            or (game_defaults and game_defaults:get(name))
     end
     function store:get_np_group(name)
         if initialized then return meta:get_np_group(name) or terrain:get_np_group(name) end
@@ -82,6 +91,17 @@ function M.open(world, schema)
     function scoped.apply(e, value) if e.readonly then return false, "Terrain is locked after first play." end; return apply(e, value) end
     function scoped.reset(e) if e.readonly then return false, "Terrain is locked after first play." end; return reset(e) end
     scoped.world, scoped.initialized = world, initialized
+    if game_id == "packerbase" then
+        scoped.launch_overrides = {}
+        for name, value in pairs(base_movement) do
+            scoped.launch_overrides[name] = mt:get(name) or value
+        end
+        if not core.is_yes(store:get("creative_mode") or "false") then
+            -- Start survival grounded. The original client modes return with the menu.
+            scoped.launch_overrides.free_move = "false"
+            scoped.launch_overrides.fast_move = "false"
+        end
+    end
     function scoped.has_override(entry)
         return mt:has(entry.name)
     end
@@ -130,15 +150,19 @@ function M.session(opts)
         local ok, err = self.recover(); if not ok then return false, err end
         local values, overrides = {}, {}
         local own = settings.to_table and settings:to_table()
+        local function add_override(name, value)
+            local present = own and own[name] ~= nil or (not own and settings:has(name)) or false
+            values[name] = { present = present, value = present and settings:get(name) or nil }
+            overrides[name] = value
+        end
         for _, e in ipairs(backend.entries) do
             -- Unset values must reach the game's own settings layer. Writing
             -- the engine's defaults here masks settings in game/minetest.conf.
             if not catalog.is_mapgen(e) and (not backend.has_override or backend.has_override(e)) then
-                local present = own and own[e.name] ~= nil or (not own and settings:has(e.name)) or false
-                values[e.name] = { present = present, value = present and settings:get(e.name) or nil }
-                overrides[e.name] = backend.read(e)
+                add_override(e.name, backend.read(e))
             end
         end
+        for name, value in pairs(backend.launch_overrides or {}) do add_override(name, value) end
         if not next(overrides) then return true end
         if not write(path, encode({ version = 1, values = values })) then return false, "Cannot save world session recovery file" end
         local applied, apply_error = pcall(function()

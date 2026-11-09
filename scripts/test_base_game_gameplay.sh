@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: LGPL-2.1-or-later
-# Exercise falling, crouched ledges and item pickup in a disposable client.
+# Exercise horizontal movement, falling, ledges and pickup in a disposable client.
 set -euo pipefail
 if [[ "${PACKERBASE_GAMEPLAY_XVFB:-}" != 1 ]]; then
     exec xvfb-run -a -s '-screen 0 1024x768x24 -nolisten tcp' env PACKERBASE_GAMEPLAY_XVFB=1 bash "$0" "$@"
@@ -46,11 +46,9 @@ for phase in baseline tuned; do
     cp "$repo/games/packerbase/tests/gameplay/init.lua" "$world/worldmods/packer_gameplay/init.lua"
     printf 'name = packer_gameplay\ndepends = packer_core\n' > "$world/worldmods/packer_gameplay/mod.conf"
     printf 'gameid = packerbase\nbackend = sqlite3\nplayer_backend = sqlite3\nauth_backend = sqlite3\nmod_storage_backend = sqlite3\nload_mod_packer_gameplay = true\n' > "$world/world.mt"
-    printf 'screen_w = 1024\nscreen_h = 768\nenable_sound = false\nenable_damage = false\nmg_name = singlenode\nstatic_spawnpoint = (0,1,0)\nkeymap_sneak = KEY_LSHIFT\nkeymap_forward = KEY_KEY_W\nkeymap_aux1 = SYSTEM_SCANCODE_224\n' > "$config"
-    # Avoid colliding with other local Luanti smoke tests on the default port.
-    printf 'port = %s\n' "$((31000 + RANDOM % 28000))" >> "$config"
+    printf 'screen_w = 1024\nscreen_h = 768\nenable_sound = false\nenable_damage = false\nmg_name = singlenode\nstatic_spawnpoint = (0,1,0)\nkeymap_sneak = KEY_LSHIFT\nkeymap_forward = KEY_KEY_W\nkeymap_aux1 = SYSTEM_SCANCODE_224\nfast_move = true\n' > "$config"
     if [[ "$phase" == baseline ]]; then
-        printf 'movement_gravity = 9.81\nmovement_speed_jump = 6.5\npacker_rigid_step_up = false\npacker_test_baseline = true\n' >> "$config"
+        printf 'movement_gravity = 9.81\nmovement_speed_jump = 6.5\nmovement_acceleration_default = 3\nmovement_acceleration_air = 2\nmovement_acceleration_fast = 10\nmovement_speed_fast = 20\npacker_rigid_step_up = false\npacker_test_baseline = true\n' >> "$config"
     fi
     touch "$log"
     LUANTI_USER_PATH="$run_dir/user" LUANTI_GAME_PATH="$run_dir/user/games" \
@@ -58,9 +56,25 @@ for phase in baseline tuned; do
         --config "$config" --logfile "$log" \
         > "$run_dir/$phase-console.log" 2>&1 &
     pid=$!
+    trials=(forward fast)
+    if [[ "$phase" == tuned ]]; then trials=(forward backward left right diagonal fast); fi
+    wait_for 'PackerMOD horizontal forward ready'
+    window="$(xdotool search --pid "$pid" --onlyvisible | head -1)"
+    xdotool windowfocus --sync "$window"
+    for trial in "${trials[@]}"; do
+        case "$trial" in
+            forward) keys=(w) ;; backward) keys=(s) ;; left) keys=(a) ;; right) keys=(d) ;;
+            diagonal) keys=(w d) ;; fast) keys=(Control_L w) ;;
+        esac
+        wait_for "PackerMOD horizontal $trial ready"
+        xdotool keydown "${keys[@]}"
+        wait_for "PackerMOD horizontal $trial speed"
+        xdotool keyup "${keys[@]}"
+        wait_for "PackerMOD horizontal $trial passed"
+    done
     wait_for 'PackerMOD gameplay fall passed'
     printf '%s:\n' "$phase"
-    grep -E 'PackerMOD gameplay (fall:|gravity:)' "$log"
+    grep -E 'PackerMOD (gameplay (fall:|gravity:)|horizontal .* (speed|passed))' "$log"
     if [[ "$phase" == tuned ]]; then
         wait_for 'PackerMOD gameplay edge ready'
         window="$(xdotool search --pid "$pid" --onlyvisible | head -1)"
